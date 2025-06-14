@@ -1,0 +1,27 @@
+<svg viewBox="0 0 180 220" xmlns="http://www.w3.org/2000/svg">
+  <!-- Loop Path -->
+  <path
+    id="logoPath"
+    d="M5 23.799V187.22L10.0794 202.077L29.381 210L49.6985 202.077L54.7778 187.22V43.6077L60.8731 34.6938H71.0318H82.2064L88.3017 43.6077V187.22L100.492 197.124L118.35 187.22V109.5L116.845 36.5L118.35 18.8469L127.879 5L142.926 1L156.365 5L167 18.8469V187.22L156.365 202.077L141.127 210L128.937 202.077L49.6985 18.8469L37.508 7.95215L29.381 3L16.1746 7.95215L5 23.799Z"
+    fill="none"
+    stroke="url(#grad)"
+    stroke-width="8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Gradient -->
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#c34ace"/>
+      <stop offset="100%" stop-color="#1d5fff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- White Pebble -->
+  <circle r="3" fill="white">
+    <animateMotion dur="3s" repeatCount="indefinite" rotate="auto">
+      <mpath href="#logoPath"/>
+    </animateMotion>
+  </circle>
+</svg>

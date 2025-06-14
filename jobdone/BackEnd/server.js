@@ -1,0 +1,2978 @@
+require('dotenv').config();
+const express = require('express');
+const Redis = require('ioredis');
+const app = express();
+const http = require("http");
+const { Server } = require("socket.io");
+const server = http.createServer(app);
+const mongoose = require('mongoose');
+const User = require('./models/user.js');
+const Post = require('./models/post.js');
+const Report = require('./models/report.js');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const Message = require('./models/message.js');
+const { client, serviceSid } = require('./twilioClient.js');
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const cookie = require('cookie'); // Add this at the top
+const multer = require('multer');
+const axios = require('axios');
+const cloudinary = require("cloudinary").v2;
+const { PassThrough } = require("stream");
+const {isValidObjectId} = require("mongoose");
+const cron = require('node-cron');
+
+
+const upload = require("./multer");
+
+
+console.log("JWT_SECRET:", process.env.JWT_SECRET);
+console.log("REFRESH_SECRET:", process.env.REFRESH_SECRET);
+
+const redis = new Redis({
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
+  username: process.env.REDIS_USERNAME,
+  password: process.env.REDIS_PASSWORD,
+});
+
+redis.on('connect', () => {
+  console.log('Redis connected successfully');
+});
+
+redis.on('ready', () => {
+  console.log('Redis ready to receive commands');
+});
+redis.on('error', (err) => {
+  console.error('Redis connection error:', err);
+  if (err.code === 'ERR_SSL_WRONG_VERSION_NUMBER') {
+    console.error('TLS version mismatch. Using rediss:// with default TLS settings. Check Node.js OpenSSL (version:', process.versions.openssl, ') or Redis Cloud requirements.');
+  } else if (err.message.includes('Command timed out')) {
+    console.error('Redis command timed out. Check server availability or increase commandTimeout.');
+  }
+  if (redis.status !== 'connecting' && redis.status !== 'connect') {
+    console.log('Attempting to reconnect to Redis...');
+    redis.connect().catch((reconnectErr) => {
+      console.error('Reconnection failed:', reconnectErr);
+    });
+  }
+});
+
+redis.on('close', () => {
+  console.log('Redis connection closed');
+});
+const OTP_EXPIRY_SECONDS = 3600;
+const OTP_LIMIT = 5;
+const PHONE_COOLDOWN_SECONDS = 60;
+const EMAIL_OTP_EXPIRY_SECONDS = 3600; // 1 hour
+const EMAIL_OTP_LIMIT = 5;
+const EMAIL_COOLDOWN_SECONDS = 120; // 2 minutes between requests for same email (longer than phone)
+
+app.use(cors({
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST' , 'PUT', 'DELETE'],
+  credentials: true,
+}));
+app.options("*", cors());
+
+
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173", 
+    methods: ["GET", "POST"],
+    credentials: true // ✅ allow credentials (cookies)
+  }
+});
+
+app.use(express.json());
+app.use(cookieParser());
+
+const handleMulterError = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    console.error('Multer error details:', err);
+    return res.status(400).json({ message: `Upload error: ${err.message}` });
+  }
+  if (err) {
+    console.error('Upload error:', err.message);
+    return res.status(400).json({ message: err.message });
+  }
+  next();
+};
+
+const PORT = process.env.PORT || 3001;
+const MONGODB_URI = process.env.MONGODB_URI;
+
+const generateAccessToken = (user) => {
+  return jwt.sign(
+    { id: user._id, email: user.email , username: user.username , postIds: user.postIds , bidIds: user.bidIds , userImage: user.userImage , userBio: user.userBio , userSkills: user.userSkills},
+    process.env.JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+};
+
+const generateRefreshToken = (user) => {
+  return jwt.sign(
+    { id: user._id, email: user.email , username: user.username , postIds: user.postIds , bidIds: user.bidIds , userImage: user.userImage , userBio: user.userBio , userSkills: user.userSkills},
+    process.env.REFRESH_SECRET,
+    { expiresIn: '60d' }
+  );
+};
+
+
+io.use(async (socket, next) => {
+  try {
+    const cookies = socket.handshake.headers.cookie
+      ? cookie.parse(socket.handshake.headers.cookie)
+      : {};
+    console.log("Socket cookies:", cookies);
+    const accessToken = cookies.accessToken;
+
+    if (!accessToken) {
+      console.warn('No access token provided in cookies');
+      throw new Error('No access token provided');
+    }
+
+    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select('-password');
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    socket.user = user;
+    next();
+  } catch (error) {
+    console.error('Socket authentication error:', error.message);
+    next(new Error('Unauthorized'));
+  }
+});
+
+io.on("connection", (socket) => {
+  console.log("Authenticated user connected:", socket.user.username, socket.id);
+
+  socket.on("join", (roomId) => {
+    if (roomId !== socket.user.id.toString()) {
+      console.log(`Unauthorized room join attempt by ${socket.user.id}`);
+      return;
+    }
+    socket.join(roomId);
+    console.log(`User ${socket.user.username} joined room ${roomId}`);
+  });
+
+  socket.on("sendMessage", async ({ receiverId, type, text, data }) => {
+    console.log("📨 Received message from:", socket.user.username);
+
+
+    try {
+      if (!receiverId || !type) throw new Error("Invalid message format");
+
+      const senderId = socket.user.id;
+      console.log("senderId:", senderId);
+      console.log("receiverId:", receiverId);
+      if (!isValidObjectId(receiverId)) throw new Error("Invalid receiver ID");
+      if (!isValidObjectId(senderId)) throw new Error("Invalid sender ID");
+      // === Fetch both users ===
+      const [receiver, sender] = await Promise.all([
+        User.findById(receiverId),
+        User.findById(senderId),
+      ]);
+
+      if (!receiver || !sender) throw new Error("User(s) not found");
+
+      // === CONNECTION LOGIC ===
+      // Receiver side
+      const receiverConnIndex = receiver.connections.findIndex(
+        (conn) => conn.user.toString() === senderId
+      );
+
+      if (receiverConnIndex === -1)  {
+        if (isValidObjectId(senderId)) {
+          receiver.connections.push({ user: senderId, request: true });
+        }
+      }
+
+      // Sender side
+      const senderConnIndex = sender.connections.findIndex(
+        (conn) => conn.user.toString() === receiverId
+      );
+
+      if (senderConnIndex === -1) {
+        if (isValidObjectId(receiverId)) {
+          sender.connections.push({ user: receiverId, request: false });
+        }
+      }
+      else{
+        sender.connections[senderConnIndex].request = false;
+      }
+
+      // === MESSAGE CONSTRUCTION ===
+      const messagePayload = {
+        sender: senderId,
+        receiver: receiverId,
+        type,
+        text: text || undefined,
+        data: {},
+        deletedFor: [],
+        seenBy: [senderId],
+      };
+      if((sender.blockedUsers.includes(receiverId)) || (receiver.blockedUsers.includes(senderId))) {
+        messagePayload.deletedFor.push(receiverId);
+      }
+      if ((type === "image" || type === "media" || type === "link") && data?.url) {
+        messagePayload.data.url = data.url;
+      }
+
+      if (type === "post" && data?.postId) {
+        messagePayload.data.postId = data.postId;
+      }
+
+      const savedMessage = await Message.create(messagePayload);
+
+      // === Update lastMessage only for connections that exist ===
+      const lastMessageId = savedMessage._id;
+
+      // Update for sender - find the connection index again after potential push
+      const finalSenderConnIndex = sender.connections.findIndex(
+        (conn) => conn.user.toString() === receiverId
+      );
+      if (finalSenderConnIndex !== -1) {
+        sender.connections[finalSenderConnIndex].lastMessage = lastMessageId;
+      }
+
+      // Update for receiver - find the connection index again after potential push  
+      const finalReceiverConnIndex = receiver.connections.findIndex(
+        (conn) => conn.user.toString() === senderId
+      );
+      if (finalReceiverConnIndex !== -1) {
+        receiver.connections[finalReceiverConnIndex].lastMessage = lastMessageId;
+      }
+      console.log("🧠 Receiver notifications before save:", receiver.notifications);
+
+      // === Save updates only if needed ===
+      await sender.save();
+      await receiver.save();
+
+      // ✅ Emit only to receiver
+      const response = {
+        ...savedMessage._doc,
+        senderId: senderId,
+        receiverId: receiverId,
+      };
+
+      io.to(receiverId).emit("receiveMessage", response);
+    } catch (error) {
+      console.error("Message error:", error.message);
+      socket.emit("messageError", { error: error.message });
+    }
+  });
+
+
+
+  ["newBid", "newComment", "newReply"].forEach((event) => {
+    socket.on(event, (data) => {
+      if (!data || typeof data !== "object") {
+        return socket.emit("error", { event, error: "Invalid payload" });
+      }
+      io.emit(`receive${event.charAt(0).toUpperCase() + event.slice(1)}`, {
+        ...data,
+        userId: socket.user.id,
+      });
+    });
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.user.username, socket.id);
+  });
+});
+
+
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.GOOGLE_CALLBACK_URL,
+  },
+  (accessToken, refreshToken, profile, done) => {
+    console.log("🔑 Google Strategy executed - got profile");
+    console.log("Google profile:", profile);
+    return done(null, profile);
+  }
+));
+
+// Start Google OAuth
+app.get("/auth/google",
+  (req, res, next) => {
+    console.log("🚀 Initial Google auth route hit");
+    next();
+  },
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+app.get("/auth/google/callback",
+  passport.authenticate("google", {
+    failureRedirect: "http://localhost:5173/login?error=oauth_failed",
+    session: false,
+  }),
+  async (req, res) => {
+    console.log("✅ Google login callback hit");
+    console.log("🧠 Google user in callback:", req.user);
+    
+    const googleUser = req.user;
+    
+    // Check if googleUser exists
+    if (!googleUser) {
+      console.error("❌ No Google user data received");
+      return res.redirect("http://localhost:5173/login?error=no_user_data");
+    }
+
+    // Check if emails exist
+    if (!googleUser.emails || googleUser.emails.length === 0) {
+      console.error("❌ No email in Google user data");
+      return res.redirect("http://localhost:5173/login?error=no_email");
+    }
+
+    const email = googleUser.emails[0].value;
+    const username = googleUser.displayName;
+    const googleId = googleUser.id;
+
+    console.log("📧 Email:", email);
+    console.log("👤 Username:", username);
+    console.log("🆔 Google ID:", googleId);
+
+    try {
+      console.log("🔍 Checking if user exists...");
+      
+      // 1. Check if user already exists in MongoDB
+      let user = await User.findOne({ 
+        $or: [
+          { email: email },
+          { googleId: googleId }
+        ]
+      });
+
+      console.log("👤 Existing user found:", user ? "Yes" : "No");
+      
+      // Updated getWorkingPhotoUrl function with URL validation
+      const getWorkingPhotoUrl = async (googleUser) => {
+        const originalUrl = googleUser.photos?.[0]?.value;
+        const jsonPicture = googleUser._json?.picture;
+        console.log("Google photo URLs:", { originalUrl, jsonPicture });
+
+        const photoUrl = jsonPicture || originalUrl;
+        if (!photoUrl) {
+          console.log("No photo URL found, using fallback");
+          return null;
+        }
+
+        const cleanUrl = photoUrl.replace(/=s\d+(-c)?$/, '');
+        console.log("Cleaned URL:", cleanUrl);
+
+        try {
+          const response = await axios.head(cleanUrl, {
+            timeout: 5000,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; JobDone/1.0)'
+            }
+          });
+          console.log("URL accessibility check:", response.status);
+          return cleanUrl;
+        } catch (error) {
+          console.error("Error checking URL:", error.message);
+          return null;
+        }
+      };
+
+      let userImage = "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"; // Default image
+      const googleImageUrl = await getWorkingPhotoUrl(googleUser);
+
+      // Fixed uploadGoogleImage function - make internal server request
+      const uploadGoogleImage = async (googleImageUrl) => {
+        try {
+          console.log("Uploading Google image:", googleImageUrl);
+          const response = await axios.get(googleImageUrl, { 
+            responseType: "arraybuffer",
+            timeout: 10000,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; JobDone/1.0)'
+            }
+          });
+          const buffer = Buffer.from(response.data);
+          const contentType = response.headers["content-type"];
+          const resourceType = contentType && contentType.startsWith("video") ? "video" : "image";
+
+          return new Promise((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+              {
+                resource_type: resourceType,
+                folder: "google_images",
+              },
+              (error, result) => {
+                if (error) {
+                  console.error("Cloudinary upload error:", error);
+                  reject(error);
+                } else {
+                  resolve(result.secure_url);
+                }
+              }
+            );
+            const bufferStream = new PassThrough();
+            bufferStream.end(buffer);
+            bufferStream.pipe(uploadStream);
+          });
+        } catch (error) {
+          console.error("Error downloading or uploading Google image:", error);
+          return null;
+        }
+      };
+
+      if (googleImageUrl) {
+        const uploadedUrl = await uploadGoogleImage(googleImageUrl);
+        if (uploadedUrl) {
+          userImage = uploadedUrl;
+        } else {
+          console.warn("Failed to upload Google image, using default");
+        }
+      }
+        
+      // 2. If not, create a new user
+      if (!user) {
+        console.log("🔨 Creating new user...");
+        
+        const newUserData = {
+          email,
+          username,
+          googleId,
+          isOAuth: true,
+          verified: { email: true, phoneNumber: false },
+          userImage,
+          postIds: [],
+          bidIds: [],
+          userBio: "",
+          userSkills: []
+        };
+        
+        console.log("📝 New user data:", newUserData);
+        
+        user = await User.create(newUserData);
+        console.log("✅ New Google user created:", user._id);
+      } else {
+        console.log("✅ Existing user found:", user._id);
+        // Update googleId and photo if user exists but doesn't have them
+        let userUpdated = false;
+        
+        if (!user.googleId) {
+          console.log("🔄 Adding Google ID to existing user");
+          user.googleId = googleId;
+          userUpdated = true;
+        }
+        
+        // Update photo if it's the default or outdated
+        if (!user.userImage || user.userImage.includes('jobdone/image/upload/v1743801776')) {
+          console.log("🔄 Updating user photo");
+          user.userImage = userImage;
+          userUpdated = true;
+        }
+        
+        if (userUpdated) {
+          await user.save();
+        }
+      }
+
+      console.log("🎟️ Generating tokens...");
+      
+      // 3. Generate JWT tokens
+      const accessToken = generateAccessToken(user);
+      const refreshToken = generateRefreshToken(user);
+
+      console.log("🍪 Setting cookies...");
+      
+      // 4. Set tokens in cookies
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax', // Changed from 'Strict' for better OAuth compatibility
+        maxAge: 60 * 24 * 60 * 60 * 1000, // 60 days
+      });
+      
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+        maxAge: 24 * 60 * 60 * 1000, // 1 day
+      });
+
+      console.log("🚀 Redirecting to Profile page");
+      
+      // 5. Redirect to frontend Profile page
+      res.redirect(`http://localhost:5173/Profile`);
+
+    } catch (error) {
+      console.error("❌ Google login error details:");
+      console.error("Error name:", error.name);
+      console.error("Error message:", error.message);
+      console.error("Full error:", error);
+      
+      // Redirect to error page instead of sending JSON
+      res.redirect(`http://localhost:5173/login?error=server_error`);
+    }
+  }
+);
+
+const verifyToken = (req, res, next) => {
+  const token =
+    req.cookies?.accessToken ||
+    req.headers.authorization?.split(" ")[1];
+  console.log("Token received:", token);
+  if (!token) return res.status(401).json({ message: "Unauthorized: No token" });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error("Token verification error:", error.message);
+    return res.status(401).json({ message: "Unauthorized: Invalid token" });
+  }
+};
+
+app.post('/user/info', async (req, res) => {
+  const { username, email, password ,postIds} = req.body;
+  const existingUser = await User.findOne({
+    $or: [{ username }, { email }]
+  });
+
+  if (existingUser) {
+    return res.status(400).json({ message: existingUser.username === username ? "Username already exists" : "Email already in use" });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({ username, email, password: hashedPassword , postIds: postIds || [] });
+    res.status(200).json({ message: "User registered successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post('/user/check', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email : email });
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    if (user.isOAuth) {
+      return res.status(400).json({ message: "Please use Google login for this account" });
+    }
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Strict',
+      maxAge: 60 * 24 * 60 * 60 * 1000,
+    });
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Lax',
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    });
+    res.status(200).json({ message: "Login successful" });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+const escapeRegex = (str) =>
+  str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); 
+
+app.get("/users/search", verifyToken, async (req, res) => {
+  const { query } = req.query;
+
+  if (!query || query.trim().length === 0) {
+    return res.status(400).json({ message: "Search query is required" });
+  }
+
+  const searchQuery = query.trim();
+  const escapedQuery = escapeRegex(searchQuery);
+  const regexExact = new RegExp(`^${escapedQuery}$`, "i");
+  const regexStartsWith = new RegExp(`^${escapedQuery}`, "i");
+  const regexAnywhere = new RegExp(escapedQuery, "i");
+
+  // Only split if search is more than 1 character
+  const words = searchQuery.length > 1 ? searchQuery.split(/\s+/).filter(w => w.length > 1) : [];
+
+  try {
+    const searchConditions = [
+      { username: regexExact },
+      { username: regexStartsWith },
+      { email: regexAnywhere },
+      { userBio: regexAnywhere },
+      { userSkills: { $elemMatch: { $regex: regexStartsWith } } },
+      { userSkills: { $elemMatch: { $regex: regexAnywhere } } },
+    ];
+
+    for (const word of words) {
+      const wordRegex = new RegExp(escapeRegex(word), "i");
+      searchConditions.push({ userSkills: { $elemMatch: { $regex: wordRegex } } });
+    }
+
+    const users = await User.aggregate([
+      { $match: { $or: searchConditions } },
+      {
+        $addFields: {
+          searchScore: {
+            $sum: [
+              { $cond: [{ $regexMatch: { input: "$username", regex: regexExact } }, 100, 0] },
+              { $cond: [{ $regexMatch: { input: "$username", regex: regexStartsWith } }, 80, 0] },
+              { $cond: [{ $regexMatch: { input: "$username", regex: regexAnywhere } }, 60, 0] },
+              { $cond: [{
+                $gt: [
+                  {
+                    $size: {
+                      $filter: {
+                        input: { $ifNull: ["$userSkills", []] },
+                        cond: { $regexMatch: { input: "$$this", regex: regexExact } }
+                      }
+                    }
+                  },
+                  0
+                ]
+              }, 90, 0] },
+              { $cond: [{
+                $gt: [
+                  {
+                    $size: {
+                      $filter: {
+                        input: { $ifNull: ["$userSkills", []] },
+                        cond: { $regexMatch: { input: "$$this", regex: regexAnywhere } }
+                      }
+                    }
+                  },
+                  0
+                ]
+              }, 70, 0] },
+              { $cond: [{ $regexMatch: { input: "$userBio", regex: regexAnywhere } }, 40, 0] },
+              { $cond: [{ $regexMatch: { input: "$email", regex: regexAnywhere } }, 50, 0] },
+              { $multiply: ["$averageRating", 2] }
+            ]
+          }
+        }
+      },
+      { $sort: { searchScore: -1, averageRating: -1, username: 1 } },
+      { $limit: 20 },
+      {
+        $project: {
+          username: 1,
+          userSkills: 1,
+          ratings: 1,
+          userBio: 1,
+          userImage: 1,
+          verified: 1,
+          averageRating: 1,
+          totalRating: 1,
+          searchScore: 1,
+          _id: 1 
+        }
+      }
+    ]);
+
+    res.status(200).json(users);
+  } catch (err) {
+    console.error("Search error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+app.put("/users/notifications", verifyToken, async (req, res) => {
+  const { type, enabled } = req.body;
+
+  if (!["comments", "bids"].includes(type)) {
+    return res.status(400).json({ message: "Invalid notification type." });
+  }
+
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: { [`allowNotifications.${type}`]: enabled } },
+      { new: true }
+    );
+
+    res.status(200).json({
+      message: `${type} notifications ${enabled ? "enabled" : "muted"}.`,
+      allowNotifications: updatedUser.allowNotifications
+    });
+  } catch (error) {
+    console.error("Notification update error:", error);
+    res.status(500).json({ message: "Failed to update notification settings." });
+  }
+});
+
+
+app.post('/posts', async (req, res) => {
+  const { postDescription, bids, comments, mediaUrls, postUserId } = req.body;
+
+  try {
+
+    const user = await User.findOne({ _id: postUserId });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const post = await Post.create({
+      user: user._id,
+      postDescription,
+      bids: bids || [],
+      comments: comments || [],
+      mediaUrls: mediaUrls || [],
+    });
+
+    await User.updateOne(
+      { _id: user._id },
+      { $push: { postIds: post._id } }
+    );
+
+    res.status(200).json({ message: "Post registered successfully" });
+  } catch (error) {
+    console.error("❌ Error while creating post:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get('/posts', async (req, res) => {
+  try {
+    const posts = await Post.find({ status: "open" })
+      .sort({ createdAt: -1 })
+      .populate({
+        path: 'user',
+        select: 'username userImage verified blockedUsers _id ratings',
+        populate: {
+          path: 'ratings.from',
+          select: 'username userImage verified blockedUsers _id'
+        }
+      })
+      .populate({
+        path: 'bids.user',
+        select: 'username userImage verified _id ratings'
+      })
+      .populate({
+        path: 'comments.user',
+        select: 'username userImage verified _id ratings'
+      })
+      .populate({
+        path: 'comments.replies.user',
+        select: 'username userImage verified _id ratings'
+      });
+
+    res.status(200).json(posts);
+  } catch (err) {
+    console.error("Error fetching posts:", err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
+app.delete("/posts", verifyToken, async (req, res) => {
+  const { postId } = req.body;
+  const userId = req.user.id; // assuming you're decoding JWT
+
+  try {
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    // ✅ Optional: Only the post owner can delete
+    if (post.user.toString() !== userId) {
+      return res.status(403).json({ message: "Unauthorized: You can only delete your own post." });
+    }
+
+    await Post.findByIdAndDelete(postId);
+
+    return res.status(200).json({ message: "Post deleted successfully." });
+  } catch (err) {
+    console.error("Error deleting post:", err);
+    return res.status(500).json({ message: "Server error while deleting post." });
+  }
+});
+
+app.put("/posts/closeBidding", verifyToken, async (req, res) => {
+  const { postId } = req.body;
+  const userId = req.user.id;
+
+  if (!postId) {
+    return res.status(400).json({ message: "Post ID is required." });
+  }
+
+  try {
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    // Ensure only the post owner can close bidding
+    if (post.user.toString() !== userId) {
+      return res.status(403).json({ message: "Unauthorized to close bidding on this post." });
+    }
+
+    // You may define your own status transitions if needed
+    if (post.status !== "open") {
+      return res.status(400).json({ message: "Bidding can only be closed on open posts." });
+    }
+
+    post.status = "closed";
+    await post.save();
+
+    return res.status(200).json({ message: "Bidding successfully closed.", status: post.status });
+  } catch (error) {
+    console.error("Error closing bidding:", error);
+    return res.status(500).json({ message: "Server error while closing bidding." });
+  }
+});
+
+app.put("/posts/openBidding", verifyToken, async (req, res) => {
+  const { postId } = req.body;
+  const userId = req.user.id;
+
+  if (!postId) {
+    return res.status(400).json({ message: "Post ID is required." });
+  }
+
+  try {
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    // Ensure only the post owner can close bidding
+    if (post.user.toString() !== userId) {
+      return res.status(403).json({ message: "Unauthorized to open bidding on this post." });
+    }
+
+    // You may define your own status transitions if needed
+    if (post.status !== "closed") {
+      return res.status(400).json({ message: "Bidding can only be oepened on closed posts." });
+    }
+
+    post.status = "open";
+    await post.save();
+
+    return res.status(200).json({ message: "Bidding successfully opened.", status: post.status });
+  } catch (error) {
+    console.error("Error closing bidding:", error);
+    return res.status(500).json({ message: "Server error while opening bidding." });
+  }
+});
+
+app.put('/posts/setBidRange', verifyToken, async (req, res) => {
+  const { postId, minBid, maxBid } = req.body;
+  const userId = req.user.id;
+
+  if (!postId || minBid == null || maxBid == null) {
+    return res.status(400).json({ message: 'postId, minBid, and maxBid are required.' });
+  }
+
+  if (minBid < 0 || maxBid < 0 || minBid > maxBid) {
+    return res.status(400).json({ message: 'Invalid bid range. minBid must be ≤ maxBid and both non-negative.' });
+  }
+
+  try {
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found.' });
+    }
+
+    if (post.user.toString() !== userId) {
+      return res.status(403).json({ message: 'You are not authorized to modify this post.' });
+    }
+
+    post.minimumBid = minBid;
+    post.maximumBid = maxBid;
+    await post.save();
+
+    res.status(200).json({ message: 'Bid range updated successfully!', post });
+  } catch (err) {
+    console.error('Error setting bid range:', err);
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+app.get("/posts/search", verifyToken, async (req, res) => {
+  const { query } = req.query;
+
+  if (!query || query.trim() === "") {
+    return res.status(400).json({ message: "Search query required" });
+  }
+
+  const searchQuery = query.trim();
+  
+  try {
+    // Create text search conditions for post description
+    const descriptionConditions = [
+      // Exact phrase match (highest priority)
+      { postDescription: new RegExp(searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "i") },
+      // All words must be present (partial word matching)
+      ...searchQuery.split(/\s+/).map(word => ({
+        postDescription: new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "i")
+      }))
+    ];
+
+    // Search for users by username (exact and partial matches)
+    const userSearchConditions = [
+      // Exact username match
+      { username: new RegExp(`^${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, "i") },
+      // Username starts with query
+      { username: new RegExp(`^${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, "i") },
+      // Username contains query
+      { username: new RegExp(searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "i") }
+    ];
+
+    const matchedUsers = await User.find({
+      $or: userSearchConditions
+    }).select("_id username");
+
+    const matchedUserIds = matchedUsers.map(u => u._id);
+
+    // Build the main search query with proper scoring
+    const searchConditions = [];
+
+    // Add description search conditions
+    searchConditions.push(...descriptionConditions.map(condition => ({
+      ...condition,
+      status: "open"
+    })));
+
+    // Add user-based search conditions
+    if (matchedUserIds.length > 0) {
+      searchConditions.push({
+        status: "open",
+        user: { $in: matchedUserIds }
+      });
+    }
+
+    if (searchConditions.length === 0) {
+      return res.json([]);
+    }
+
+    // Execute search with aggregation for better scoring
+    const posts = await Post.aggregate([
+      {
+        $match: {
+          status: "open",
+          $or: searchConditions.map(condition => {
+            const { status, ...rest } = condition;
+            return rest;
+          })
+        }
+      },
+      // Add scoring based on relevance
+      {
+        $addFields: {
+          searchScore: {
+            $sum: [
+              // Exact phrase match in description gets highest score
+              {
+                $cond: [
+                  { $regexMatch: { input: "$postDescription", regex: new RegExp(searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "i") } },
+                  100,
+                  0
+                ]
+              },
+              // Partial word matches get lower scores
+              ...searchQuery.split(/\s+/).map(word => ({
+                $cond: [
+                  { $regexMatch: { input: "$postDescription", regex: new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "i") } },
+                  10,
+                  0
+                ]
+              })),
+              // User matches get medium score
+              {
+                $cond: [
+                  { $in: ["$user", matchedUserIds] },
+                  50,
+                  0
+                ]
+              }
+            ]
+          }
+        }
+      },
+      // Sort by relevance score first, then by creation date
+      {
+        $sort: { searchScore: -1, createdAt: -1 }
+      },
+      // Remove duplicates and limit results
+      {
+        $group: {
+          _id: "$_id",
+          doc: { $first: "$$ROOT" }
+        }
+      },
+      {
+        $replaceRoot: { newRoot: "$doc" }
+      },
+      {
+        $limit: 50 // Limit results for performance
+      }
+    ]);
+
+    // Populate the results
+    const populatedPosts = await Post.populate(posts, [
+      {
+        path: "user",
+        select: "username userImage verified blockedUsers _id ratings",
+        populate: {
+          path: "ratings.from",
+          select: "username userImage verified blockedUsers _id"
+        }
+      },
+      {
+        path: "bids.user",
+        select: "username userImage verified _id ratings"
+      },
+      {
+        path: "comments.user",
+        select: "username userImage verified _id ratings"
+      },
+      {
+        path: "comments.replies.user",
+        select: "username userImage verified _id ratings"
+      }
+    ]);
+
+    res.json(populatedPosts);
+  } catch (err) {
+    console.error("Search error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.get("/api/me", verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .select("-password")
+      .populate({
+        path: "connections.user",
+        select: "_id username userImage verified",
+      })
+      .populate({
+        path: "connections.lastMessage",
+        select: "_id sender receiver type text data createdAt",
+      })
+      .populate({
+        path: "ratings.from",
+        select: "_id username userImage verified",
+      })
+      .populate({
+        path: "connections.user",
+        select: "_id username userImage verified",
+      });
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("❌ Error in /api/me:", error.message);
+    res.status(500).json({ message: "Failed to fetch user" });
+  }
+});
+
+app.post('/auth/logout', verifyToken, async (req, res) => {
+  try {
+    // Get the accessToken from the request (cookie or header)
+    const accessToken =
+      req.cookies?.accessToken ||
+      req.headers.authorization?.split(" ")[1];
+
+    // If no token is provided, clear cookies and return
+    if (!accessToken) {
+      res.clearCookie('accessToken', {
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        sameSite: 'Lax', // Match the sameSite used when setting the cookie
+      });
+      res.clearCookie('refreshToken', {
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        sameSite: 'Lax',
+      });
+      return res.json({
+        success: true,
+        message: 'Logged out successfully',
+      });
+    }
+
+    // Blacklist the accessToken in Redis (optional, for added security)
+    try {
+      const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
+      const tokenKey = `blacklist:token:${decoded.id}:${accessToken}`;
+      await redis.setex(tokenKey, 24 * 60 * 60, 'blacklisted'); // Match accessToken expiry (24 hours)
+    } catch (jwtError) {
+      console.error('Invalid token during logout:', jwtError);
+      // Continue with logout even if token is invalid
+    }
+
+    // Clear authentication cookies
+    res.clearCookie('accessToken', {
+      path: '/',
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      sameSite: 'Lax',
+    });
+    res.clearCookie('refreshToken', {
+      path: '/',
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      sameSite: 'Lax',
+    });
+
+    // Optionally clear session if express-session is used
+    if (req.session) {
+      await new Promise((resolve, reject) => {
+        req.session.destroy((err) => {
+          if (err) {
+            console.error('Session destruction error:', err);
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Logout failed',
+    });
+  }
+});
+
+app.get('/protected-route', verifyToken, (req, res) => {
+  res.json({ message: "This is a protected route", user: req.user });
+});
+
+// Temporary test endpoint in server.js
+app.post('/test-cloudinary', async (req, res) => {
+  try {
+    const result = await cloudinary.uploader.upload('https://via.placeholder.com/150', {
+      folder: 'posts',
+      resource_type: 'image',
+    });
+    res.json({ url: result.secure_url });
+  } catch (error) {
+    console.error("Cloudinary test error:", error);
+    res.status(500).json({ message: "Cloudinary upload failed" });
+  }
+});
+
+app.post(
+  "/upload",
+  verifyToken,
+  upload.fields([{ name: "files", maxCount: 10 }, { name: "file", maxCount: 1 }]),
+  handleMulterError,
+  async (req, res) => {
+    console.log("🔥 Files received at /upload:", req.files);
+    console.log("Raw req.body payload:", req.body);
+
+    try {
+      console.log("Received /upload request:", {
+        body: req.body,
+        files: req.files,
+      });
+
+      // Case 2: Multiple file upload (JobPostInput.jsx)
+      if (req.files && req.files.files && req.files.files.length > 0) {
+        const files = req.files.files;
+        console.log("Processing multiple files:", files.length);
+
+        const urls = files.map(file => {
+          const url = file?.path || file?.cloudinary?.secure_url || file?.cloudinary?.url;
+          if (!url) {
+            throw new Error(`File upload failed for ${file.originalname}: No URL available`);
+          }
+          return url;
+        });
+
+
+        return res.status(200).json({ urls });
+      }
+
+      // Case 3: Google image URL upload (for OAuth callback)
+      if (req.body.googleImageUrl) {
+        const googleImageUrl = req.body.googleImageUrl;
+        console.log("Processing Google image URL:", googleImageUrl);
+
+        if (!/^https?:\/\/.*/.test(googleImageUrl)) {
+          return res.status(400).json({ message: "Invalid Google image URL" });
+        }
+
+        try {
+          const response = await axios.get(googleImageUrl, {
+            responseType: "arraybuffer",
+            timeout: 10000,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; JobDone/1.0)'
+            }
+          });
+          const buffer = Buffer.from(response.data);
+
+          if (!buffer || buffer.length === 0) {
+            return res.status(400).json({ message: "Empty Google image buffer" });
+          }
+
+          const contentType = response.headers["content-type"];
+          const resourceType = contentType && contentType.startsWith("video") ? "video" : "image";
+
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              resource_type: resourceType,
+              folder: "google_images",
+            },
+            (error, result) => {
+              if (error) {
+                console.error("Cloudinary upload error:", error);
+                return res.status(500).json({ message: "Failed to upload Google image to Cloudinary", error: error.message });
+              }
+              res.status(200).json({ url: result.secure_url });
+            }
+          );
+
+          const bufferStream = new PassThrough();
+          bufferStream.end(buffer);
+          bufferStream.pipe(uploadStream);
+          return;
+        } catch (downloadError) {
+          console.error("Error downloading Google image:", downloadError);
+          return res.status(500).json({ message: "Failed to download Google image", error: downloadError.message });
+        }
+      }
+
+      return res.status(400).json({ message: "No file or Google image URL provided" });
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      res.status(500).json({ message: error.message || "Failed to upload file" });
+    }
+  }
+);
+
+app.post("/posts/comments", async (req, res) => {
+  const { postId, commentText, username } = req.body;
+
+  try {
+    if (!postId || !commentText || !username) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+    post.comments.push({ commentText, user:user._id });
+    await post.save();
+    res.status(200).json({ message: "Comment added successfully" });
+  } catch (error) {
+    console.error("❌ Error while adding comment:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+app.get("/posts/comments", async (req, res) => {
+  const { postId } = req.query;
+
+  if (!postId) {
+    return res.status(400).json({ message: "postId is missing" });
+  }
+
+  try {
+    const post = await Post.findById(postId)
+      .populate('comments.user', 'username userImage verified')
+      .populate('comments.replies.user', 'username userImage verified');
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+    res.status(200).json(post.comments || []);
+  } catch (error) {
+    console.error("❌ Error while loading comments:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+app.post("/posts/comments/replies", async (req, res) => {
+  const { postId , commentId, replyText ,username } = req.body;
+  if (!postId || !commentId || !replyText || !username) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
+  try {
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+    const user =  await User.findOne({username});
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const comment = post.comments.id(commentId);
+    if (!comment) return res.status(404).json({ message: "Comment not found" });
+
+    comment.replies.push({replyText, user:user._id});
+    await post.save();
+    res.status(200).json({ message: "reply added successfully" });
+  } catch (error) {
+    console.error("❌ Error while adding comment:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post("/posts/bids", async (req, res) => {
+  const { postId, BidText, username, BidAmount } = req.body;
+
+  if (!postId || !BidAmount || !username) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
+
+  try {
+    const user = await User.findOne({ username });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    await User.updateOne(
+      { username },
+      { $push: { bidIds: postId } }
+    );
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    post.bids.push({
+      user: user._id,     
+      BidText,
+      BidAmount
+    });
+
+    await post.save();
+    res.status(200).json({ 
+      message: "Bid added successfully", 
+      bid: { 
+        user: {
+          _id: user._id,
+          username: user.username,
+          verified: user.verified || {},
+          userImage: user.userImage
+        }, 
+        BidText, 
+        BidAmount 
+      }
+    });
+  } catch (error) {
+    console.error("❌ Error while adding bid:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.delete("/posts/bids", async (req, res) => {
+  const { postId, userId, BidAmount } = req.body;
+
+  if (!postId || !userId || !BidAmount) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
+
+  try {
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    // Find and remove the bid
+    const originalBidCount = post.bids.length;
+    post.bids = post.bids.filter(
+      (bid) =>
+        String(bid.user) !== String(userId) ||
+        bid.BidAmount !== BidAmount
+    );
+
+    if (post.bids.length === originalBidCount) {
+      return res.status(404).json({ message: "Bid not found" });
+    }
+
+    await post.save();
+
+    // Remove the postId from user's bidIds array
+    await User.updateOne(
+      { _id: userId },
+      { $pull: { bidIds: postId } }
+    );
+
+    res.status(200).json({ message: "Bid deleted successfully" });
+  } catch (error) {
+    console.error("❌ Error while deleting bid:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get("/posts/bids", async (req, res) => {
+  const { postId,currentUserId, sortBy } = req.query;
+
+  if (!postId) {
+    return res.status(400).json({ message: "postId is missing" });
+  }
+
+  try {
+    const post = await Post.findById(postId)
+      .populate('user', '_id')
+      .populate('bids.user', 'username userImage verified _id'); 
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    let bids = post.bids || [];
+
+  bids.sort((a, b) => {
+    // amount comparison
+    const amountDiff = sortBy === '1'
+      ? a.BidAmount - b.BidAmount
+      : b.BidAmount - a.BidAmount;
+    if (amountDiff !== 0) return amountDiff;
+
+    // verified‐user tiebreaker
+    const aVer = a.user.verified?.email && a.user.verified?.phoneNumber;
+    const bVer = b.user.verified?.email && b.user.verified?.phoneNumber;
+    if (aVer !== bVer) return aVer ? -1 : 1;
+
+    // earliest bid tiebreaker
+    const timeDiff = new Date(a.createdAt) - new Date(b.createdAt);
+    if (timeDiff !== 0) return timeDiff;
+
+    // final fallback: lexicographic ObjectId compare
+    return a._id.toString().localeCompare(b._id.toString());
+  });
+
+  res.status(200).json(bids);
+
+  } catch (error) {
+    console.error("❌ Error while loading bids:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+
+app.get("/posts/topbid", async (req, res) => {
+  const { postId, sortBy } = req.query;
+  if (!postId) return res.status(400).json({ message: "postId is missing" });
+
+  try {
+    const post = await Post.findById(postId).populate('bids.user' , 'username , userImage , _id , verified');
+    let bids = post.bids || [];
+
+    bids.sort((a, b) => {
+      // amount comparison
+      const amountDiff = sortBy === '1'
+        ? a.BidAmount - b.BidAmount
+        : b.BidAmount - a.BidAmount;
+      if (amountDiff !== 0) return amountDiff;
+
+      // verified‐user tiebreaker
+      const aVer = a.user.verified?.email && a.user.verified?.phoneNumber;
+      const bVer = b.user.verified?.email && b.user.verified?.phoneNumber;
+      if (aVer !== bVer) return aVer ? -1 : 1;
+
+      // earliest bid tiebreaker
+      const timeDiff = new Date(a.createdAt) - new Date(b.createdAt);
+      if (timeDiff !== 0) return timeDiff;
+
+      // final fallback: lexicographic ObjectId compare
+      return a._id.toString().localeCompare(b._id.toString());
+    });
+    const topBid = bids[0] || null;
+    res.json(topBid);
+  } catch (error) {
+    console.error("Top bid fetch error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.get("/user/posts", async (req, res) => {
+  const { userId } = req.query;
+
+  if (!userId) {
+    return res.status(400).json({ message: "userId is missing" });
+  }
+
+  try {
+    const user = await User.findById(userId);
+    const postIds = user?.postIds || [];
+
+    const posts = await Post.find({ _id: { $in: postIds } })
+      .sort({ createdAt: -1 })
+      .populate({
+        path: 'user',
+        select: 'username userImage verified blockedUsers _id ratings',
+        populate: {
+          path: 'ratings.from',
+          select: 'username userImage verified blockedUsers _id'
+        }
+      })
+      .populate({
+        path: 'bids.user',
+        select: 'username userImage verified _id ratings'
+      })
+      .populate({
+        path: 'comments.user',
+        select: 'username userImage verified _id ratings'
+      })
+      .populate({
+        path: 'comments.replies.user',
+        select: 'username userImage verified _id ratings'
+      });
+
+    res.status(200).json(posts);
+  } catch (error) {
+    console.error("❌ Error while loading user posts:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+app.get("/user/bids", async (req, res) => {
+  const { userId } = req.query;
+
+  if (!userId) {
+    return res.status(400).json({ message: "userId is missing" });
+  }
+
+  try {
+    const user = await User.findById(userId);
+    const bidIds = user?.bidIds || [];
+
+    const posts = await Post.find({ _id: { $in: bidIds } })
+      .sort({ createdAt: -1 })
+      .populate({
+        path: 'user',
+        select: 'username userImage verified blockedUsers _id ratings',
+        populate: {
+          path: 'ratings.from',
+          select: 'username userImage verified blockedUsers _id'
+        }
+      })
+      .populate({
+        path: 'bids.user',
+        select: 'username userImage verified _id ratings'
+      })
+      .populate({
+        path: 'comments.user',
+        select: 'username userImage verified _id ratings'
+      })
+      .populate({
+        path: 'comments.replies.user',
+        select: 'username userImage verified _id ratings'
+      });
+
+    res.status(200).json(posts);
+  } catch (error) {
+    console.error("❌ Error while loading posts user has bid on:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get("/user/reviews", async (req, res) => {
+  const { userId } = req.query;
+
+  if (!userId) {
+    return res.status(400).json({ message: "userId is missing" });
+  }
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const reviewIds = user.ratings.map(r => r.post);
+
+    const posts = await Post.find({ _id: { $in: reviewIds } })
+      .sort({ createdAt: -1 })
+      .populate({
+        path: 'user',
+        select: 'username userImage verified blockedUsers _id ratings',
+        populate: {
+          path: 'ratings.from',
+          select: 'username userImage verified blockedUsers _id'
+        }
+      })
+      .populate({
+        path: 'bids.user',
+        select: 'username userImage verified _id ratings'
+      })
+      .populate({
+        path: 'comments.user',
+        select: 'username userImage verified _id ratings'
+      })
+      .populate({
+        path: 'comments.replies.user',
+        select: 'username userImage verified _id ratings'
+      });
+
+    res.status(200).json(posts);
+  } catch (error) {
+    console.error("❌ Error while loading reviewed posts:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+app.put("/users/editprofile/:id", async (req, res) => {
+  try {
+    const { userBio, userSkills, userImage } = req.body;
+    const userId = req.params.id;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { userBio, userSkills, userImage },
+      { new: true } 
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json(updatedUser);
+  } catch (err) {
+    console.error("❌ Error updating user:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
+app.put("/users/changeUsername/:id" , async(req,res) =>{
+  const{newUsername} = req.body;
+  const userId = req.params.id;
+
+  try {
+    if (!newUsername || newUsername.trim() === "") {
+      return res.status(400).json({ error: "New username is required" });
+    }
+    // Check if the new username already exists
+    const existingUser = await User.findOne({ username: newUsername });
+    if (existingUser) {
+      return res.status(500).json({ message: "Username already exists" });
+    }
+    const updatedUser  = await User.findByIdAndUpdate(
+      userId,
+      { username:newUsername },
+      { new: true } 
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error("❌ Error while changing username :", error);
+    res.status(500).json({ message: error.message });
+  }
+} );
+
+// PUT /posts/select-winner
+app.put("/posts/select-winner", async (req, res) => {
+  const { postId, userId , bidId} = req.body;
+
+  if (!postId || !userId) {
+    return res.status(400).json({ message: "postId and userId are required" });
+  }
+
+  try {
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    // Check if this user has actually placed a bid
+    const isValidBidder = post.bids.some(bid => bid.user.toString() === userId && bid._id.toString() === bidId);
+
+    if (!isValidBidder) {
+      return res.status(400).json({ message: "User did not bid on this post" });
+    }
+
+    // Set the winner
+    post.selectedWinner = userId;
+    post.status = "winnerSelected";
+    post.winningBidId = bidId;
+
+    await post.save();
+
+    return res.status(200).json({ message: "Winner selected successfully" });
+  } catch (error) {
+    console.error("❌ Error selecting winner:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.put("/posts/mark-completed", verifyToken, async (req, res) => {
+  const userId = req.user.id;
+  const { postId } = req.body;
+
+  if (!postId || !userId) {
+    return res.status(400).json({ message: "postId and userId are required" });
+  }
+
+  try {
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    // Correct object ID checks
+    const isValidWorker = post.selectedWinner?.toString() === userId;
+    const isValidProvider = post.user?.toString() === userId;
+
+    if (!isValidWorker && !isValidProvider) {
+      return res.status(403).json({ message: "User has no permission to mark this job" });
+    }
+
+    // Mark completion
+    if (isValidProvider) {
+      post.providerConfirmed = true;
+    } else if (isValidWorker) {
+      post.workerConfirmed = true;
+    }
+
+    await post.save();
+
+    return res.status(200).json({ message: "Marked as completed successfully" });
+  } catch (error) {
+    console.error("❌ Error marking completed:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.post("/posts/review", verifyToken, async (req, res) => {
+  const userId = req.user.id;
+  const { postId, review, rating } = req.body;
+
+  if (!postId || !userId || !rating) {
+    return res.status(400).json({ message: "postId and rating are required" });
+  }
+
+  try {
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+    if(post.selectedWinner?.toString()===post.user?.toString()){
+      return res.status(404).json({ message: "you can not rate yourself" });
+    }
+    const isValidWorker = post.selectedWinner?.toString() === userId.toString();
+    const isValidProvider = post.user?.toString() === userId.toString();
+
+    if (!isValidWorker && !isValidProvider) {
+      return res.status(403).json({ message: "You don't have permission to review this post" });
+    }
+
+    let targetUserId;
+    let reviewFieldToUpdate;
+
+    if (isValidProvider) {
+      targetUserId = post.selectedWinner;
+      reviewFieldToUpdate = "reviewedByProvider";
+    } else {
+      targetUserId = post.user;
+      reviewFieldToUpdate = "reviewedByWorker";
+    }
+
+    await User.findByIdAndUpdate(
+      targetUserId,
+      {
+        $push: {
+          ratings: {
+            review,
+            rating,
+            from: userId,
+            post: postId
+          }
+        }
+      },
+      { new: true }
+    );
+
+    const updatedUser = await User.findById(targetUserId);
+    // Recalculate average rating
+    if (updatedUser) {
+      const ratings = updatedUser.ratings || [];
+      const totalRating = ratings.reduce((sum, r) => sum + r.rating, 0);
+      const averageRating = ratings.length ? totalRating / ratings.length : 0;
+
+      updatedUser.totalRating = totalRating;
+      updatedUser.averageRating = Math.round(averageRating * 10) / 10; // round to 1 decimal
+      await updatedUser.save();
+    }
+
+    // Mark post as reviewed
+    post[reviewFieldToUpdate] = true;
+    await post.save();
+
+    return res.status(200).json({ message: "Review submitted successfully" });
+
+  } catch (error) {
+    console.error("❌ Error uploading review:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+async function recordOtpRequest(ip, phoneNumber) {
+  const ipKey = `otp:ip:${ip}`;
+  const phoneKey = `otp:user:${phoneNumber}`;
+  const phoneCooldownKey = `otp:cooldown:${phoneNumber}`;
+
+  try {
+    const pipeline = redis.pipeline();
+    
+    // Increment counters and set expiry
+    [ipKey, phoneKey].forEach((key) => {
+      pipeline.incr(key);
+      pipeline.expire(key, OTP_EXPIRY_SECONDS);
+    });
+    
+    // Set cooldown for phone number (prevents spam for same number)
+    pipeline.setex(phoneCooldownKey, PHONE_COOLDOWN_SECONDS, '1');
+    
+    await pipeline.exec();
+  } catch (error) {
+    console.error('Error recording OTP request:', error);
+    throw new Error('Failed to record OTP request');
+  }
+}
+
+async function isOtpLimitExceeded(ip, phoneNumber) {
+  try {
+    const [ipCount, phoneCount, phoneCooldown] = await Promise.all([
+      redis.get(`otp:ip:${ip}`),
+      redis.get(`otp:user:${phoneNumber}`),
+      redis.get(`otp:cooldown:${phoneNumber}`)
+    ]);
+
+    return {
+      exceeded: (
+        (ipCount && parseInt(ipCount) >= OTP_LIMIT) ||
+        (phoneCount && parseInt(phoneCount) >= OTP_LIMIT)
+      ),
+      inCooldown: !!phoneCooldown,
+      ipCount: ipCount ? parseInt(ipCount) : 0,
+      phoneCount: phoneCount ? parseInt(phoneCount) : 0
+    };
+  } catch (error) {
+    console.error('Error checking OTP limit:', error);
+    // In case of Redis error, allow the request but log it
+    return { exceeded: false, inCooldown: false, ipCount: 0, phoneCount: 0 };
+  }
+}
+
+async function getRemainingOtpAttempts(ip, phoneNumber) {
+  try {
+    const [ipCount, phoneCount] = await Promise.all([
+      redis.get(`otp:ip:${ip}`),
+      redis.get(`otp:user:${phoneNumber}`)
+    ]);
+
+    const ipRemaining = OTP_LIMIT - (ipCount ? parseInt(ipCount) : 0);
+    const phoneRemaining = OTP_LIMIT - (phoneCount ? parseInt(phoneCount) : 0);
+
+    return Math.min(ipRemaining, phoneRemaining);
+  } catch (error) {
+    console.error('Error getting remaining attempts:', error);
+    return OTP_LIMIT; // Default to full limit on error
+  }
+}
+
+// Enhanced endpoint with better error handling and responses
+app.post("/users/phoneNumber/send-otp", async (req, res) => {
+  let { phoneNumber } = req.body;
+
+  // Input validation
+  if (!phoneNumber) {
+    return res.status(400).json({ 
+      message: 'Phone number is required',
+      code: 'PHONE_REQUIRED'
+    });
+  }
+
+  // Clean phone number
+  phoneNumber = phoneNumber.replace(/\D/g, "");
+
+  // Validate phone number format
+  if (!/^\d{10}$/.test(phoneNumber)) {
+    return res.status(400).json({ 
+      message: 'Invalid phone number format. Please enter a 10-digit number.',
+      code: 'INVALID_PHONE_FORMAT'
+    });
+  }
+
+  // Get client IP
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
+             req.socket?.remoteAddress || 
+             req.ip || 
+             'unknown';
+
+  try {
+    // Check if user already exists
+    const existingUser = await User.findOne({ phoneNumber });
+    if (existingUser) {
+      return res.status(409).json({ 
+        message: 'This number is already registered. Please try another number or sign in.',
+        code: 'PHONE_EXISTS'
+      });
+    }
+
+    // Check rate limits
+    const limitCheck = await isOtpLimitExceeded(ip, phoneNumber);
+    
+    if (limitCheck.inCooldown) {
+      return res.status(429).json({ 
+        message: 'Please wait before requesting another OTP for this number.',
+        code: 'COOLDOWN_ACTIVE',
+        retryAfter: PHONE_COOLDOWN_SECONDS
+      });
+    }
+
+    if (limitCheck.exceeded) {
+      const remainingAttempts = await getRemainingOtpAttempts(ip, phoneNumber);
+      return res.status(429).json({ 
+        message: 'Too many OTP requests. Please try again later.',
+        code: 'RATE_LIMIT_EXCEEDED',
+        details: {
+          ipCount: limitCheck.ipCount,
+          phoneCount: limitCheck.phoneCount,
+          limit: OTP_LIMIT,
+          remainingAttempts: Math.max(0, remainingAttempts),
+          resetTime: new Date(Date.now() + (OTP_EXPIRY_SECONDS * 1000)).toISOString()
+        }
+      });
+    }
+
+    // Record the OTP attempt BEFORE sending (in case Twilio fails)
+    await recordOtpRequest(ip, phoneNumber);
+
+    // Send OTP via Twilio
+    const verification = await client.verify.v2.services(serviceSid)
+      .verifications
+      .create({ 
+        to: `+91${phoneNumber}`, 
+        channel: 'sms',
+        locale: 'en' // Optional: specify language
+      });
+
+    // Get remaining attempts for response
+    const remainingAttempts = await getRemainingOtpAttempts(ip, phoneNumber);
+
+    res.status(200).json({ 
+      message: 'OTP sent successfully',
+      code: 'OTP_SENT',
+      data: {
+        sid: verification.sid,
+        phoneNumber: `+91${phoneNumber}`,
+        remainingAttempts: Math.max(0, remainingAttempts - 1),
+        expiresIn: 600 // Twilio default is 10 minutes
+      }
+    });
+
+  } catch (err) {
+    console.error('OTP sending error:', err);
+
+    // Handle specific Twilio errors
+    if (err.code === 20003) {
+      return res.status(403).json({ 
+        message: 'Authentication failed. Please contact support.',
+        code: 'TWILIO_AUTH_ERROR'
+      });
+    } else if (err.code === 21211) {
+      return res.status(400).json({ 
+        message: 'Invalid phone number format.',
+        code: 'INVALID_PHONE_TWILIO'
+      });
+    } else if (err.code === 21608) {
+      return res.status(400).json({ 
+        message: 'This phone number is not reachable.',
+        code: 'PHONE_UNREACHABLE'
+      });
+    } else if (err.code === 21610) {
+      return res.status(429).json({ 
+        message: 'SMS sending rate limit exceeded. Please try again later.',
+        code: 'TWILIO_RATE_LIMIT'
+      });
+    }
+
+    // Generic error response
+    res.status(500).json({ 
+      message: 'Failed to send OTP. Please try again.',
+      code: 'OTP_SEND_FAILED'
+    });
+  }
+});
+
+// Optional: Add endpoint to check remaining attempts
+app.get("/users/phoneNumber/otp-status", async (req, res) => {
+  const { phoneNumber } = req.query;
+  
+  if (!phoneNumber) {
+    return res.status(400).json({ message: 'Phone number is required' });
+  }
+
+  const cleanPhoneNumber = phoneNumber.replace(/\D/g, "");
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
+
+  try {
+    const limitCheck = await isOtpLimitExceeded(ip, cleanPhoneNumber);
+    const remainingAttempts = await getRemainingOtpAttempts(ip, cleanPhoneNumber);
+
+    res.status(200).json({
+      phoneNumber: cleanPhoneNumber,
+      canSendOtp: !limitCheck.exceeded && !limitCheck.inCooldown,
+      remainingAttempts: Math.max(0, remainingAttempts),
+      inCooldown: limitCheck.inCooldown,
+      details: {
+        ipCount: limitCheck.ipCount,
+        phoneCount: limitCheck.phoneCount,
+        limit: OTP_LIMIT
+      }
+    });
+  } catch (error) {
+    console.error('Error checking OTP status:', error);
+    res.status(500).json({ message: 'Failed to check OTP status' });
+  }
+});
+
+app.post("/users/phoneNumber/verify-otp", async (req, res) => {
+  const { phoneNumber, otp , userId} = req.body;
+
+  try {
+    const verificationCheck = await client.verify.v2.services(serviceSid)
+      .verificationChecks
+      .create({ to: `+91${phoneNumber}`, code: otp });
+
+    if (verificationCheck.status === 'approved') {
+      res.status(200).json({ message: 'OTP verified' });
+      await User.findByIdAndUpdate(userId ,{phoneNumber: phoneNumber ,  'verified.phoneNumber': true});
+    } else {
+      res.status(400).json({ message: 'Invalid OTP' });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to verify OTP' });
+  }
+});
+
+// Enhanced Email OTP rate limiting functions with better error handling and features
+
+async function recordEmailOtpRequest(ip, email) {
+  const ipKey = `email_otp:ip:${ip}`;
+  const emailKey = `email_otp:user:${email.toLowerCase()}`;
+  const emailCooldownKey = `email_otp:cooldown:${email.toLowerCase()}`;
+
+  try {
+    const pipeline = redis.pipeline();
+    
+    // Increment counters and set expiry
+    [ipKey, emailKey].forEach((key) => {
+      pipeline.incr(key);
+      pipeline.expire(key, EMAIL_OTP_EXPIRY_SECONDS);
+    });
+    
+    // Set cooldown for email (prevents spam for same email)
+    pipeline.setex(emailCooldownKey, EMAIL_COOLDOWN_SECONDS, '1');
+    
+    await pipeline.exec();
+  } catch (error) {
+    console.error('Error recording email OTP request:', error);
+    throw new Error('Failed to record email OTP request');
+  }
+}
+
+async function isEmailOtpLimitExceeded(ip, email) {
+  try {
+    const normalizedEmail = email.toLowerCase();
+    const [ipCount, emailCount, emailCooldown] = await Promise.all([
+      redis.get(`email_otp:ip:${ip}`),
+      redis.get(`email_otp:user:${normalizedEmail}`),
+      redis.get(`email_otp:cooldown:${normalizedEmail}`)
+    ]);
+
+    return {
+      exceeded: (
+        (ipCount && parseInt(ipCount) >= EMAIL_OTP_LIMIT) ||
+        (emailCount && parseInt(emailCount) >= EMAIL_OTP_LIMIT)
+      ),
+      inCooldown: !!emailCooldown,
+      ipCount: ipCount ? parseInt(ipCount) : 0,
+      emailCount: emailCount ? parseInt(emailCount) : 0
+    };
+  } catch (error) {
+    console.error('Error checking email OTP limit:', error);
+    // In case of Redis error, allow the request but log it
+    return { exceeded: false, inCooldown: false, ipCount: 0, emailCount: 0 };
+  }
+}
+
+async function getRemainingEmailOtpAttempts(ip, email) {
+  try {
+    const normalizedEmail = email.toLowerCase();
+    const [ipCount, emailCount] = await Promise.all([
+      redis.get(`email_otp:ip:${ip}`),
+      redis.get(`email_otp:user:${normalizedEmail}`)
+    ]);
+
+    const ipRemaining = EMAIL_OTP_LIMIT - (ipCount ? parseInt(ipCount) : 0);
+    const emailRemaining = EMAIL_OTP_LIMIT - (emailCount ? parseInt(emailCount) : 0);
+
+    return Math.min(ipRemaining, emailRemaining);
+  } catch (error) {
+    console.error('Error getting remaining email attempts:', error);
+    return EMAIL_OTP_LIMIT; // Default to full limit on error
+  }
+}
+
+// Enhanced email validation function
+function validateEmail(email) {
+  // More comprehensive email validation
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+  
+  if (!emailRegex.test(email)) {
+    return { valid: false, message: 'Invalid email format' };
+  }
+  
+  if (email.length > 254) {
+    return { valid: false, message: 'Email address too long' };
+  }
+  
+  // Check for common disposable email domains (optional)
+  const disposableDomains = [
+    'temp-mail.org', '10minutemail.com', 'guerrillamail.com', 
+    'mailinator.com', 'yopmail.com', 'throwaway.email'
+  ];
+  
+  const domain = email.split('@')[1]?.toLowerCase();
+  if (disposableDomains.includes(domain)) {
+    return { valid: false, message: 'Disposable email addresses are not allowed' };
+  }
+  
+  return { valid: true };
+}
+
+// Enhanced endpoint with better error handling and responses
+app.post("/users/email/send-otp", verifyToken , async (req, res) => {
+  let { email } = req.body;
+
+  // Input validation
+  if (!email) {
+    return res.status(400).json({ 
+      message: 'Email address is required',
+      code: 'EMAIL_REQUIRED'
+    });
+  }
+
+  // Normalize email
+  email = email.trim().toLowerCase();
+
+  // Validate email format
+  const emailValidation = validateEmail(email);
+  if (!emailValidation.valid) {
+    return res.status(400).json({ 
+      message: emailValidation.message,
+      code: 'INVALID_EMAIL_FORMAT'
+    });
+  }
+
+  // Get client IP
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
+             req.socket?.remoteAddress || 
+             req.ip || 
+             'unknown';
+
+  try {
+    // Check if user already exists
+    if (!req.user?.id) {
+      return res.status(401).json({
+        message: 'User must be authenticated to request an email OTP',
+        code: 'UNAUTHENTICATED'
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    console.log("Existing user found:", existingUser);
+    console.log("Current user ID:", req.user?.id);
+
+    // Check if the email is already taken or verified
+    if (existingUser) {
+      const isCurrentUser = existingUser._id.toString() === req.user.id;
+      if (!isCurrentUser) {
+        // Email belongs to another user
+        return res.status(409).json({ 
+          message: 'This email is already registered by another user. Please try another email.',
+          code: 'EMAIL_EXISTS'
+        });
+      }
+      if (existingUser.verified?.email) {
+        // Email is already verified for the current user
+        return res.status(409).json({ 
+          message: 'This email is already verified for your account.',
+          code: 'EMAIL_ALREADY_VERIFIED'
+        });
+      }
+    }
+
+    // Check rate limits
+    const limitCheck = await isEmailOtpLimitExceeded(ip, email);
+    
+    if (limitCheck.inCooldown) {
+      return res.status(429).json({ 
+        message: 'Please wait before requesting another OTP for this email address.',
+        code: 'COOLDOWN_ACTIVE',
+        retryAfter: EMAIL_COOLDOWN_SECONDS
+      });
+    }
+
+    if (limitCheck.exceeded) {
+      const remainingAttempts = await getRemainingEmailOtpAttempts(ip, email);
+      return res.status(429).json({ 
+        message: 'Too many OTP requests. Please try again later.',
+        code: 'RATE_LIMIT_EXCEEDED',
+        details: {
+          ipCount: limitCheck.ipCount,
+          emailCount: limitCheck.emailCount,
+          limit: EMAIL_OTP_LIMIT,
+          remainingAttempts: Math.max(0, remainingAttempts),
+          resetTime: new Date(Date.now() + (EMAIL_OTP_EXPIRY_SECONDS * 1000)).toISOString()
+        }
+      });
+    }
+
+    // Record the OTP attempt BEFORE sending (in case Twilio fails)
+    await recordEmailOtpRequest(ip, email);
+
+    // Send OTP via Twilio Email
+    const verification = await client.verify.v2.services(serviceSid)
+      .verifications
+      .create({ 
+        to: email, 
+        channel: 'email',
+        locale: 'en' // Optional: specify language
+      });
+
+    // Get remaining attempts for response
+    const remainingAttempts = await getRemainingEmailOtpAttempts(ip, email);
+
+    res.status(200).json({ 
+      message: 'OTP sent successfully to your email address',
+      code: 'OTP_SENT',
+      data: {
+        sid: verification.sid,
+        email: email,
+        remainingAttempts: Math.max(0, remainingAttempts - 1),
+        expiresIn: 600, // Twilio default is 10 minutes
+        checkSpam: true // Remind user to check spam folder
+      }
+    });
+
+  } catch (err) {
+    console.error('Email OTP sending error:', err);
+
+    // Handle specific Twilio errors
+    if (err.code === 20003) {
+      return res.status(403).json({ 
+        message: 'Authentication failed. Please contact support.',
+        code: 'TWILIO_AUTH_ERROR'
+      });
+    } else if (err.code === 21211) {
+      return res.status(400).json({ 
+        message: 'Invalid email address format.',
+        code: 'INVALID_EMAIL_TWILIO'
+      });
+    } else if (err.code === 21408) {
+      return res.status(400).json({ 
+        message: 'This email address cannot receive messages.',
+        code: 'EMAIL_UNREACHABLE'
+      });
+    } else if (err.code === 21610) {
+      return res.status(429).json({ 
+        message: 'Email sending rate limit exceeded. Please try again later.',
+        code: 'TWILIO_RATE_LIMIT'
+      });
+    } else if (err.code === 60200) {
+      return res.status(400).json({ 
+        message: 'Email service temporarily unavailable. Please try SMS verification.',
+        code: 'EMAIL_SERVICE_UNAVAILABLE'
+      });
+    }
+
+    // Generic error response
+    res.status(500).json({ 
+      message: 'Failed to send OTP to email. Please try again.',
+      code: 'EMAIL_OTP_SEND_FAILED'
+    });
+  }
+});
+
+// Optional: Add endpoint to check remaining email OTP attempts
+app.get("/users/email/otp-status", async (req, res) => {
+  const { email } = req.query;
+  
+  if (!email) {
+    return res.status(400).json({ message: 'Email address is required' });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const emailValidation = validateEmail(normalizedEmail);
+  
+  if (!emailValidation.valid) {
+    return res.status(400).json({ message: emailValidation.message });
+  }
+
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
+
+  try {
+    const limitCheck = await isEmailOtpLimitExceeded(ip, normalizedEmail);
+    const remainingAttempts = await getRemainingEmailOtpAttempts(ip, normalizedEmail);
+
+    res.status(200).json({
+      email: normalizedEmail,
+      canSendOtp: !limitCheck.exceeded && !limitCheck.inCooldown,
+      remainingAttempts: Math.max(0, remainingAttempts),
+      inCooldown: limitCheck.inCooldown,
+      cooldownSeconds: limitCheck.inCooldown ? EMAIL_COOLDOWN_SECONDS : 0,
+      details: {
+        ipCount: limitCheck.ipCount,
+        emailCount: limitCheck.emailCount,
+        limit: EMAIL_OTP_LIMIT
+      }
+    });
+  } catch (error) {
+    console.error('Error checking email OTP status:', error);
+    res.status(500).json({ message: 'Failed to check email OTP status' });
+  }
+});
+
+// Optional: Combined status endpoint for both phone and email
+app.get("/users/otp-status", async (req, res) => {
+  const { phoneNumber, email } = req.query;
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
+
+  try {
+    const results = {};
+
+    if (phoneNumber) {
+      const cleanPhoneNumber = phoneNumber.replace(/\D/g, "");
+      if (/^\d{10}$/.test(cleanPhoneNumber)) {
+        const limitCheck = await isOtpLimitExceeded(ip, cleanPhoneNumber);
+        const remainingAttempts = await getRemainingOtpAttempts(ip, cleanPhoneNumber);
+        
+        results.phone = {
+          phoneNumber: cleanPhoneNumber,
+          canSendOtp: !limitCheck.exceeded && !limitCheck.inCooldown,
+          remainingAttempts: Math.max(0, remainingAttempts),
+          inCooldown: limitCheck.inCooldown
+        };
+      }
+    }
+
+    if (email) {
+      const normalizedEmail = email.trim().toLowerCase();
+      const emailValidation = validateEmail(normalizedEmail);
+      
+      if (emailValidation.valid) {
+        const limitCheck = await isEmailOtpLimitExceeded(ip, normalizedEmail);
+        const remainingAttempts = await getRemainingEmailOtpAttempts(ip, normalizedEmail);
+        
+        results.email = {
+          email: normalizedEmail,
+          canSendOtp: !limitCheck.exceeded && !limitCheck.inCooldown,
+          remainingAttempts: Math.max(0, remainingAttempts),
+          inCooldown: limitCheck.inCooldown
+        };
+      }
+    }
+
+    res.status(200).json(results);
+  } catch (error) {
+    console.error('Error checking OTP status:', error);
+    res.status(500).json({ message: 'Failed to check OTP status' });
+  }
+});
+
+app.post("/users/email/verify-otp", async (req, res) => {
+  const { email, otp, userId } = req.body;
+
+  try {
+    const verificationCheck = await client.verify.v2.services(serviceSid)
+      .verificationChecks
+      .create({ to: email, code: otp });
+
+    if (verificationCheck.status === 'approved') {
+      await User.findByIdAndUpdate(userId, { email: email , 'verified.email': true });
+      res.status(200).json({ message: 'Email verified' });
+    } else {
+      res.status(400).json({ message: 'Invalid OTP' });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to verify email OTP' });
+  }
+});
+
+app.post("/users/change-password", async (req, res) => {
+  const { oldPassword, newPassword , email} = req.body;
+  if (!newPassword || !email) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
+  try {
+      const user = await User.findOne({ email: email}); 
+      if (!user) {
+          return res.status(404).json({ message: "User not found." });
+      }
+      const isAuth = user.isOAuth;
+      if (isAuth ) {
+          const hashedPassword = await bcrypt.hash(newPassword, 10);
+          user.password = hashedPassword;
+          user.isOAuth = false; // Convert OAuth user to regular user
+          await user.save();
+          return res.status(200).json({ message: "Password created successfully for OAuth user." });
+      }
+
+      if (!oldPassword){
+          return res.status(400).json({ message: "Old password is required for non-OAuth users." });
+      }
+      // Check if old password matches
+      const isMatch = await bcrypt.compare(oldPassword, user.password);
+      if (!isMatch) {
+          return res.status(400).json({ message: "Old password is incorrect." });
+      }
+
+      // Hash new password and update it
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+      user.password = hashedNewPassword;
+      await user.save();
+
+      res.status(200).json({ message: "Password changed successfully." });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Failed to change password." });
+  }
+});
+
+app.post('/posts/save', async (req, res) => {
+  const { postId, userId } = req.body;
+  console.log("Saving post:", postId, "for user:", userId);
+  try {
+    const user = await User.findById(userId);
+    if (user.savedPosts.includes(postId)) {
+      return res.status(400).send('Post already saved');
+    }
+    user.savedPosts.push(postId);
+    await user.save();
+    res.status(200).json( user.savedPosts);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error');
+  }
+});
+
+app.delete('/posts/unsave', async (req, res) => {
+  const { postId, userId } = req.body;
+  try {
+    const user = await User.findById(userId);
+    user.savedPosts = user.savedPosts.filter(id => id.toString() !== postId);
+    await user.save();
+    res.status(200).json( user.savedPosts);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error');
+  }
+});
+
+
+// Get unseen message counts
+app.get('/api/unseen-counts', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    console.log("userId in /api/unseen-counts:", userId, "type:", typeof userId);
+    
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      console.log("Invalid user ID detected:", userId);
+      return res.status(400).json({ error: `Invalid user ID: ${userId}` });
+    }
+
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    const unseenCounts = await Message.aggregate([
+      {
+        $match: {
+          receiver: userObjectId,
+          seenBy: { $ne: userObjectId },
+          deletedFor: { $ne: userObjectId }
+        }
+      },
+      {
+        $group: {
+          _id: '$sender',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    
+    const result = {};
+    unseenCounts.forEach(item => {
+      result[item._id.toString()] = item.count;
+    });
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching unseen counts:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Mark messages as seen
+app.put('/api/mark-seen/:userId', verifyToken, async (req, res) => {
+  try {
+    const currentUserId = req.user.id;
+    const otherUserId = req.params.userId;
+
+    if (!mongoose.Types.ObjectId.isValid(currentUserId) || !mongoose.Types.ObjectId.isValid(otherUserId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    const currentUserObjectId = new mongoose.Types.ObjectId(currentUserId);
+    const otherUserObjectId = new mongoose.Types.ObjectId(otherUserId);
+
+    await Message.updateMany(
+      { sender: otherUserObjectId, receiver: currentUserObjectId, seenBy: { $ne: currentUserObjectId } },
+      { $addToSet: { seenBy: currentUserObjectId } }
+    );
+
+    // Emit socket event to update unseen counts
+    io.to(currentUserId).emit('markMessagesSeen', { userId: otherUserId });
+
+    res.status(200).json({ message: 'Messages marked as seen' });
+  } catch (error) {
+    console.error('Error marking messages as seen:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+app.delete('/api/conversation/:userId', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const withUserId = req.params.userId;
+
+    if (!mongoose.Types.ObjectId.isValid(withUserId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+
+    // Find messages between the two users
+    const messages = await Message.find({
+      $or: [
+        { sender: userId, receiver: withUserId },
+        { sender: withUserId, receiver: userId }
+      ]
+    });
+
+    // Mark messages as deleted for current user
+    const bulkOps = messages
+      .filter(msg => !msg.deletedFor.includes(userId))
+      .map(msg => ({
+        updateOne: {
+          filter: { _id: msg._id },
+          update: { $addToSet: { deletedFor: userId } }
+        }
+      }));
+
+    if (bulkOps.length > 0) {
+      await Message.bulkWrite(bulkOps);
+    }
+    console.log('Marked messages as deleted for user:', userId);
+    res.status(200).json({ message: 'Conversation deleted for user' });
+  } catch (error) {
+    console.error('Error deleting conversation:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.get('/api/messages/:userId', verifyToken, async (req, res) => {
+  try {
+    const senderId = req.user.id;
+    const receiverId = req.params.userId;
+
+    const messages = await Message.find({
+      $or: [
+        { sender: senderId, receiver: receiverId },
+        { sender: receiverId, receiver: senderId },
+      ],
+    })
+      .sort({ createdAt: 1 })
+      .populate('sender', 'username userImage verified blockedUsers')
+      .populate('receiver', 'username userImage verified blockedUsers');
+
+    res.status(200).json(messages);
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    res.status(500).json({ message: 'Failed to fetch messages' });
+  }
+});
+
+
+app.get("/conversations", verifyToken, async (req, res) => {
+  const userId = req.user.id;
+  const oid = new mongoose.Types.ObjectId(userId); 
+
+  try {
+    const conversations = await Message.aggregate([
+      {
+        $match: {
+          $or: [
+            { sender: oid },
+            { receiver: oid }
+          ]
+        }
+      },
+      {
+        $project: {
+          otherUser: {
+            $cond: [
+              { $eq: ["$sender", oid] },
+              "$receiver",
+              "$sender"
+            ]
+          },
+          createdAt: 1
+        }
+      },
+      {
+        $group: {
+          _id: "$otherUser",
+          lastMessageTime: { $max: "$createdAt" }
+        }
+      },
+      {
+        $sort: { lastMessageTime: -1 }
+      }
+    ]);
+
+    const userIds = conversations.map(c => c._id);
+    const users = await User.find(
+      { _id: { $in: userIds } },
+      "_id username userImage verified"
+    );
+
+    const result = conversations.map(c => {
+      const u = users.find(user => user._id.toString() === c._id.toString());
+      return { user: u, lastMessageTime: c.lastMessageTime };
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Failed to fetch conversations:", error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
+
+
+app.get("/users/saved", async (req, res) => {
+  const { userId } = req.query;
+
+  if (!userId) {
+    return res.status(400).json({ message: "userId is missing" });
+  }
+
+  try {
+    const user = await User.findById(userId);
+    const savedIds = user?.savedPosts || [];
+
+    const posts = await Post.find({ _id: { $in: savedIds } })
+      .sort({ createdAt: -1 })
+      .populate({
+        path: 'user',
+        select: 'username userImage verified blockedUsers _id ratings',
+        populate: {
+          path: 'ratings.from',
+          select: 'username userImage verified blockedUsers _id'
+        }
+      })
+      .populate({
+        path: 'bids.user',
+        select: 'username userImage verified _id ratings'
+      })
+      .populate({
+        path: 'comments.user',
+        select: 'username userImage verified _id ratings'
+      })
+      .populate({
+        path: 'comments.replies.user',
+        select: 'username userImage verified _id ratings'
+      });
+    
+    res.status(200).json(posts);
+  } catch (error) {
+    console.error("❌ Error while loading posts user has saved:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get('/users/savedPosts/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await User.findById(userId).populate('savedPosts');
+    const savedPostIds = user.savedPosts.map(post => post._id.toString());
+    res.json(savedPostIds);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error');
+  }
+});
+
+app.get("/user/username/:username", async (req, res) => {
+  const { username } = req.params;
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("❌ Error while loading user:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get("/users/:id", async (req, res) => {
+  try {
+    const userId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: "Invalid user ID format" });
+    }
+
+    const user = await User.findById(userId).populate(
+     { path: 'ratings.from',
+      select: 'username userImage verified blockedUsers _id'}
+    );
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("❌ Error while loading user:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get("/api/post/:postId", async (req, res) => {
+  const { postId} = req.params;
+  console.log("Post ID:", postId);
+  try {
+    const post = await Post.findById(postId)
+      .populate('user', 'username userImage verified blockedUsers')
+      .populate('bids.user', 'username userImage verified')
+      .populate('comments.user', 'username userImage verified')
+      .populate('comments.replies.user', 'username userImage verified');
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+    res.status(200).json(post);
+  } catch (error) {
+    console.error("❌ Error while loading post:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST /api/block/:userId
+app.post('/api/block/:userId', verifyToken, async (req, res) => {
+  try {
+    const blockerId = req.user.id;
+    const blockedId = req.params.userId;
+
+    if (blockerId === blockedId) {
+      return res.status(400).json({ message: "You cannot block yourself." });
+    }
+
+    await User.findByIdAndUpdate(blockerId, {
+      $addToSet: { blockedUsers: blockedId },
+    });
+
+    res.status(200).json({ message: "User blocked successfully." });
+  } catch (error) {
+    console.error("Error blocking user:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+});
+
+// POST /api/unblock/:userId
+app.post('/api/unblock/:userId', verifyToken, async (req, res) => {
+  try {
+    const blockerId = req.user.id;
+    const blockedId = req.params.userId;
+
+    await User.findByIdAndUpdate(blockerId, {
+      $pull: { blockedUsers: blockedId },
+    });
+
+    res.status(200).json({ message: "User unblocked successfully." });
+  } catch (error) {
+    console.error("Error unblocking user:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+});
+
+app.post('/api/report/:userId', verifyToken, async (req, res) => {
+  const { userId } = req.params;
+  const { text, postId, bidId, commentId } = req.body;
+
+  try {
+    const isSelfReport = req.user.id === userId;
+
+    const report = new Report({
+      reporter: req.user.id,
+      reportedUser: isSelfReport ? null : userId,
+      text: text || "",
+      post: postId || null,
+      bid: bidId || null,
+      comment: commentId || null,
+    });
+
+    await report.save();
+    res.status(201).json({ message: "Report submitted successfully." });
+  } catch (err) {
+    console.error("Report error:", err);
+    res.status(500).json({ message: "Failed to submit report." });
+  }
+});
+
+
+app.post('/api/notify', verifyToken, async (req, res) => {
+  const { type, postId, senderId, message, userId, postDescription } = req.body;
+
+  if (!type || !senderId) {
+    return res.status(400).json({ message: 'Missing required fields: type and sender.' });
+  }
+
+  try {
+    const notification = {
+      type,
+      postId,
+      sender: senderId,
+      message,
+      createdAt: new Date(),
+      postDescription,
+      seen: false,
+    };
+
+    await User.findByIdAndUpdate(userId, {
+      $push: { notifications: notification },
+    });
+    const user= await User.findById(userId);
+    // Emit socket event to the recipient
+    if((user?.allowNotifications?.bids === true && type==="bid")|| (user?.allowNotifications?.comments === true && type===("comment" || "Reply"))){
+      io.to(userId).emit('receiveNotification', notification);
+    }
+
+    res.status(201).json({ message: 'Notification sent.' });
+  } catch (err) {
+    console.error('Notification error:', err);
+    res.status(500).json({ message: 'Failed to send notification.' });
+  }
+});
+
+app.put('/api/notifications/mark-seen', verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    user.notifications.forEach((n) => (n.seen = true));
+    await user.save();
+
+    // Emit socket event to the user
+    io.to(req.user.id).emit('notificationsMarkedSeen');
+
+    res.json({ message: 'Notifications marked as seen.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to update notifications.' });
+  }
+});
+
+app.get('/api/notifications/unseen-count', verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('notifications');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    const unseenCount = user.notifications.filter((n) => !n.seen).length;
+    res.json({ unseenCount });
+  } catch (err) {
+    console.error('Error fetching unseen notifications count:', err);
+    res.status(500).json({ message: 'Failed to fetch unseen notifications count.' });
+  }
+});
+async function cleanupOldNotifications() {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - 30); // 7 days ago
+    
+    // Update all users to remove old seen notifications
+    await User.updateMany(
+      {},
+      {
+        $pull: {
+          notifications: {
+            seen: true,
+            createdAt: { $lt: cutoffDate }
+          }
+        }
+      }
+    );
+    
+    console.log('Old notifications cleaned up successfully');
+  } catch (error) {
+    console.error('Error cleaning up notifications:', error);
+  }
+}
+
+cron.schedule('0 2 * * *', cleanupOldNotifications);
+
+
+mongoose.connect(MONGODB_URI)
+  .then(() => {
+    console.log("Connection established");
+    
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  })
+  .catch(() => console.log("Connection failed"));

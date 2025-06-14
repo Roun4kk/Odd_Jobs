@@ -1,0 +1,180 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import useAuth from "./hooks/useAuth.jsx";
+import Sidebar from "./Sidebar";
+import { BadgeCheck, Star } from "lucide-react";
+import UserJobs from "./userJobs";
+import axios from "axios";
+import logo from "./assets/logo/logo-transparent.png";
+
+function Profile() {
+  const { user, updateUser, loading } = useAuth();
+  const navigate = useNavigate();
+  const [job, setJob] = useState("posts");
+  const [verified, setVerified] = useState(false);
+  const [hasToken, setHasToken] = useState(false);
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        navigate("/");
+      } else {
+        setHasToken(true);
+      }
+    }
+  }, [user, loading, navigate]);
+
+  const checkVerified = () => {
+    if (user?.verified?.email && user.verified.phoneNumber) {
+      setVerified(true);
+    }
+  };
+
+  useEffect(() => {
+    checkVerified();
+  }, [user?._id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-white">
+        <img src={logo} alt="Loading..." className="w-40 h-40 animate-pulse" />
+      </div>
+    );
+  }
+
+  const reviewCount = user?.totalRating || user?.ratings?.length || 0;
+
+  return (
+    <div className="flex h-screen overflow-hidden">
+      <Sidebar user={user} />
+      <div className="w-[70%] h-full fixed right-0 top-0 bg-white flex flex-col items-center justify-start overflow-y-scroll">
+        <div className="w-2/3 flex items-center justify-start py-6">
+          <div className="w-40 h-40 flex-shrink-0">
+            <button className="w-full h-full cursor-pointer">
+              <img
+                src={
+                  user?.userImage ||
+                  "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"
+                }
+                alt="User"
+                className="w-full h-full rounded-full border-2 border-white object-cover"
+              />
+            </button>
+          </div>
+
+          <div className="ml-6 flex-1 flex-col items-start justify-center">
+            <div className="flex items-center justify-start w-full gap-2">
+              <button className="text-2xl font-bold text-gray-800 cursor-pointer">
+                {user?.username || "User not found"}
+              </button>
+              {verified && <BadgeCheck className="h-6 w-6 text-teal-400" />}
+              <div className="h-full ml-auto flex gap-2">
+                <button
+                  onClick={() => navigate("/EditProfile")}
+                  className="px-4 py-2 bg-teal-400 text-white rounded-3xl hover:bg-teal-600 transition cursor-pointer duration-200"
+                >
+                  Edit Profile
+                </button>
+                <button
+                  onClick={() => {
+                    const publicUrl = `${window.location.origin}/profile/${user._id}`;
+                    navigator.clipboard.writeText(publicUrl);
+                    alert("Public profile link copied to clipboard!");
+                  }}
+                  className="px-4 py-2 bg-teal-400 text-white rounded-3xl hover:bg-teal-600 transition cursor-pointer duration-200"
+                >
+                  Public Profile
+                </button>
+              </div>
+            </div>
+            <p className="text-gray-600">{user?.email || "User not found"}</p>
+            <p className="text-gray-600">{user?.userBio || ""}</p>
+            <div className="flex gap-2 mt-2 flex-wrap w-full items-center">
+              {user?.userSkills?.map((skill, index) => (
+                <span
+                  key={index}
+                  className="bg-teal-400 text-white px-2 py-1 rounded-full text-sm"
+                >
+                  {skill}
+                </span>
+              ))}
+
+              {reviewCount > 0 && (
+                <div className="mt-1 flex items-center gap-1 ml-auto">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-5 h-5 ${
+                        i < Math.round(user?.averageRating || 0)
+                          ? "text-yellow-400"
+                          : "text-gray-300"
+                      }`}
+                      fill={
+                        i < Math.round(user?.averageRating || 0)
+                          ? "#facc15"
+                          : "none"
+                      }
+                    />
+                  ))}
+                  <span
+                    title="Average user rating"
+                    className="text-sm text-gray-600 ml-1"
+                  >
+                    {user?.averageRating?.toFixed(1)}
+                  </span>
+                  <span className="text-sm text-gray-600 ml-1">
+                    ({reviewCount} reviews)
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="w-5/6 flex items-center justify-center border-t">
+          <button
+            onClick={() => setJob("posts")}
+            className={`w-1/2 flex justify-center cursor-pointer border-t-4 ${
+              job === "posts" ? "border-teal-400" : "border-transparent"
+            }`}
+          >
+            <div className="py-2">POSTS</div>
+          </button>
+
+          <button
+            onClick={() => setJob("bids")}
+            className={`w-1/2 flex justify-center cursor-pointer border-t-4 ${
+              job === "bids" ? "border-teal-400" : "border-transparent"
+            }`}
+          >
+            <div className="py-2">BIDS</div>
+          </button>
+
+          <button
+            onClick={() => setJob("saved")}
+            className={`w-1/2 flex justify-center cursor-pointer border-t-4 ${
+              job === "saved" ? "border-teal-400" : "border-transparent"
+            }`}
+          >
+            <div className="py-2">SAVED</div>
+          </button>
+
+          <button
+            onClick={() => setJob("reviews")}
+            className={`w-1/2 flex justify-center cursor-pointer border-t-4 ${
+              job === "reviews" ? "border-teal-400" : "border-transparent"
+            }`}
+          >
+            <div className="py-2">REVIEWS</div>
+          </button>
+        </div>
+
+        <div className="w-5/6 flex items-center justify-center mt-4">
+          <UserJobs job={job} hasToken={hasToken} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default Profile;

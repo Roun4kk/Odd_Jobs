@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+input.no-spinner::-webkit-outer-spin-button,
+input.no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input.no-spinner {
+  appearance: textfield;
+}
+
+.chat-messages-container {
+  height: 100%;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
