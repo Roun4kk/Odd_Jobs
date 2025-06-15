@@ -100,7 +100,7 @@ function App() {
           withCredentials: true,
         },
       );
-      const userRes = await axios.get("/api/me", {
+      const userRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/me`, {
         withCredentials: true,
       });
 
