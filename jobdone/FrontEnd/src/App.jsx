@@ -78,7 +78,7 @@ function App() {
   const SignUpUser = async (username, email, password) => {
     try {
       const response = await axios.post(
-        "/user/info",
+        `${import.meta.env.VITE_API_BASE_URL}/user/info`,
         { username, email, password },
         {
           withCredentials: true,
@@ -94,7 +94,7 @@ function App() {
   const SignInUser = async (email, password) => {
     try {
       const response = await axios.post(
-        "/user/check",
+        `${import.meta.env.VITE_API_BASE_URL}/user/check`,
         { email, password },
         {
           withCredentials: true,
@@ -122,7 +122,7 @@ function App() {
       setIsLoading(true);
       // Clear the logged out flag before Google login
       setWasLoggedOut(false);
-      window.location.href = "http://localhost:3001/auth/google";
+      window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`;
     } catch (error) {
       setErrorMessage("Failed to initiate Google login");
       setIsLoading(false);

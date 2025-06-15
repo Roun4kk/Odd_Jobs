@@ -18,7 +18,7 @@ const ReportForm = ({ reportedUserId, postId, bidId, commentId }) => {
 
     try {
       await axios.post(
-        `/api/report/${reportedUserId}`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/report/${reportedUserId}`,
         { text, postId, bidId, commentId },
         { withCredentials: true }
       );

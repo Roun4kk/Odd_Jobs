@@ -10,7 +10,6 @@ import useSocketRoomJoin from "./hooks/socketRoomJoin.js";
 import MessageComp from "./messageInfo.jsx";
 import { useMessageContext } from "./hooks/useMessageContext.js";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function Messages() {
   const { state } = useLocation();
@@ -56,7 +55,7 @@ function Messages() {
       return;
     }
     try {
-      await axios.put(`${API_BASE_URL}/api/mark-seen/${userId}`, {}, {
+      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/mark-seen/${userId}`, {}, {
         withCredentials: true,
       });
       socket.emit("markMessagesSeen", { userId });
@@ -78,7 +77,7 @@ function Messages() {
     }
     try {
       setLoadingMessages(true);
-      const res = await axios.get(`${API_BASE_URL}/api/messages/${userId}`, {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/messages/${userId}`, {
         withCredentials: true,
       });
       console.log("Fetched messages:", res.data);
@@ -184,7 +183,7 @@ function Messages() {
 
         let urls = [];
         try {
-          const response = await axios.post(`${API_BASE_URL}/upload`, formData, {
+          const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/upload`, formData, {
             withCredentials: true,
             headers: { "Content-Type": "multipart/form-data" },
           });

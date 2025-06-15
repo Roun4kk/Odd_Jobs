@@ -32,7 +32,7 @@ function ProfileComp({setComp , userId}) {
 
   const handleBlock = async (userId) => {
     try {
-      await axios.post(`/api/block/${userId}`, null, {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/block/${userId}`, null, {
         withCredentials: true,
       });
       updateUser ((prevUser) => ({
@@ -61,7 +61,7 @@ function ProfileComp({setComp , userId}) {
 
   const handleSendReport = async () => {
     try {
-      await axios.post(`/api/report/${userId}`, {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/report/${userId}`, {
         text: reportText,
       }, {
         withCredentials: true,

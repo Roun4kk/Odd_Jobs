@@ -25,7 +25,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
     const fetchPost = async () => {
       setLoading(true);
       try {
-        const response = await axios.get("/posts/bids", { params: { postId, sortBy , currentUserId} });
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts/bids`, { params: { postId, sortBy , currentUserId} });
         setBids(response.data || []);
       } catch (error) {
         console.error("Error fetching post:", error);
@@ -71,7 +71,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
   
   const handleDelete = async () =>{
     try {
-      await axios.delete("posts/bids" , {
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/posts/bids`, {
       data: {
         postId: postId,
         userId: selectedBid.user._id,
@@ -93,7 +93,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
 
   const handleSendReport = async () =>{
     try {
-      await axios.post(`/api/report/${selectedBid.user._id}`, {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/report/${selectedBid.user._id}`, {
         text: reportText,
         postId: postId,
         bidId: selectedBid._id,
@@ -110,13 +110,13 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
   }
   const handleSelectWinner = async () => {
             try {
-              await axios.put("/posts/select-winner", {
+              await axios.put(`${import.meta.env.VITE_API_BASE_URL}/posts/select-winner`, {
                 postId,
                 userId: pendingWinner,
                 bidId: selectedBid._id,
               });
               const message = `Congratulations! You have been hired with a pay of ₹${selectedBid.BidAmount} for the job : `;
-              await axios.post('/api/notify', {
+              await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/notify`, {
                 userId: selectedBid.user._id,
                 message: message,
                 senderId: user._id,

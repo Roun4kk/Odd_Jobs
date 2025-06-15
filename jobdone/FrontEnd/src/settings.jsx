@@ -41,7 +41,7 @@ function Settings() {
 
     const SignInUser = async (email, password) => {
         try {
-          const response = await axios.post("/user/check", {
+          const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/user/check`, {
             email,
             password,
           }, { withCredentials: true });
@@ -69,7 +69,7 @@ function Settings() {
             return ;
         }
         try {
-            const response = await axios.put(`/users/changeUsername/${user.id||user._id}`, {newUsername},{ withCredentials: true })
+            const response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/users/changeUsername/${user.id||user._id}`, {newUsername},{ withCredentials: true })
             const updatedUserData = response.data || {username: newUsername} ;
             const updatedUser = { ...user, ...updatedUserData };
             updateUser(updatedUser);
@@ -85,7 +85,7 @@ function Settings() {
             return ;
         }
         try {
-            const response =  await axios.post("/users/phoneNumber/send-otp", {
+            const response =  await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/phoneNumber/send-otp`, {
                 phoneNumber: newPhoneNumber
               }, { withCredentials: true })
             setActiveSection("verifyOTP");
@@ -105,7 +105,7 @@ function Settings() {
             return;
         }
         try {
-            const response =  await axios.post("/users/phoneNumber/verify-otp", {
+            const response =  await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/phoneNumber/verify-otp`, {
                 phoneNumber: newPhoneNumber,
                 otp: otp,
                 userId: user.id||user._id,
@@ -128,7 +128,7 @@ function Settings() {
     const handleSendEmailOTP = async (newEmail) => {
         console.log("Sending OTP for email:", newEmail);
         try {
-            const response = await axios.post("/users/email/send-otp", {
+            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/email/send-otp`, {
                 email: newEmail
             }, { withCredentials: true });
     
@@ -145,7 +145,7 @@ function Settings() {
             return;
         }
         try {
-            const response = await axios.post("/users/email/verify-otp", {
+            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/email/verify-otp`, {
                 email: newEmail,
                 otp: emailOtp,
                 userId: user.id || user._id,
@@ -176,7 +176,7 @@ function Settings() {
         }
     
         try {
-            const response = await axios.post("/users/change-password", {
+            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/change-password`, {
                 oldPassword,
                 newPassword,
                 email: user.email,

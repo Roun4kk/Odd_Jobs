@@ -26,7 +26,7 @@ function UserJobs({ job, userProfile, hasToken }) {
     const newTopBids = {};
     for (const post of posts) {
       try {
-        const res = await axios.get("/posts/topbid", {
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts/topbid`, {
           params: { postId: post._id, sortBy: sortByMap[post._id] || "1" },
         });
         newTopBids[post._id] = res.data;
@@ -39,16 +39,16 @@ function UserJobs({ job, userProfile, hasToken }) {
 
   const toggleSavePost = async (postId) => {
     try {
-      const response = await axios.get(`/users/savedPosts/${user._id}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/savedPosts/${user._id}`);
       const savedPosts = response.data;
 
       const isAlreadySaved = savedPosts.includes(postId);
       if (isAlreadySaved) {
-        await axios.delete("/posts/unsave", { data: { postId, userId: user._id } });
+        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/posts/unsave`, { data: { postId, userId: user._id } });
         const updatedUser = { ...user, savedPosts: savedPosts.filter(id => id !== postId) };
         updateUser(updatedUser);
       } else {
-        await axios.post("/posts/save", { postId, userId: user._id });
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/save`, { postId, userId: user._id });
         const updatedUser = { ...user, savedPosts: [...savedPosts, postId] };
         updateUser(updatedUser);
       }
@@ -63,19 +63,19 @@ function UserJobs({ job, userProfile, hasToken }) {
         setLoading(true);
         let response;
         if (job === "posts") {
-          response = await axios.get("/user/posts", {
+          response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/user/posts`, {
             params: { userId: userProfileReplacer.id || userProfileReplacer._id },
           });
         } else if (job === "saved") {
-          response = await axios.get("/users/saved", {
+          response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/saved`, {
             params: { userId: userProfileReplacer.id || userProfileReplacer._id },
           });
         } else if(job === "bids"){
-          response = await axios.get("/user/bids", {
+          response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/user/bids`, {
             params: { userId: userProfileReplacer.id || userProfileReplacer._id },
           });
         }else {
-          response = await axios.get("/user/reviews", {
+          response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/user/reviews`, {
             params: { userId: userProfileReplacer.id || userProfileReplacer._id },
           });
         }

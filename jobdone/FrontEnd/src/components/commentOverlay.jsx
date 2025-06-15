@@ -40,7 +40,7 @@ function CommentOverlay({ post, onClose }) {
               console.log("reply to", replyTo);
               
               if (user._id !== post.user._id ){const message = `${username} replied: "${commentText}" to you on job post:`;
-              await axios.post('/api/notify', {
+              await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/notify`, {
                   userId: replyUserId,
                   message: message,
                   senderId: user._id,
@@ -50,7 +50,7 @@ function CommentOverlay({ post, onClose }) {
               });}
               
               console.log("Replying to comment:", replyTo);
-              await axios.post("/posts/comments/replies", {
+              await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/comments/replies`, {
                   postId: post._id,
                   commentId: replyTo,
                   replyText: commentText,
@@ -58,7 +58,7 @@ function CommentOverlay({ post, onClose }) {
               });
           } else {
               // It's a normal comment - notify the post owner
-              await axios.post("/posts/comments", {
+              await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/comments`, {
                   postId: post._id,
                   commentText,
                   username,
@@ -67,7 +67,7 @@ function CommentOverlay({ post, onClose }) {
               // Only notify post owner if it's not their own post
               if (user._id !== post.user._id ) {
                   const message = `${username} commented: "${commentText}" on your job post:`;
-                  await axios.post('/api/notify', {
+                  await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/notify`, {
                       userId: post.user._id,
                       message: message,
                       senderId: user._id,

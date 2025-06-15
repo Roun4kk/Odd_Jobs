@@ -1,14 +1,13 @@
-import { Home, Search, MessageCircle, User, Settings, Bell } from "lucide-react";
+import { Home, Search, MessageCircle, User, Settings, Bell , Briefcase } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SettingsComp from "./accounts";
 import logo from "./assets/logo/logo-jobddone.svg";
 import axios from "axios";
-import socket from "./socket.js"; // Ensure this import is present
+import socket from "./socket.js"; 
 import { useMessageContext } from "./hooks/useMessageContext.js";
 import useSocketRoomJoin from "./hooks/socketRoomJoin.js";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function Sidebar({ user }) {
   const navigate = useNavigate();
@@ -27,7 +26,7 @@ function Sidebar({ user }) {
     }
     const fetchUnseenNotifications = async () => {
       try {
-        const notificationsRes = await axios.get(`${API_BASE_URL}/api/notifications/unseen-count`, {
+        const notificationsRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/notifications/unseen-count`, {
           withCredentials: true,
         });
         setUnseenNotifications(notificationsRes.data.unseenCount);

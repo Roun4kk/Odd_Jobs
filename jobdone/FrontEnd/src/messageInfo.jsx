@@ -23,7 +23,7 @@ function MessageComp({setComp , fetchMessages , userId}) {
 
   const handleBlock = async (userId) => {
     try {
-      await axios.post(`/api/block/${userId}`, null, {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/block/${userId}`, null, {
         withCredentials: true,
       });
       updateUser ((prevUser) => ({
@@ -37,7 +37,7 @@ function MessageComp({setComp , fetchMessages , userId}) {
 
   const handleUnblock = async (userId) => {
     try {
-      await axios.post(`/api/unblock/${userId}`, null, {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/unblock/${userId}`, null, {
       withCredentials: true,
     });
       updateUser((prevUser) => ({
@@ -51,7 +51,7 @@ function MessageComp({setComp , fetchMessages , userId}) {
 
   const handleDelete = async (userId) => {
     try {
-      await axios.delete(`/api/conversation/${userId}`, {
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/conversation/${userId}`, {
         withCredentials: true,
       });
       
@@ -64,7 +64,7 @@ function MessageComp({setComp , fetchMessages , userId}) {
 
   const handleSendReport = async () => {
     try {
-      await axios.post(`/api/report/${userId}`, {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/report/${userId}`, {
         text: reportText,
       }, {
         withCredentials: true,

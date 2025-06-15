@@ -31,7 +31,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts , setActiveBidPost}) {
       }
         try {
           const message = `${user.username} placed a new bid of ${BidAmount} on your job post:`
-          await axios.post('/api/notify', {
+          await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/notify`, {
             userId: post.user._id,
             message: message,
             senderId: user._id,
@@ -40,7 +40,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts , setActiveBidPost}) {
             postDescription : post.postDescription,
           } );
 
-          const response =  await axios.post("/posts/bids", {
+          await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/bids`, {
                 postId: post._id,
                 BidText: (BidText || ""),
                 BidAmount,

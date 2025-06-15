@@ -24,7 +24,7 @@ function SendOverlay({ post, onClose }) {
 
   const fetchConversations = useCallback(async () => {
     try {
-      const res = await axios.get("/conversations", { withCredentials: true });
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/conversations`, { withCredentials: true });
       const usersFromConversations = res.data
         .map((c) => c.user)
         .filter((u) => u._id !== user?._id);

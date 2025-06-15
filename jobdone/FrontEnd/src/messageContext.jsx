@@ -5,7 +5,6 @@ import useAuth from "./hooks/useAuth.jsx";
 
 export const MessageContext = createContext();
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export function MessageProvider({ children }) {
   const { user, loading } = useAuth();
@@ -22,7 +21,7 @@ export function MessageProvider({ children }) {
       return;
     }
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/unseen-counts`, {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/unseen-counts`, {
         withCredentials: true,
       });
       setUnseenMessages(res.data);

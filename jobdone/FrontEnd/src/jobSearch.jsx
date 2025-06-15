@@ -41,7 +41,7 @@ function JobSearch() {
     const newTopBids = {};
     const bidPromises = posts.map(async (post) => {
       try {
-        const res = await axios.get("/posts/topbid", {
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts/topbid`, {
           params: { postId: post._id, sortBy: sortByMap[post._id] || "1" },
         });
         newTopBids[post._id] = res.data;
@@ -67,7 +67,7 @@ function JobSearch() {
     setSearchError(null);
 
     try {
-      const res = await axios.get(`/posts/search?query=${encodeURIComponent(query.trim())}`, {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts/search?query=${encodeURIComponent(query.trim())}`, {
         withCredentials: true
       });
 

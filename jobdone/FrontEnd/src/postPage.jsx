@@ -41,10 +41,10 @@ export default function PostPage() {
 
       let updatedUser;
       if (isAlreadySaved) {
-        await axios.delete("/posts/unsave", { data: { postId, userId: user._id } });
+        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/posts/unsave`, { data: { postId, userId: user._id } });
         updatedUser = { ...user, savedPosts: savedPosts.filter((id) => id !== postId) };
       } else {
-        await axios.post("/posts/save", { postId, userId: user._id });
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/save`, { postId, userId: user._id });
         updatedUser = { ...user, savedPosts: [...savedPosts, postId] };
       }
 
@@ -68,7 +68,7 @@ export default function PostPage() {
       console.log("Fetching post with ID:", postId);
       try {
         setLoading(true);
-        const res = await axios.get(`/api/post/${postId}`);
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${postId}`);
         const fetchedPost = res.data;
         setPost(fetchedPost);
 

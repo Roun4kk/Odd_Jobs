@@ -29,7 +29,7 @@ function OtherProfile() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await axios.get(`/users/${userId}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/${userId}`);
         setProfile(response.data);
 
         if (response.data?.verified?.email && response.data?.verified?.phoneNumber) {

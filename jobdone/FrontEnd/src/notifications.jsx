@@ -5,7 +5,6 @@ import logo from "./assets/logo/logo-transparent.png";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function Notifications() {
   const { user, loading, refreshUser } = useAuth();
@@ -22,7 +21,7 @@ function Notifications() {
   // Mark notifications as seen
   const markNotificationsAsSeen = async () => {
     try {
-      await axios.put(`${API_BASE_URL}/api/notifications/mark-seen`, {}, {
+      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/notifications/mark-seen`, {}, {
         withCredentials: true,
       });
       await refreshUser(); // Refresh user to update notifications

@@ -11,7 +11,7 @@ const NotificationToggle = ({ label, type, checked }) => {
     setLoading(true);
     try {
       const response = await axios.put(
-        "/users/notifications",
+        `${import.meta.env.VITE_API_BASE_URL}/users/notifications`,
         { type, enabled: !isChecked },
         { withCredentials: true }
       );

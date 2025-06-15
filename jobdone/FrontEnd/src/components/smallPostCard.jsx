@@ -21,7 +21,7 @@ const SmallPostCard = ({ postId }) => {
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        const response = await axios.get(`http://localhost:3001/api/post/${postId}`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${postId}`, {
           withCredentials: true,
         });
         setPost(response.data);

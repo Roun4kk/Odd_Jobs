@@ -318,7 +318,7 @@ app.get("/auth/google",
 
 app.get("/auth/google/callback",
   passport.authenticate("google", {
-    failureRedirect: "http://localhost:5173/login?error=oauth_failed",
+    failureRedirect: "https://jobdone-ecru.vercel.app/login?error=oauth_failed",
     session: false,
   }),
   async (req, res) => {
@@ -330,13 +330,13 @@ app.get("/auth/google/callback",
     // Check if googleUser exists
     if (!googleUser) {
       console.error("❌ No Google user data received");
-      return res.redirect("http://localhost:5173/login?error=no_user_data");
+      return res.redirect("https://jobdone-ecru.vercel.app/login?error=no_user_data");
     }
 
     // Check if emails exist
     if (!googleUser.emails || googleUser.emails.length === 0) {
       console.error("❌ No email in Google user data");
-      return res.redirect("http://localhost:5173/login?error=no_email");
+      return res.redirect("https://jobdone-ecru.vercel.app/login?error=no_email");
     }
 
     const email = googleUser.emails[0].value;
@@ -512,7 +512,7 @@ app.get("/auth/google/callback",
       console.log("🚀 Redirecting to Profile page");
       
       // 5. Redirect to frontend Profile page
-      res.redirect(`http://localhost:5173/Profile`);
+      res.redirect(`https://jobdone-ecru.vercel.app/Profile`);
 
     } catch (error) {
       console.error("❌ Google login error details:");
@@ -521,7 +521,7 @@ app.get("/auth/google/callback",
       console.error("Full error:", error);
       
       // Redirect to error page instead of sending JSON
-      res.redirect(`http://localhost:5173/login?error=server_error`);
+      res.redirect(`https://jobdone-ecru.vercel.app/login?error=server_error`);
     }
   }
 );

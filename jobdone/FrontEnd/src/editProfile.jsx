@@ -31,7 +31,7 @@ function EditProfile() {
       }
     
       try {
-        const response = await axios.post("/upload", formData, {
+        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/upload`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -69,7 +69,7 @@ function EditProfile() {
       }
       
       const response = await axios.put(
-        `/users/editprofile/${user.id||user._id}`,
+        `${import.meta.env.VITE_API_BASE_URL}/users/editprofile/${user.id||user._id}`,
         payload,
         {
           headers: {
@@ -80,7 +80,6 @@ function EditProfile() {
       const updatedUserData = response.data || payload;
       const updatedUser = { ...user, ...updatedUserData };
       updateUser(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
 
       navigate("/Profile");
       alert("Profile updated successfully!");

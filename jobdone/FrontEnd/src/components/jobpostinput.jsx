@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, ImagePlus, X, AlertCircle } from "lucide-react";
 import axios from "axios";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function JobPostInput({ refresh, user }) {
   const [postText, setPostText] = useState("");
@@ -34,7 +33,7 @@ function JobPostInput({ refresh, user }) {
       console.log(key, val);
     }
     try {
-      const response = await axios.post(`${API_BASE_URL}/upload`, formData, {
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/upload`, formData, {
         withCredentials: true,
         headers: {
           "Content-Type": "multipart/form-data",
@@ -63,7 +62,7 @@ function JobPostInput({ refresh, user }) {
       const mediaUrls = await postUpload();
       console.log("Media URLs:", mediaUrls);
 
-      const response = await axios.post("/posts", {
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts`, {
         postDescription: postText,
         postUserId: user._id,
         mediaUrls: mediaUrls,

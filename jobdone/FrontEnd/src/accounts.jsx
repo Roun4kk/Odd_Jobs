@@ -20,7 +20,7 @@ function SettingsComp({ setUserLog, user }) { // Add updateUser prop
     try {
       // STEP 1: Call backend logout endpoint
       console.log("Calling backend logout...");
-      const response = await axios.post("/auth/logout", {}, { 
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/logout`, {}, { 
         withCredentials: true 
       });
       

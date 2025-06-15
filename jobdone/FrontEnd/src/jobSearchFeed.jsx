@@ -27,17 +27,17 @@ function JobSearchFeed({
   const toggleSavePost = async (postId) => {
     try {
       // Check if the post is already saved
-      const response = await axios.get(`/users/savedPosts/${user._id}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/savedPosts/${user._id}`);
       const savedPosts = response.data;
   
       const isAlreadySaved = savedPosts.includes(postId);
       if (isAlreadySaved) {
-        const resp = await axios.delete("/posts/unsave", { data: { postId, userId: user._id } });
+        const resp = await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/posts/unsave`, { data: { postId, userId: user._id } });
         const updatedUser = { ...user, savedPosts: savedPosts.filter(id => id !== postId) }; 
         updateUser(updatedUser); 
       } else {
         // Save post
-        const resp = await axios.post("/posts/save", { postId, userId: user._id });
+        const resp = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/save`, { postId, userId: user._id });
         const updatedUser = { ...user, savedPosts: [...savedPosts, postId] };
         updateUser(updatedUser); 
       }

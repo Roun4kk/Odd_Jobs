@@ -21,7 +21,7 @@ const ReviewAndRatingForm = ({ targetUserType = "worker" , post  , setReviewSubm
 
     try {
       const response = await axios.post(
-        "/posts/review",
+        `${import.meta.env.VITE_API_BASE_URL}/posts/review`,
         {
           postId: post._id,
           review: review,

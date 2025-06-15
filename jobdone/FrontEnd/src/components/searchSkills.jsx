@@ -25,7 +25,7 @@ function SearchSkills() {
     setError(null);
 
     try {
-      const response = await axios.get(`/users/search?query=${encodeURIComponent(searchQuery.trim())}`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/search?query=${encodeURIComponent(searchQuery.trim())}`, {
         withCredentials: true
       });
 
@@ -116,7 +116,7 @@ function SearchSkills() {
       <p className="text-gray-500 text-sm max-w-sm mx-auto">
         {query.trim()
           ? "Try different keywords or check your spelling"
-          : "Search by skills, username, or bio to find the right freelancer"}
+          : "Search by skills, username, or bio to find the right person for the job"}
       </p>
     </div>
   );

@@ -14,7 +14,7 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
   const eventHandler = (word) => async () => {
     const username = word.replace(/^@/, "");
     try {
-      const res = await axios.get(`/user/username/${username}`);
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/user/username/${username}`);
       const targetUser = res.data;
   
       if (user._id === targetUser._id) {
@@ -31,7 +31,7 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
     const fetchPost = async () => {
       setLoading(true);
       try {
-        const response = await axios.get("/posts/comments", { params: { postId } });
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts/comments`, { params: { postId } });
         setComments(response.data || []);
         console.log("Comments fetched:", comments);
       } catch (error) {

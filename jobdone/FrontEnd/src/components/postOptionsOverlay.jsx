@@ -19,7 +19,7 @@ function PostOptionsOverlay({ post, onClose , setPosts }) {
 
   const handleSetBidRange = async () => {
     try {
-      await axios.put("/posts/setBidRange", {
+      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/posts/setBidRange`, {
         postId: post._id,
         minBid: Number(minBid),
         maxBid: Number(maxBid),
@@ -47,7 +47,7 @@ function PostOptionsOverlay({ post, onClose , setPosts }) {
 
   const handleSendReport = async (userId) => {
     try {
-      await axios.post(`/api/report/${userId}`, {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/report/${userId}`, {
         text: reportText,
         postId: post._id,
       }, {
@@ -65,7 +65,7 @@ function PostOptionsOverlay({ post, onClose , setPosts }) {
 
   const handleCloseBidding = async () => {
     try {
-      await axios.put("posts/closeBidding",{
+      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/posts/closeBidding`,{
         postId: post._id
       },{
         withCredentials: true
@@ -87,7 +87,7 @@ function PostOptionsOverlay({ post, onClose , setPosts }) {
 
   const handleOpenBidding = async () => {
     try {
-      await axios.put("posts/openBidding",{
+      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/posts/openBidding`,{
         postId: post._id
       },{
         withCredentials: true
@@ -109,7 +109,7 @@ function PostOptionsOverlay({ post, onClose , setPosts }) {
 
   const handleDelete =  async () =>{
     try {
-      await axios.delete("/posts", {
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/posts`, {
         withCredentials: true,
         data: { postId: post._id },
       }); 

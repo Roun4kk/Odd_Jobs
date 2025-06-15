@@ -93,7 +93,7 @@ const PostCard = ({
 
   const handleCompleted = async (postId) => {
     try {
-      await axios.put("/posts/mark-Completed", { postId }, {
+      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/posts/mark-Completed`, { postId }, {
         withCredentials: true,
       });
 

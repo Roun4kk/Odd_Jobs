@@ -24,7 +24,7 @@ function JobFeed({ refreshFlag  }) {
     const newTopBids = {};
     for (const post of posts) {
       try {
-        const res = await axios.get("/posts/topbid", {
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts/topbid`, {
           params: { postId: post._id, sortBy: sortByMap[post._id] || "1" },
         });
         newTopBids[post._id] = res.data;
@@ -38,17 +38,17 @@ function JobFeed({ refreshFlag  }) {
   const toggleSavePost = async (postId) => {
     try {
       // Check if the post is already saved
-      const response = await axios.get(`/users/savedPosts/${user._id}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/savedPosts/${user._id}`);
       const savedPosts = response.data;
   
       const isAlreadySaved = savedPosts.includes(postId);
       if (isAlreadySaved) {
-        const resp = await axios.delete("/posts/unsave", { data: { postId, userId: user._id } });
+        const resp = await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/posts/unsave`, { data: { postId, userId: user._id } });
         const updatedUser = { ...user, savedPosts: savedPosts.filter(id => id !== postId) }; // Update user saved posts
         updateUser(updatedUser); 
       } else {
         // Save post
-        const resp = await axios.post("/posts/save", { postId, userId: user._id });
+        const resp = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/save`, { postId, userId: user._id });
         const updatedUser = { ...user, savedPosts: [...savedPosts, postId] }; // Add to saved posts
         updateUser(updatedUser); 
       }
@@ -62,7 +62,7 @@ function JobFeed({ refreshFlag  }) {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await axios.get("/posts");
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts`);
         setPosts(response.data);
         await fetchTopBids(response.data);
       } catch (error) {
@@ -83,7 +83,7 @@ function JobFeed({ refreshFlag  }) {
   }
 
   return (
-    <div className="w-3/4 mt-4 space-y-4">
+    <div className="w-full lg:w-3/4 mt-4 space-y-4 max-w-md lg:max-w-none mx-auto">
       {posts.length === 0 ? (
         <p className="text-gray-500 text-center">No job posts yet.</p>
       ) : (
