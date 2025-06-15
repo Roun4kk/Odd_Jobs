@@ -100,9 +100,11 @@ function App() {
           withCredentials: true,
         },
       );
+      console.log("cookies set");
       const userRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/me`, {
         withCredentials: true,
       });
+      console.log("userset");
 
       updateUser(userRes.data);
       console.log("Login successful:", userRes.data);
