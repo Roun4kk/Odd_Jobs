@@ -7,27 +7,27 @@ export default defineConfig({
   server: {
     proxy:{
       "/user": {
-        target: "http://localhost:3001",
+        target: "https://jobdone-zh3o.onrender.com",
         changeOrigin: true,
         secure: false,
       },
       "/posts": {
-        target: "http://localhost:3001",
+        target: "https://jobdone-zh3o.onrender.com",
         changeOrigin: true,
         secure: false,
       },
       "/api": {
-        target: "http://localhost:3001",
+        target: "https://jobdone-zh3o.onrender.com",
         changeOrigin: true,
         secure: false,
       },
       "/conversations": {
-        target: "http://localhost:3001",
+        target: "https://jobdone-zh3o.onrender.com",
         changeOrigin: true,
         secure: false,
       },
       "/auth": {
-        target: "http://localhost:3001",
+        target: "https://jobdone-zh3o.onrender.com",
         changeOrigin: true,
         secure: false,
       }
