@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import logo from "./assets/logo/logo-transparent-jobdone.svg";
 import googleIcon from "./assets/icons/google.svg";
-import axios from "axios";
+import api from "./api"; // Import the custom Axios instance
 import useAuth from "./hooks/useAuth.jsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -15,16 +15,13 @@ function App() {
   const [entryStage, setEntryStage] = useState("choose");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { updateUser , user } = useAuth(); 
+  const { updateUser } = useAuth();
   const [searchParams] = useSearchParams();
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
-
-  // Check if user was logged out (to prevent auto-login)
   const [wasLoggedOut, setWasLoggedOut] = useState(false);
 
   useEffect(() => {
-    // Check if we're coming from a logout
     const loggedOut = sessionStorage.getItem('logged_out');
     if (loggedOut) {
       setWasLoggedOut(true);
@@ -35,29 +32,24 @@ function App() {
     }
 
     if (authChecked) return;
-    
-    // const checkAuthentication = async () => {
-    //   try {
-    //     const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/me`, { credentials: "include" });
-    //     console.log("newuser" , res);
-    //     if (res.ok) {
-    //       const data = await res.json();
-    //       updateUser(data);
-    //       navigate("/Profile");
-    //       return;
-    //     }
-    //   } catch (error) {
-    //     console.log("Not authenticated");
-    //   } finally {
-        
-    //   }
-    // };
 
-    // checkAuthentication();
-    setCheckingAuth(false);
-    setAuthChecked(true);
+    const checkAuthentication = async () => {
+      try {
+        const res = await api.get('/api/me');
+        if (res.status === 200) {
+          updateUser(res.data);
+          navigate("/Profile");
+        }
+      } catch (error) {
+        console.log("User is not authenticated");
+      } finally {
+        setCheckingAuth(false);
+        setAuthChecked(true);
+      }
+    };
+
+    checkAuthentication();
   }, [navigate, updateUser, authChecked]);
-
 
   useEffect(() => {
     const error = searchParams.get("error");
@@ -77,14 +69,7 @@ function App() {
 
   const SignUpUser = async (username, email, password) => {
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/user/info`,
-        { username, email, password },
-        {
-          withCredentials: true,
-        },
-      );
-      console.log(response.data);
+      const response = await api.post('/user/info', { username, email, password });
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : { message: "Network error" };
@@ -93,23 +78,11 @@ function App() {
 
   const SignInUser = async (email, password) => {
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/user/check`,
-        { email, password },
-        {
-          withCredentials: true,
-        },
-      );
-      const userRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/me`, {
-        withCredentials: true,
-      });
-
+      const response = await api.post('/user/check', { email, password });
+      const userRes = await api.get('/api/me');
+      localStorage.setItem('accessToken', response.data.accessToken); // Store token
       updateUser(userRes.data);
-      console.log("Login successful:", userRes.data);
-      
-      // Clear the logged out flag
       setWasLoggedOut(false);
-      
       navigate("/Profile");
       return response.data;
     } catch (error) {
@@ -120,7 +93,6 @@ function App() {
   const handleGoogleLogin = async () => {
     try {
       setIsLoading(true);
-      // Clear the logged out flag before Google login
       setWasLoggedOut(false);
       window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`;
     } catch (error) {
@@ -189,7 +161,6 @@ function App() {
             <img src={logo} alt="logo" className="object-contain w-full h-full" />
           </div>
         </div>
-
 
         <div className="w-4/5 min-h-[380px] flex flex-col gap-4 bg-white p-6 rounded-lg shadow-lg">
           {wasLoggedOut && (
