@@ -510,15 +510,15 @@ app.get("/auth/google/callback",
       // 4. Set tokens in cookies
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+        secure: true,
+        sameSite: 'None',
         maxAge: 60 * 24 * 60 * 60 * 1000,
       });
       
       res.cookie('accessToken', accessToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+        secure: true,
+        sameSite: 'None',
         maxAge: 24 * 60 * 60 * 1000,
       });
 
@@ -601,16 +601,16 @@ app.post('/user/check', async (req, res) => {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // Important change
+      secure: true,
+      sameSite: 'None',
       maxAge: 60 * 24 * 60 * 60 * 1000,
       domain: process.env.NODE_ENV === 'production' ? undefined : undefined, // Let browser handle domain
     });
 
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // Important change
+      secure: true,
+      sameSite: 'None',
       maxAge: 24 * 60 * 60 * 1000,
       domain: process.env.NODE_ENV === 'production' ? undefined : undefined, // Let browser handle domain
     });
