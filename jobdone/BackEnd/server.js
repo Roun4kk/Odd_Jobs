@@ -71,21 +71,27 @@ const EMAIL_OTP_EXPIRY_SECONDS = 3600; // 1 hour
 const EMAIL_OTP_LIMIT = 5;
 const EMAIL_COOLDOWN_SECONDS = 120; // 2 minutes between requests for same email (longer than phone)
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://jobdone-ecru.vercel.app/",
+];
+
 app.use(cors({
-  origin: 'http://localhost:5173',
-  methods: ['GET', 'POST' , 'PUT', 'DELETE'],
+  origin: allowedOrigins,
+  methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 }));
-app.options("*", cors());
 
+app.options("*", cors()); // Preflight requests
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", 
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
-    credentials: true // ✅ allow credentials (cookies)
+    credentials: true,
   }
 });
+
 
 app.use(express.json());
 app.use(cookieParser());
