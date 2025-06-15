@@ -73,7 +73,7 @@ const EMAIL_COOLDOWN_SECONDS = 120; // 2 minutes between requests for same email
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://jobdone-ecru.vercel.app/",
+  "https://jobdone-ecru.vercel.app",
 ];
 
 app.use(cors({
