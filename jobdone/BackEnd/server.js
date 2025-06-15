@@ -74,13 +74,26 @@ const EMAIL_COOLDOWN_SECONDS = 120; // 2 minutes between requests for same email
 const allowedOrigins = [
   "http://localhost:5173",
   "https://jobdone-ecru.vercel.app",
+  // Add your exact Vercel domain if different
 ];
 
 app.use(cors({
-  origin: allowedOrigins,
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  exposedHeaders: ['Set-Cookie'],
 }));
+
 
 app.options("*", cors()); // Preflight requests
 
@@ -498,15 +511,15 @@ app.get("/auth/google/callback",
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax', // Changed from 'Strict' for better OAuth compatibility
-        maxAge: 60 * 24 * 60 * 60 * 1000, // 60 days
+        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+        maxAge: 60 * 24 * 60 * 60 * 1000,
       });
       
       res.cookie('accessToken', accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax',
-        maxAge: 24 * 60 * 60 * 1000, // 1 day
+        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+        maxAge: 24 * 60 * 60 * 1000,
       });
 
       console.log("🚀 Redirecting to Profile page");
@@ -527,18 +540,27 @@ app.get("/auth/google/callback",
 );
 
 const verifyToken = (req, res, next) => {
+  console.log("🍪 All cookies:", req.cookies);
+  console.log("🔑 Authorization header:", req.headers.authorization);
+  
   const token =
     req.cookies?.accessToken ||
     req.headers.authorization?.split(" ")[1];
-  console.log("Token received:", token);
-  if (!token) return res.status(401).json({ message: "Unauthorized: No token" });
+    
+  console.log("🎫 Token received:", token ? "Token present" : "No token");
+  
+  if (!token) {
+    console.log("❌ No token provided");
+    return res.status(401).json({ message: "Unauthorized: No token" });
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("✅ Token verified for user:", decoded.id);
     req.user = decoded;
     next();
   } catch (error) {
-    console.error("Token verification error:", error.message);
+    console.error("❌ Token verification error:", error.message);
     return res.status(401).json({ message: "Unauthorized: Invalid token" });
   }
 };
@@ -580,15 +602,17 @@ app.post('/user/check', async (req, res) => {
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'Strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // Important change
       maxAge: 60 * 24 * 60 * 60 * 1000,
+      domain: process.env.NODE_ENV === 'production' ? undefined : undefined, // Let browser handle domain
     });
 
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'Lax',
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // Important change
+      maxAge: 24 * 60 * 60 * 1000,
+      domain: process.env.NODE_ENV === 'production' ? undefined : undefined, // Let browser handle domain
     });
     res.status(200).json({ message: "Login successful" });
 

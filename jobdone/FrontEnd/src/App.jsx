@@ -38,7 +38,7 @@ function App() {
     
     // const checkAuthentication = async () => {
     //   try {
-    //     const res = await fetch("/api/me", { credentials: "include" });
+    //     const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/me`, { credentials: "include" });
     //     console.log("newuser" , res);
     //     if (res.ok) {
     //       const data = await res.json();
