@@ -14,7 +14,6 @@ function App() {
   const [errorMessage, setErrorMessage] = useState("");
   const [entryStage, setEntryStage] = useState("choose");
   const [isLoading, setIsLoading] = useState(false);
-  const [csrfToken, setCsrfToken] = useState("");
   const navigate = useNavigate();
   const { updateUser , user } = useAuth(); 
   const [searchParams] = useSearchParams();
@@ -59,18 +58,6 @@ function App() {
     setAuthChecked(true);
   }, [navigate, updateUser, authChecked]);
 
-  useEffect(() => {
-    const fetchCSRFToken = async () => {
-      try {
-        const response = await axios.get("/csrf-token", { withCredentials: true });
-        setCsrfToken(response.data.csrfToken);
-      } catch (error) {
-        setErrorMessage("Failed to fetch CSRF token");
-      }
-    };
-
-    fetchCSRFToken();
-  }, []);
 
   useEffect(() => {
     const error = searchParams.get("error");
@@ -94,7 +81,6 @@ function App() {
         "/user/info",
         { username, email, password },
         {
-          headers: { "X-CSRF-Token": csrfToken },
           withCredentials: true,
         },
       );
@@ -111,7 +97,6 @@ function App() {
         "/user/check",
         { email, password },
         {
-          headers: { "X-CSRF-Token": csrfToken },
           withCredentials: true,
         },
       );
