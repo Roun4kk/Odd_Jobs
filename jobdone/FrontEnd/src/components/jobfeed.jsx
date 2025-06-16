@@ -37,24 +37,32 @@ function JobFeed({ refreshFlag  }) {
 
   const toggleSavePost = async (postId) => {
     try {
-      // Check if the post is already saved
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/savedPosts/${user._id}`);
-      const savedPosts = response.data;
-  
-      const isAlreadySaved = savedPosts.includes(postId);
+      // Get current state from local user object instead of API call
+      const isAlreadySaved = user.savedPosts?.includes(postId);
+      
+      // Optimistic update - update UI immediately
+      const optimisticUser = {
+        ...user,
+        savedPosts: isAlreadySaved 
+          ? user.savedPosts.filter(id => id !== postId)
+          : [...(user.savedPosts || []), postId]
+      };
+      updateUser(optimisticUser);
+
+      // Then sync with server
       if (isAlreadySaved) {
-        const resp = await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/posts/unsave`, { data: { postId, userId: user._id } });
-        const updatedUser = { ...user, savedPosts: savedPosts.filter(id => id !== postId) }; // Update user saved posts
-        updateUser(updatedUser); 
+        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/posts/unsave`, { 
+          data: { postId, userId: user._id } 
+        });
       } else {
-        // Save post
-        const resp = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/save`, { postId, userId: user._id });
-        const updatedUser = { ...user, savedPosts: [...savedPosts, postId] }; // Add to saved posts
-        updateUser(updatedUser); 
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/save`, { 
+          postId, userId: user._id 
+        });
       }
-  
     } catch (error) {
       console.error("Error saving/unsaving post:", error);
+      // Revert optimistic update on error
+      updateUser(user);
     }
   };
   
