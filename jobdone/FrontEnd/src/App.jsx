@@ -36,24 +36,24 @@ function App() {
 
     if (authChecked) return;
     
-    // const checkAuthentication = async () => {
-    //   try {
-    //     const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/me`, { credentials: "include" });
-    //     console.log("newuser" , res);
-    //     if (res.ok) {
-    //       const data = await res.json();
-    //       updateUser(data);
-    //       navigate("/Profile");
-    //       return;
-    //     }
-    //   } catch (error) {
-    //     console.log("Not authenticated");
-    //   } finally {
+    const checkAuthentication = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/me`, { credentials: "include" });
+        console.log("newuser" , res);
+        if (res.ok) {
+          const data = await res.json();
+          updateUser(data);
+          navigate("/Profile");
+          return;
+        }
+      } catch (error) {
+        console.log("Not authenticated");
+      } finally {
         
-    //   }
-    // };
+      }
+    };
 
-    // checkAuthentication();
+    checkAuthentication();
     setCheckingAuth(false);
     setAuthChecked(true);
   }, [navigate, updateUser, authChecked]);
