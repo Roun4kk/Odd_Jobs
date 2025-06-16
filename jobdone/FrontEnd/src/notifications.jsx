@@ -4,6 +4,7 @@ import Sidebar from "./Sidebar";
 import logo from "./assets/logo/logo-transparent.png";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import SearchSkills from "./components/searchSkills.jsx";
 
 
 function Notifications() {
@@ -84,14 +85,8 @@ function Notifications() {
           </div>
 
           {/* Right */}
-          <div className="w-[43%] bg-white flex items-start justify-center pt-10 sticky top-0 h-screen">
-            <input
-              type="text"
-              name="skillSearch"
-              id="skillSearch"
-              placeholder="Search Skills"
-              className="p-3 border w-11/12 border-gray-300 rounded-md focus:outline-teal-500"
-            />
+          <div className="w-[43%] bg-white sticky top-0 h-screen border-l border-gray-200">
+            <SearchSkills />
           </div>
         </div>
       </div>
