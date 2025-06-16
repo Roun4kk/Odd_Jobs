@@ -69,7 +69,7 @@ function SendOverlay({ post, onClose }) {
       
       console.log(`Message ${index + 1} emitted`);
     });
-
+    navigate("/messages", { state: { newChatWith: selectedUsers[0] } });
     alert(`Post shared with ${selectedUsers.map((u) => u.username).join(", ")}`);
     setMessage("");
     setSelectedUsers([]);
