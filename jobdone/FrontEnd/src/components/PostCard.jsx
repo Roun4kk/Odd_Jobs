@@ -76,8 +76,8 @@ const PostCard = ({
     const sorted = [...bids].sort((a, b) => {
       const amountDiff =
         sortByMap[localPost._id] === "1"
-          ? b.BidAmount - a.BidAmount
-          : a.BidAmount - b.BidAmount;
+          ? a.BidAmount - b.BidAmount
+          : b.BidAmount - a.BidAmount;
 
       if (amountDiff !== 0) return amountDiff;
 
