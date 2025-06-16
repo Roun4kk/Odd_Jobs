@@ -74,7 +74,6 @@ const EMAIL_COOLDOWN_SECONDS = 120; // 2 minutes between requests for same email
 const allowedOrigins = [
   "http://localhost:5173",
   "https://jobdone-ecru.vercel.app",
-  // Add your exact Vercel domain if different
 ];
 
 app.use(cors({
@@ -525,7 +524,11 @@ app.get("/auth/google/callback",
       console.log("🚀 Redirecting to Profile page");
       
       // 5. Redirect to frontend Profile page
-      res.redirect(`https://jobdone-ecru.vercel.app/Profile`);
+      if (process.env.GOOGLE_CALLBACK_URL === 'http://localhost:3001/auth/google/callback') {
+        res.redirect('http://localhost:5173/profile');
+      } else {
+        res.redirect('https://jobdone-ecru.vercel.app/profile');
+      }
 
     } catch (error) {
       console.error("❌ Google login error details:");
@@ -2907,6 +2910,8 @@ app.post('/api/report/:userId', verifyToken, async (req, res) => {
 app.post('/api/notify', verifyToken, async (req, res) => {
   const { type, postId, senderId, message, userId, postDescription } = req.body;
 
+  console.log('🔔 Notification request:', { type, userId, message });
+
   if (!type || !senderId) {
     return res.status(400).json({ message: 'Missing required fields: type and sender.' });
   }
@@ -2925,10 +2930,26 @@ app.post('/api/notify', verifyToken, async (req, res) => {
     await User.findByIdAndUpdate(userId, {
       $push: { notifications: notification },
     });
-    const user= await User.findById(userId);
-    // Emit socket event to the recipient
-    if((user?.allowNotifications?.bids === true && type==="bid")|| (user?.allowNotifications?.comments === true && type===("comment" || "Reply"))){
+    
+    const user = await User.findById(userId);
+    console.log('📱 User notification settings:', user?.allowNotifications);
+    
+    // Debug: Check if user is in socket room
+    const socketsInRoom = await io.in(userId).fetchSockets();
+    console.log(`🏠 Sockets in room ${userId}:`, socketsInRoom.length);
+
+    const shouldNotify = (
+      (user?.allowNotifications?.bids === true && (type === "bid" || type === "Hired")) ||
+      (user?.allowNotifications?.comments === true && (type === "comment" || type === "Reply"))
+    );
+
+    console.log('🚨 Should notify:', shouldNotify, 'Type:', type);
+
+    if (shouldNotify) {
+      console.log(`📡 Emitting notification to room: ${userId}`);
       io.to(userId).emit('receiveNotification', notification);
+    } else {
+      console.log('❌ Not emitting - settings disabled or type not matched');
     }
 
     res.status(201).json({ message: 'Notification sent.' });
@@ -2959,17 +2980,37 @@ app.put('/api/notifications/mark-seen', verifyToken, async (req, res) => {
 
 app.get('/api/notifications/unseen-count', verifyToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('notifications');
+    const user = await User.findById(req.user.id).select('notifications notificationsAllowed');
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
-    const unseenCount = user.notifications.filter((n) => !n.seen).length;
+
+    const { bids, comments } = user.allowNotifications || {};
+
+    const unseenCount = user.notifications.filter((n) => {
+      if (n.seen) return false;
+
+      // Exclude bid/hired if user disabled bid notifications
+      if (!bids && (n.type === 'bid' || n.type === 'hired')) {
+        return false;
+      }
+
+      // Exclude comment/reply if user disabled comment notifications
+      if (!comments && (n.type === 'comment' || n.type === 'reply')) {
+        return false;
+      }
+
+      return true;
+    }).length;
+
     res.json({ unseenCount });
+
   } catch (err) {
     console.error('Error fetching unseen notifications count:', err);
     res.status(500).json({ message: 'Failed to fetch unseen notifications count.' });
   }
 });
+
 async function cleanupOldNotifications() {
   try {
     const cutoffDate = new Date();

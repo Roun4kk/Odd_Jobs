@@ -38,6 +38,9 @@ function BidOverlay({ post, onClose, sortBy, setPosts , setActiveBidPost}) {
             postId: post._id,
             type: "bid",
             postDescription : post.postDescription,
+          },
+          {
+            withCredentials: true
           } );
 
           await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/bids`, {

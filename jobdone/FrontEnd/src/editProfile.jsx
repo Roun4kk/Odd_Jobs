@@ -32,10 +32,12 @@ function EditProfile() {
     
       try {
         const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/upload`, formData, {
+          withCredentials: true,
           headers: {
             "Content-Type": "multipart/form-data",
           },
-        });
+        },
+      );
         return response.data.urls[0];
       } catch (error) {
         console.error("Error uploading media:", error);

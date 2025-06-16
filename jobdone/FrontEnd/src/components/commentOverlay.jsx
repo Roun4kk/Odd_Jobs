@@ -47,7 +47,10 @@ function CommentOverlay({ post, onClose }) {
                   postId: post._id,
                   type: "Reply",
                   postDescription: post.postDescription,
-              });}
+              },
+              {
+                withCredentials: true
+              } );}
               
               console.log("Replying to comment:", replyTo);
               await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/comments/replies`, {
@@ -74,7 +77,10 @@ function CommentOverlay({ post, onClose }) {
                       postId: post._id,
                       type: "comment",
                       postDescription: post.postDescription,
-                  });
+                  },
+                  {
+                    withCredentials: true
+                  } );
               }
           }
 

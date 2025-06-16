@@ -123,6 +123,9 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
                 postId: post._id,
                 type: "Hired",
                 postDescription : post.postDescription,
+              },
+              {
+                withCredentials: true
               } );
               setPosts(prevPosts =>
                 prevPosts.map(p =>
