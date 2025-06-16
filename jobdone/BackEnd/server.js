@@ -640,7 +640,7 @@ app.get("/users/search", verifyToken, async (req, res) => {
   const regexStartsWith = new RegExp(`^${escapedQuery}`, "i");
   const regexAnywhere = new RegExp(escapedQuery, "i");
 
-  // Only split if search is more than 1 character
+  
   const words = searchQuery.length > 1 ? searchQuery.split(/\s+/).filter(w => w.length > 1) : [];
 
   try {

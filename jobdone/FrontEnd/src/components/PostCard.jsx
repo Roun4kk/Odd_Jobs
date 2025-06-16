@@ -321,7 +321,7 @@ const PostCard = ({
             </div>
 
             {/* Single Review Component Rendered Below */}
-            {(((user._id === localPost.user._id && !localPost?.reviewedByProvider) ||( user._id === localPost.selectedWinner && !localPost?.reviewedByWorker))) && !reviews[post._id] && (
+            {(((user._id === localPost.user._id && !localPost?.reviewedByProvider) ||( user._id === localPost.selectedWinner && !localPost?.reviewedByWorker))) && reviews?.[localPost?._id] === undefined && (
               <div className="mt-4">
                 <ReviewAndRatingForm
                   targetUserType={user._id === localPost.user._id ? "worker" : "provider"}
