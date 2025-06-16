@@ -21,19 +21,20 @@ function JobFeed({ refreshFlag  }) {
 
 
   const fetchTopBids = async (posts) => {
-    const newTopBids = {};
-    for (const post of posts) {
+    const bids = await Promise.all(posts.map(async post => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts/topbid`, {
           params: { postId: post._id, sortBy: sortByMap[post._id] || "1" },
         });
-        newTopBids[post._id] = res.data;
-      } catch (err) {
-        newTopBids[post._id] = null;
+        return [post._id, res.data];
+      } catch {
+        return [post._id, null];
       }
-    }
-    setTopBids(newTopBids);
+    }));
+
+    setTopBids(Object.fromEntries(bids));
   };
+
 
   const toggleSavePost = async (postId) => {
     try {
@@ -71,6 +72,8 @@ function JobFeed({ refreshFlag  }) {
       setLoading(true);
       try {
         const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts`);
+        const newSortByMap = Object.fromEntries(response.data.map(post => [post._id, "1"]));
+        setSortByMap(newSortByMap);
         setPosts(response.data);
         await fetchTopBids(response.data);
       } catch (error) {
@@ -95,15 +98,13 @@ function JobFeed({ refreshFlag  }) {
       {posts.length === 0 ? (
         <p className="text-gray-500 text-center">No job posts yet.</p>
       ) : (
-        posts.map((post, index) => {
+        posts.filter(post => post.status === "open")
+          .map((post, index) => {
           const shouldBlur =
             !(
               user._id === post.user._id ||
               (topBids[post._id] && user._id === topBids[post._id].user._id)
             );
-          if(post.status !=="open"){
-            return ;
-          }
           return (
             <PostCard
               post={post}
