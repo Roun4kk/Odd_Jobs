@@ -4,7 +4,7 @@ import useAuth from "../hooks/useAuth";
 import axios from "axios";
 import socket from "../socket.js";
 import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
-
+import { useNavigate } from "react-router-dom";
 function SendOverlay({ post, onClose }) {
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
@@ -12,6 +12,7 @@ function SendOverlay({ post, onClose }) {
   const [conversationUsers, setConversationUsers] = useState([]);
   const { user } = useAuth();
   const [socketError, setSocketError] = useState(null);
+  const navigate = useNavigate();
 
   useSocketRoomJoin(user?._id, setSocketError);   // ONE line
 
