@@ -39,21 +39,32 @@ function UserJobs({ job, userProfile, hasToken }) {
 
   const toggleSavePost = async (postId) => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/savedPosts/${user._id}`);
-      const savedPosts = response.data;
+      // Get current state from local user object instead of API call
+      const isAlreadySaved = user.savedPosts?.includes(postId);
+      
+      // Optimistic update - update UI immediately
+      const optimisticUser = {
+        ...user,
+        savedPosts: isAlreadySaved 
+          ? user.savedPosts.filter(id => id !== postId)
+          : [...(user.savedPosts || []), postId]
+      };
+      updateUser(optimisticUser);
 
-      const isAlreadySaved = savedPosts.includes(postId);
+      // Then sync with server
       if (isAlreadySaved) {
-        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/posts/unsave`, { data: { postId, userId: user._id } });
-        const updatedUser = { ...user, savedPosts: savedPosts.filter(id => id !== postId) };
-        updateUser(updatedUser);
+        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/posts/unsave`, { 
+          data: { postId, userId: user._id } 
+        });
       } else {
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/save`, { postId, userId: user._id });
-        const updatedUser = { ...user, savedPosts: [...savedPosts, postId] };
-        updateUser(updatedUser);
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/save`, { 
+          postId, userId: user._id 
+        });
       }
     } catch (error) {
       console.error("Error saving/unsaving post:", error);
+      // Revert optimistic update on error
+      updateUser(user);
     }
   };
 

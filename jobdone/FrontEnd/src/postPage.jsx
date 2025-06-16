@@ -32,25 +32,33 @@ export default function PostPage() {
   }, []);
 
   const toggleSavePost = async (postId) => {
-    console.log("Toggling save for post ID:", postId);
-    console.log("Current user:", user);
-    if (!user) return;
     try {
-      const savedPosts = user.savedPosts || [];
-      const isAlreadySaved = savedPosts.includes(postId);
+      // Get current state from local user object instead of API call
+      const isAlreadySaved = user.savedPosts?.includes(postId);
+      
+      // Optimistic update - update UI immediately
+      const optimisticUser = {
+        ...user,
+        savedPosts: isAlreadySaved 
+          ? user.savedPosts.filter(id => id !== postId)
+          : [...(user.savedPosts || []), postId]
+      };
+      updateUser(optimisticUser);
 
-      let updatedUser;
+      // Then sync with server
       if (isAlreadySaved) {
-        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/posts/unsave`, { data: { postId, userId: user._id } });
-        updatedUser = { ...user, savedPosts: savedPosts.filter((id) => id !== postId) };
+        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/posts/unsave`, { 
+          data: { postId, userId: user._id } 
+        });
       } else {
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/save`, { postId, userId: user._id });
-        updatedUser = { ...user, savedPosts: [...savedPosts, postId] };
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/save`, { 
+          postId, userId: user._id 
+        });
       }
-
-      updateUser(updatedUser);
     } catch (error) {
       console.error("Error saving/unsaving post:", error);
+      // Revert optimistic update on error
+      updateUser(user);
     }
   };
 
