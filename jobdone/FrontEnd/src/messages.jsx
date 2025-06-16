@@ -10,7 +10,6 @@ import useSocketRoomJoin from "./hooks/socketRoomJoin.js";
 import MessageComp from "./messageInfo.jsx";
 import { useMessageContext } from "./hooks/useMessageContext.js";
 
-
 function Messages() {
   const { state } = useLocation();
   const initialUser = state?.newChatWith;
@@ -18,7 +17,7 @@ function Messages() {
   const [conversations, setConversations] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [loadingConversation, setLoadingConversation] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -43,11 +42,31 @@ function Messages() {
     scrollToBottom();
   }, [messages]);
 
-  const isValidObjectId = (id) => {
-    return /^[0-9a-fA-F]{24}$/.test(id);
-  };
+  useEffect(() => {
+    if (user?._id) {
+      refreshUser();
+    }
+  }, [user?._id]);
+
+  const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
 
   useSocketRoomJoin(user?._id, setSocketError);
+
+  const refreshUserConnections = useCallback(async () => {
+    if (!user?._id || !isValidObjectId(user._id)) return;
+    
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/connections`, {
+        withCredentials: true,
+      });
+      
+      setConversations(res.data?.connections?.filter((conv) => !conv.request) || []);
+      setRequests(res.data?.connections?.filter((conv) => conv.request) || []);
+      setRequestCount(res.data?.connections?.filter((conv) => conv.request).length || 0);
+    } catch (err) {
+      setError("Failed to refresh user connections.");
+    }
+  }, [user?._id]);
 
   const markMessagesAsSeen = async (userId) => {
     if (!user?._id || !isValidObjectId(user._id) || !isValidObjectId(userId)) {
@@ -63,9 +82,7 @@ function Messages() {
         ...prev,
         [userId]: 0,
       }));
-      console.log(`Marked messages as seen for userId: ${userId}`);
     } catch (err) {
-      console.error("Failed to mark messages as seen:", err.response?.data || err.message);
       setError(`Failed to mark messages as seen: ${err.response?.data?.error || err.message}`);
     }
   };
@@ -80,12 +97,10 @@ function Messages() {
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/messages/${userId}`, {
         withCredentials: true,
       });
-      console.log("Fetched messages:", res.data);
       setMessages(res.data.filter((msg) => !msg.deletedFor.includes(user._id)));
       setLoadingMessages(false);
       await markMessagesAsSeen(userId);
     } catch (err) {
-      console.error("Failed to fetch messages:", err.response?.data || err.message);
       setError(`Failed to fetch messages: ${err.response?.data?.error || err.message}`);
       setLoadingMessages(false);
     }
@@ -93,36 +108,21 @@ function Messages() {
 
   const updateConversationTime = (message) => {
     setConversations((prev) =>
-      prev.map((conv) => {
-        if (
-          conv.user &&
-          (conv.user._id === message.sender.toString() || conv.user._id === message.receiver.toString())
-        ) {
-          return {
-            ...conv,
-            lastMessage: message,
-            updatedAt: message.createdAt,
-          };
-        }
-        return conv;
-      })
+      prev.map((conv) =>
+        conv.user &&
+        (conv.user._id === message.sender.toString() || conv.user._id === message.receiver.toString())
+          ? { ...conv, lastMessage: message, updatedAt: message.createdAt }
+          : conv
+      )
     );
 
     setRequests((prev) =>
-      prev.map((req) => {
-        if (
-          req.user &&
-          (req.user._id === message.sender.toString() || req.user._id === message.receiver.toString())
-        ) {
-          return {
-            ...req,
-            lastMessage: message,
-            updatedAt: message.createdAt,
-            request: false,
-          };
-        }
-        return req;
-      })
+      prev.map((req) =>
+        req.user &&
+        (req.user._id === message.sender.toString() || req.user._id === message.receiver.toString())
+          ? { ...req, lastMessage: message, updatedAt: message.createdAt, request: false }
+          : req
+      )
     );
   };
 
@@ -147,7 +147,6 @@ function Messages() {
     try {
       setUploading(true);
       setError("");
-      const currentTime = new Date().toISOString();
 
       if (newMessage.trim()) {
         const isTextLink = isLink(newMessage.trim());
@@ -189,7 +188,6 @@ function Messages() {
           });
           urls = response.data.urls || [];
         } catch (uploadError) {
-          console.error("Upload failed:", uploadError);
           setError("Failed to upload files. Please try again.");
           setUploading(false);
           return;
@@ -227,15 +225,13 @@ function Messages() {
       setUploading(false);
     } catch (err) {
       setUploading(false);
-      console.error("Failed to send message:", err);
       setError(`Failed to send message: ${err.message}`);
     }
   };
 
-  function isLink(text) {
+  const isLink = (text) => {
     if (!text) return false;
-    const urlPattern = /^https?:\/\/[\w\-]+(\.[\w\-]+)+[\w\-.,@?^=%&:/~+#]*$/;
-    return urlPattern.test(text.trim());
+    return /^https?:\/\/[\w\-]+(\.[\w\-]+)+[\w\-.,@?^=%&:/~+#]*$/.test(text.trim());
   };
 
   const getThumbnail = (file) => {
@@ -248,10 +244,8 @@ function Messages() {
     return null;
   };
 
-
   useEffect(() => {
     const handleReceiveMessage = (message) => {
-      console.log("Messages component: Received message:", message);
       if (message.receiver.toString() === user._id && !message.deletedFor.includes(user._id)) {
         setMessages((prev) => {
           const isDuplicate = prev.some(
@@ -269,8 +263,33 @@ function Messages() {
         });
 
         updateConversationTime(message);
+        refreshUserConnections();
 
-        // Only mark as seen if the sender is the currently selected user
+        setRequests((prev) => {
+          const senderId = message.sender?._id?.toString?.() || message.sender?.toString?.();
+          const alreadyInRequests = prev.some(r => r.user._id?.toString() === senderId);
+          const inConversations = conversations.some(c => c.user._id?.toString() === senderId);
+          const inConnections = user?.connections?.some(conn => conn.user?._id?.toString() === senderId);
+          const alreadyConnected = inConversations && inConnections;
+
+          if (!alreadyInRequests && !alreadyConnected) {
+            const newRequest = {
+              user: {
+                _id: senderId,
+                username: message.senderUsername || "New User",
+                userImage: message.senderImage || "",
+                verified: message.senderVerified || {},
+              },
+              lastMessage: message,
+              request: true,
+              createdAt: message.createdAt || new Date(),
+            };
+            setRequestCount(prev => prev + 1);
+            return [...prev, newRequest];
+          }
+          return prev;
+        });
+
         if (selectedUser && message.sender.toString() === selectedUser._id) {
           markMessagesAsSeen(message.sender);
         }
@@ -292,12 +311,10 @@ function Messages() {
     };
 
     const handleMessageError = ({ error }) => {
-      console.error("Message error:", error);
       setMessages((prev) => prev.filter((msg) => !msg._id.startsWith("temp-")));
       setError(`Failed to send message: ${error}`);
     };
 
-    // Set up socket listeners
     socket.on("receiveMessage", handleReceiveMessage);
     socket.on("messageConfirmation", handleMessageConfirmation);
     socket.on("messageError", handleMessageError);
@@ -307,7 +324,7 @@ function Messages() {
       socket.off("messageConfirmation", handleMessageConfirmation);
       socket.off("messageError", handleMessageError);
     };
-  }, [user?._id, selectedUser]); 
+  }, [user?._id, selectedUser, refreshUserConnections]);
 
   const handleSelectUser = async (user) => {
     if (!isValidObjectId(user._id)) {
@@ -320,7 +337,6 @@ function Messages() {
   };
 
   useEffect(() => {
-    console.log("useAuth user:", user);
     if (!user?._id || !isValidObjectId(user._id)) {
       setError("Invalid user ID. Please log in again.");
       setLoadingConversation(false);
@@ -328,12 +344,17 @@ function Messages() {
     }
 
     setLoadingConversation(true);
-    const requestFalse = user?.connections?.filter((conv) => !conv.request) || [];
-    const requestTrue = user?.connections?.filter((conv) => conv.request) || [];
-
-    setConversations(requestFalse);
-    setRequests(requestTrue);
-    setRequestCount(requestTrue.length);
+    setConversations(
+      user?.connections
+        ?.filter((conv) => !conv.request)
+        ?.sort((a, b) => new Date(b.lastMessage?.createdAt || b.updatedAt || 0) - new Date(a.lastMessage?.createdAt || a.updatedAt || 0)) || []
+    );
+    setRequests(
+      user?.connections
+        ?.filter((conv) => conv.request)
+        ?.sort((a, b) => new Date(b.lastMessage?.createdAt || b.updatedAt || 0) - new Date(a.lastMessage?.createdAt || a.updatedAt || 0)) || []
+    );
+    setRequestCount(user?.connections?.filter((conv) => conv.request).length || 0);
 
     if (initialUser && isValidObjectId(initialUser._id)) {
       setSelectedUser(initialUser);
@@ -426,7 +447,6 @@ function Messages() {
             </video>
           </div>
         );
-      case "text":
       default:
         return <p className="break-words whitespace-pre-wrap">{content.text || "[Empty message]"}</p>;
     }
@@ -571,15 +591,11 @@ function Messages() {
                 )}
                 {!loadingMessages &&
                   messages.map((msg) => {
-                    if (msg.deletedFor.includes(user._id)) {
-                      return null;
-                    }
+                    if (msg.deletedFor.includes(user._id)) return null;
                     const senderId = typeof msg.sender === 'object' && msg.sender?._id
                       ? msg.sender._id.toString()
                       : msg.sender.toString();
                     const isSender = senderId === user._id;
-                    console.log("Message:", msg);
-                    console.log("senderId:", senderId, "user._id:", user._id, "isSender:", isSender);
                     const avatarSrc = isSender ? user.userImage : selectedUser.userImage;
 
                     return (

@@ -2733,7 +2733,91 @@ app.get("/conversations", verifyToken, async (req, res) => {
   }
 });
 
+app.get('/api/user/connections', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid user ID' 
+      });
+    }
 
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    // Find the user with populated connections
+    const user = await User.findById(userId)
+      .populate({
+        path: 'connections.user',
+        select: 'username userImage userBio verified averageRating totalRating'
+      })
+      .select('connections');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Process connections with enhanced data
+    const enhancedConnections = await Promise.all(
+      user.connections.map(async (connection) => {
+        const otherUserId = connection.user._id;
+        
+        // Get the most recent message between these users
+        const lastMessage = await Message.findOne({
+          $or: [
+            { sender: userId, receiver: otherUserId },
+            { sender: otherUserId, receiver: userId }
+          ],
+          deletedFor: { $ne: userObjectId }
+        })
+        .sort({ createdAt: -1 })
+        .select('text type createdAt sender receiver data seenBy');
+
+        // Get unseen message count for this connection
+        const unseenCount = await Message.countDocuments({
+          sender: otherUserId,
+          receiver: userId,
+          seenBy: { $ne: userObjectId },
+          deletedFor: { $ne: userObjectId }
+        });
+
+        return {
+          _id: connection._id,
+          user: connection.user,
+          request: connection.request,
+          lastMessage: lastMessage,
+          unseenCount: unseenCount,
+          createdAt: connection.createdAt,
+          updatedAt: connection.updatedAt || connection.createdAt
+        };
+      })
+    );
+
+    // Sort connections by most recent activity
+    enhancedConnections.sort((a, b) => {
+      const aTime = a.lastMessage?.createdAt || a.createdAt;
+      const bTime = b.lastMessage?.createdAt || b.createdAt;
+      return new Date(bTime) - new Date(aTime);
+    });
+
+    res.status(200).json({
+      success: true,
+      connections: enhancedConnections
+    });
+
+  } catch (error) {
+    console.error('Error fetching user connections:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
 
 app.get("/users/saved", async (req, res) => {
   const { userId } = req.query;
