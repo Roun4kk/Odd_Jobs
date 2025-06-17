@@ -13,6 +13,22 @@
       "destination": "https://jobdone-zh3o.onrender.com/user/$1"
     },
     {
+      "source": "/users/(.*)",
+      "destination": "https://jobdone-zh3o.onrender.com/users/$1"
+    },
+    {
+      "source": "/posts/(.*)",
+      "destination": "https://jobdone-zh3o.onrender.com/posts/$1"
+    },
+    {
+      "source": "/upload/(.*)",
+      "destination": "https://jobdone-zh3o.onrender.com/upload/$1"
+    },
+    {
+      "source": "/conversations/(.*)",
+      "destination": "https://jobdone-zh3o.onrender.com/conversations/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

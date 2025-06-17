@@ -1204,19 +1204,6 @@ app.get('/protected-route', verifyToken, (req, res) => {
   res.json({ message: "This is a protected route", user: req.user });
 });
 
-// Temporary test endpoint in server.js
-app.post('/test-cloudinary', async (req, res) => {
-  try {
-    const result = await cloudinary.uploader.upload('https://via.placeholder.com/150', {
-      folder: 'posts',
-      resource_type: 'image',
-    });
-    res.json({ url: result.secure_url });
-  } catch (error) {
-    console.error("Cloudinary test error:", error);
-    res.status(500).json({ message: "Cloudinary upload failed" });
-  }
-});
 
 app.post(
   "/upload",
