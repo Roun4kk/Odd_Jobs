@@ -505,19 +505,23 @@ app.get("/auth/google/callback",
       const refreshToken = generateRefreshToken(user);
 
       console.log("🍪 Setting cookies...");
-      
+      const isProduction = process.env.NODE_ENV === 'production';
       // 4. Set tokens in cookies
       res.cookie('refreshToken', refreshToken, {
+        path: '/',
+        secure: isProduction, // false for localhost HTTP, true for production HTTPS
         httpOnly: true,
-        secure: true,
-        sameSite: 'None',
+        sameSite: isProduction ? 'None' : 'Lax',
+        domain: undefined,
         maxAge: 60 * 24 * 60 * 60 * 1000,
       });
       
       res.cookie('accessToken', accessToken, {
+        path: '/',
+        secure: isProduction, // false for localhost HTTP, true for production HTTPS
         httpOnly: true,
-        secure: true,
-        sameSite: 'None',
+        sameSite: isProduction ? 'None' : 'Lax',
+        domain: undefined,
         maxAge: 24 * 60 * 60 * 1000,
       });
 
@@ -601,21 +605,24 @@ app.post('/user/check', async (req, res) => {
     }
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
-
+    
+    const isProduction = process.env.NODE_ENV === 'production';
     res.cookie('refreshToken', refreshToken, {
+      path: '/',
+      secure: isProduction, // false for localhost HTTP, true for production HTTPS
       httpOnly: true,
-      secure: true,
-      sameSite: 'None',
+      sameSite: isProduction ? 'None' : 'Lax',
+        domain: undefined,
       maxAge: 60 * 24 * 60 * 60 * 1000,
-      domain: process.env.NODE_ENV === 'production' ? undefined : undefined, // Let browser handle domain
     });
 
     res.cookie('accessToken', accessToken, {
+      path: '/',
+      secure: isProduction, // false for localhost HTTP, true for production HTTPS
       httpOnly: true,
-      secure: true,
-      sameSite: 'None',
+      sameSite: isProduction ? 'None' : 'Lax',
+        domain: undefined,
       maxAge: 24 * 60 * 60 * 1000,
-      domain: process.env.NODE_ENV === 'production' ? undefined : undefined, // Let browser handle domain
     });
     res.status(200).json({ message: "Login successful" });
 
@@ -1128,20 +1135,21 @@ app.post('/auth/logout', verifyToken, async (req, res) => {
     const accessToken =
       req.cookies?.accessToken ||
       req.headers.authorization?.split(" ")[1];
+    const isProduction = process.env.NODE_ENV === 'production';
 
     // If no token is provided, clear cookies and return
     if (!accessToken) {
       res.clearCookie('accessToken', {
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        httpOnly: true,
-        sameSite: 'Lax', // Match the sameSite used when setting the cookie
+          path: '/',
+          secure: isProduction, // false for localhost HTTP, true for production HTTPS
+          httpOnly: true,
+          sameSite: isProduction ? 'None' : 'Lax'
       });
       res.clearCookie('refreshToken', {
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        httpOnly: true,
-        sameSite: 'Lax',
+          path: '/',
+          secure: isProduction, // false for localhost HTTP, true for production HTTPS
+          httpOnly: true,
+          sameSite: isProduction ? 'None' : 'Lax'
       });
       return res.json({
         success: true,
@@ -1161,16 +1169,16 @@ app.post('/auth/logout', verifyToken, async (req, res) => {
 
     // Clear authentication cookies
     res.clearCookie('accessToken', {
-      path: '/',
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      sameSite: 'Lax',
+        path: '/',
+        secure: isProduction, // false for localhost HTTP, true for production HTTPS
+        httpOnly: true,
+        sameSite: isProduction ? 'None' : 'Lax'
     });
     res.clearCookie('refreshToken', {
-      path: '/',
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      sameSite: 'Lax',
+        path: '/',
+        secure: isProduction, // false for localhost HTTP, true for production HTTPS
+        httpOnly: true,
+        sameSite: isProduction ? 'None' : 'Lax'
     });
 
     // Optionally clear session if express-session is used

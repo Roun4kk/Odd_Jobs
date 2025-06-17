@@ -1,10 +1,12 @@
 import { useEffect, useRef } from "react";
 import axios from "axios";
 import useAuth from "./hooks/useAuth.jsx";
+import { useNavigate } from "react-router-dom";
 
 function SettingsComp({ setUserLog, user }) { // Add updateUser prop
   const popoverRef = useRef(null);
   const { updateUser } = useAuth();
+  const navigate = useNavigate();
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (popoverRef.current && !popoverRef.current.contains(event.target)) {
@@ -56,7 +58,7 @@ function SettingsComp({ setUserLog, user }) { // Add updateUser prop
       console.log("Redirecting to login...");
       
       // STEP 5: Force redirect (use replace to prevent back navigation)
-      window.location.replace("/");
+      navigate("/");
       
     } catch (error) {
       console.error("Logout error:", error);
@@ -77,9 +79,6 @@ function SettingsComp({ setUserLog, user }) { // Add updateUser prop
           document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
         }
       });
-      
-      // Force redirect even if backend call failed
-      window.location.replace("/");
     }
   };
 

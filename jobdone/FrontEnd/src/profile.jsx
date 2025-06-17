@@ -15,10 +15,13 @@ function Profile() {
   const [hasToken, setHasToken] = useState(false);
 
   useEffect(() => {
+    
     if (!loading) {
       if (!user) {
+        console.log("No user found, redirecting to login");
         navigate("/");
       } else {
+        console.log("User found, setting hasToken to true");
         setHasToken(true);
       }
     }
@@ -31,13 +34,26 @@ function Profile() {
   };
 
   useEffect(() => {
-    checkVerified();
+    if (user) {
+      checkVerified();
+    }
   }, [user?._id]);
 
+  // Show loading screen while checking authentication
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-white">
         <img src={logo} alt="Loading..." className="w-40 h-40 animate-pulse" />
+      </div>
+    );
+  }
+
+  // Show loading screen briefly while redirect is happening
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-white">
+        <img src={logo} alt="Redirecting..." className="w-40 h-40 animate-pulse" />
+        <div className="ml-4 text-gray-600">Redirecting to login...</div>
       </div>
     );
   }
