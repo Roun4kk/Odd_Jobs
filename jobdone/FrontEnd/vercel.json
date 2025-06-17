@@ -1,5 +1,20 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/api/(.*)",
+      "destination": "https://jobdone-zh3o.onrender.com/api/$1"
+    },
+    {
+      "source": "/auth/(.*)",
+      "destination": "https://jobdone-zh3o.onrender.com/auth/$1"
+    },
+    {
+      "source": "/user/(.*)",
+      "destination": "https://jobdone-zh3o.onrender.com/user/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
