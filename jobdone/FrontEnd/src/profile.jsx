@@ -4,8 +4,7 @@ import useAuth from "./hooks/useAuth.jsx";
 import Sidebar from "./Sidebar";
 import { BadgeCheck, Star } from "lucide-react";
 import UserJobs from "./userJobs";
-import axios from "axios";
-import logo from "./assets/logo/logo-transparent.png";
+import logo from "./assets/logo/logo-transparent-jobdone.svg";
 
 function Profile() {
   const { user, updateUser, loading } = useAuth();

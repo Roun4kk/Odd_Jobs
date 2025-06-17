@@ -4,6 +4,7 @@ import JobPostInput from "./components/jobpostinput.jsx";
 import JobFeed from "./components/jobfeed.jsx";
 import Sidebar from "./Sidebar";
 import logo from "./assets/logo/logo-jobddone.svg";
+import loadingLogo from "./assets/logo/logo-transparent-jobdone.svg";
 import SearchSkills from "./components/searchSkills.jsx";
 import BottomNavbar from "./bottomNavBar.jsx";
 import useIsMobile from "./hooks/useIsMobile";
@@ -14,11 +15,10 @@ function Landing() {
   const [refreshFlag, setRefreshFlag] = useState(false);
   const [showJobPost, setShowJobPost] = useState(false);
   const [showSkillsSearch, setShowSkillsSearch] = useState(false);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-white">
-        <img src={logo} alt="Loading..." className="w-40 h-40 animate-pulse" />
+        <img src={loadingLogo} alt="Loading..." className="w-40 h-40 animate-pulse" />
       </div>
     );
   }

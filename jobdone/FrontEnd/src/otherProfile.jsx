@@ -7,6 +7,7 @@ import  useAuth  from "./hooks/useAuth.jsx";
 import UserJobs from "./userJobs";
 import { useNavigate } from "react-router-dom";
 import ProfileComp from "./profileComp.jsx";
+import logo from "./assets/logo/logo-transparent-jobdone.svg";
 function OtherProfile() {
     const { userId } = useParams();
   const [profile, setProfile] = useState(null);
@@ -44,8 +45,12 @@ function OtherProfile() {
   }, [userId]);
 
   if (!profile) {
-    return <div>Loading profile...</div>;
-  }
+      return (
+        <div className="flex items-center justify-center h-screen bg-white">
+          <img src={logo} alt="Loading..." className="w-40 h-40 animate-pulse" />
+        </div>
+      );
+    }
 
   return (
     <div className="flex h-screen overflow-hidden">
