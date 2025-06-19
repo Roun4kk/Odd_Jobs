@@ -79,7 +79,10 @@ function Profile() {
 
           <div className="ml-6 flex-1 flex-col items-start justify-center">
             <div className="flex items-center justify-start w-full gap-2">
-              <button className="text-2xl font-bold text-gray-800 cursor-pointer">
+              <button
+                className="text-2xl font-bold text-gray-800 cursor-pointer truncate max-w-[200px] overflow-hidden whitespace-nowrap"
+                title={user?.username} // optional: show full name on hover
+              >
                 {user?.username || "User not found"}
               </button>
               {verified && <BadgeCheck className="h-6 w-6 text-teal-400" />}

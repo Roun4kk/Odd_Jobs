@@ -130,7 +130,7 @@ function Settings() {
         try {
             const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/email/send-otp`, {
                 email: newEmail
-            }, { withCredentials: true });
+            });
     
             setActiveSection("verifyEmailOTP");
         } catch (error) {
@@ -149,7 +149,7 @@ function Settings() {
                 email: newEmail,
                 otp: emailOtp,
                 userId: user.id || user._id,
-            }, { withCredentials: true });
+            });
     
             if (response.data.message !== "Email verified") {
                 setEmailOtpErrorMessage("Invalid OTP");

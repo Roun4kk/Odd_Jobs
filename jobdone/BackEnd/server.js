@@ -474,7 +474,7 @@ app.get("/auth/google/callback",
           userBio: "",
           userSkills: []
         };
-        
+
         console.log("📝 New user data:", newUserData);
         
         user = await User.create(newUserData);
@@ -591,7 +591,6 @@ app.post('/user/info', async (req, res) => {
   const existingUser = await User.findOne({
     $or: [{ username }, { email }]
   });
-
   if (existingUser) {
     return res.status(400).json({ message: existingUser.username === username ? "Username already exists" : "Email already in use" });
   }
@@ -2168,7 +2167,7 @@ function validateEmail(email) {
 }
 
 // Enhanced endpoint with better error handling and responses
-app.post("/users/email/send-otp", verifyToken, async (req, res) => {
+app.post("/users/email/send-otp", async (req, res) => {
   let { email } = req.body;
 
   if (!email) {
@@ -2323,7 +2322,6 @@ app.post("/users/email/verify-otp", async (req, res) => {
     res.status(500).json({ message: 'Verification failed', code: 'EMAIL_VERIFY_ERROR' });
   }
 });
-
 
 app.post("/users/change-password", async (req, res) => {
   const { oldPassword, newPassword , email} = req.body;
