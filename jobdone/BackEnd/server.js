@@ -24,6 +24,9 @@ const cloudinary = require("cloudinary").v2;
 const { PassThrough } = require("stream");
 const {isValidObjectId} = require("mongoose");
 const cron = require('node-cron');
+const sendEmailOtp = require('./sendEmailOtp');
+const API_KEY = process.env.TWO_FACTOR_API_KEY; 
+const OTP_TEMPLATE = 'OTP1';
 
 
 const upload = require("./multer");
@@ -64,10 +67,10 @@ redis.on('error', (err) => {
 redis.on('close', () => {
   console.log('Redis connection closed');
 });
-const OTP_EXPIRY_SECONDS = 3600;
+const OTP_EXPIRY_SECONDS = 900;
 const OTP_LIMIT = 5;
 const PHONE_COOLDOWN_SECONDS = 60;
-const EMAIL_OTP_EXPIRY_SECONDS = 3600; // 1 hour
+const EMAIL_OTP_EXPIRY_SECONDS = 900; // 1 hour
 const EMAIL_OTP_LIMIT = 5;
 const EMAIL_COOLDOWN_SECONDS = 120; // 2 minutes between requests for same email (longer than phone)
 
@@ -444,27 +447,28 @@ app.get("/auth/google/callback",
           return null;
         }
       };
-
-      if (googleImageUrl) {
-        const uploadedUrl = await uploadGoogleImage(googleImageUrl);
-        if (uploadedUrl) {
-          userImage = uploadedUrl;
-        } else {
-          console.warn("Failed to upload Google image, using default");
-        }
-      }
         
       // 2. If not, create a new user
       if (!user) {
         console.log("🔨 Creating new user...");
-        
+
+        let finalUsername = username;
+        let usernameExists = await User.exists({ username: finalUsername });
+
+        while (usernameExists) {
+          const randomSuffix = Math.floor(1000 + Math.random() * 9000); // 4-digit number
+          finalUsername = `${username.replace(/\s+/g, '')}${randomSuffix}`;
+          usernameExists = await User.exists({ username: finalUsername });
+        }
+
         const newUserData = {
           email,
-          username,
+          username: finalUsername,
           googleId,
           isOAuth: true,
           verified: { email: true, phoneNumber: false },
-          userImage,
+          userImage: googleImageUrl ? await uploadGoogleImage(googleImageUrl) || userImage : userImage,
+          googlePhotoUrl: googleImageUrl || "",
           postIds: [],
           bidIds: [],
           userBio: "",
@@ -486,11 +490,21 @@ app.get("/auth/google/callback",
           userUpdated = true;
         }
         
-        // Update photo if it's the default or outdated
-        if (!user.userImage || user.userImage.includes('jobdone/image/upload/v1743801776')) {
-          console.log("🔄 Updating user photo");
-          user.userImage = userImage;
-          userUpdated = true;
+        // Compare current Google photo URL with stored one
+        const currentGooglePhotoUrl = googleImageUrl;
+
+        if (currentGooglePhotoUrl && user.googlePhotoUrl !== currentGooglePhotoUrl) {
+          console.log("🔄 New or updated Google image found");
+
+          const uploadedUrl = await uploadGoogleImage(currentGooglePhotoUrl);
+
+          if (uploadedUrl) {
+            user.userImage = uploadedUrl;
+            user.googlePhotoUrl = currentGooglePhotoUrl;
+            userUpdated = true;
+          } else {
+            console.warn("⚠️ Failed to upload Google image — keeping existing one");
+          }
         }
         
         if (userUpdated) {
@@ -1941,124 +1955,62 @@ async function getRemainingOtpAttempts(ip, phoneNumber) {
 app.post("/users/phoneNumber/send-otp", async (req, res) => {
   let { phoneNumber } = req.body;
 
-  // Input validation
   if (!phoneNumber) {
-    return res.status(400).json({ 
-      message: 'Phone number is required',
-      code: 'PHONE_REQUIRED'
-    });
+    return res.status(400).json({ message: 'Phone number is required', code: 'PHONE_REQUIRED' });
   }
 
-  // Clean phone number
   phoneNumber = phoneNumber.replace(/\D/g, "");
 
-  // Validate phone number format
   if (!/^\d{10}$/.test(phoneNumber)) {
-    return res.status(400).json({ 
-      message: 'Invalid phone number format. Please enter a 10-digit number.',
-      code: 'INVALID_PHONE_FORMAT'
-    });
+    return res.status(400).json({ message: 'Invalid phone number format. Please enter a 10-digit number.', code: 'INVALID_PHONE_FORMAT' });
   }
 
-  // Get client IP
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
-             req.socket?.remoteAddress || 
-             req.ip || 
-             'unknown';
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || req.ip || 'unknown';
 
   try {
-    // Check if user already exists
     const existingUser = await User.findOne({ phoneNumber });
     if (existingUser) {
-      return res.status(409).json({ 
-        message: 'This number is already registered. Please try another number or sign in.',
-        code: 'PHONE_EXISTS'
-      });
+      return res.status(409).json({ message: 'This number is already registered. Please try another number or sign in.', code: 'PHONE_EXISTS' });
     }
 
-    // Check rate limits
     const limitCheck = await isOtpLimitExceeded(ip, phoneNumber);
-    
+
     if (limitCheck.inCooldown) {
-      return res.status(429).json({ 
-        message: 'Please wait before requesting another OTP for this number.',
-        code: 'COOLDOWN_ACTIVE',
-        retryAfter: PHONE_COOLDOWN_SECONDS
-      });
+      return res.status(429).json({ message: 'Please wait before requesting another OTP for this number.', code: 'COOLDOWN_ACTIVE', retryAfter: PHONE_COOLDOWN_SECONDS });
     }
 
     if (limitCheck.exceeded) {
       const remainingAttempts = await getRemainingOtpAttempts(ip, phoneNumber);
-      return res.status(429).json({ 
-        message: 'Too many OTP requests. Please try again later.',
-        code: 'RATE_LIMIT_EXCEEDED',
-        details: {
-          ipCount: limitCheck.ipCount,
-          phoneCount: limitCheck.phoneCount,
-          limit: OTP_LIMIT,
-          remainingAttempts: Math.max(0, remainingAttempts),
-          resetTime: new Date(Date.now() + (OTP_EXPIRY_SECONDS * 1000)).toISOString()
-        }
-      });
+      return res.status(429).json({ message: 'Too many OTP requests. Please try again later.', code: 'RATE_LIMIT_EXCEEDED', details: { ipCount: limitCheck.ipCount, phoneCount: limitCheck.phoneCount, limit: OTP_LIMIT, remainingAttempts: Math.max(0, remainingAttempts), resetTime: new Date(Date.now() + (OTP_EXPIRY_SECONDS * 1000)).toISOString() } });
     }
 
-    // Record the OTP attempt BEFORE sending (in case Twilio fails)
     await recordOtpRequest(ip, phoneNumber);
 
-    // Send OTP via Twilio
-    const verification = await client.verify.v2.services(serviceSid)
-      .verifications
-      .create({ 
-        to: `+91${phoneNumber}`, 
-        channel: 'sms',
-        locale: 'en' // Optional: specify language
-      });
+    const otpSendUrl = `https://2factor.in/API/V1/${process.env.TWO_FACTOR_API_KEY}/SMS/+91${phoneNumber}/AUTOGEN/${OTP_TEMPLATE}`;
+    const response = await axios.get(otpSendUrl);
 
-    // Get remaining attempts for response
-    const remainingAttempts = await getRemainingOtpAttempts(ip, phoneNumber);
+    if (response.data.Status === 'Success') {
+      const sessionId = response.data.Details;
+      await redis.setex(`otp:session:${phoneNumber}`, OTP_EXPIRY_SECONDS, sessionId);
 
-    res.status(200).json({ 
-      message: 'OTP sent successfully',
-      code: 'OTP_SENT',
-      data: {
-        sid: verification.sid,
-        phoneNumber: `+91${phoneNumber}`,
-        remainingAttempts: Math.max(0, remainingAttempts - 1),
-        expiresIn: 600 // Twilio default is 10 minutes
-      }
-    });
-
-  } catch (err) {
-    console.error('OTP sending error:', err);
-
-    // Handle specific Twilio errors
-    if (err.code === 20003) {
-      return res.status(403).json({ 
-        message: 'Authentication failed. Please contact support.',
-        code: 'TWILIO_AUTH_ERROR'
+      const remainingAttempts = await getRemainingOtpAttempts(ip, phoneNumber);
+      res.status(200).json({ 
+        message: 'OTP sent successfully', 
+        code: 'OTP_SENT', 
+        data: {
+          sessionId,
+          phoneNumber: `+91${phoneNumber}`,
+          remainingAttempts: Math.max(0, remainingAttempts - 1),
+          expiresIn: 600
+        }
       });
-    } else if (err.code === 21211) {
-      return res.status(400).json({ 
-        message: 'Invalid phone number format.',
-        code: 'INVALID_PHONE_TWILIO'
-      });
-    } else if (err.code === 21608) {
-      return res.status(400).json({ 
-        message: 'This phone number is not reachable.',
-        code: 'PHONE_UNREACHABLE'
-      });
-    } else if (err.code === 21610) {
-      return res.status(429).json({ 
-        message: 'SMS sending rate limit exceeded. Please try again later.',
-        code: 'TWILIO_RATE_LIMIT'
-      });
+    } else {
+      throw new Error(response.data.Details || 'Unknown error from 2Factor');
     }
 
-    // Generic error response
-    res.status(500).json({ 
-      message: 'Failed to send OTP. Please try again.',
-      code: 'OTP_SEND_FAILED'
-    });
+  } catch (err) {
+    console.error('OTP sending error:', err.message);
+    res.status(500).json({ message: 'Failed to send OTP. Please try again.', code: 'OTP_SEND_FAILED' });
   }
 });
 
@@ -2095,16 +2047,21 @@ app.get("/users/phoneNumber/otp-status", async (req, res) => {
 });
 
 app.post("/users/phoneNumber/verify-otp", async (req, res) => {
-  const { phoneNumber, otp , userId} = req.body;
+  const { phoneNumber, otp ,userId } = req.body;
 
   try {
-    const verificationCheck = await client.verify.v2.services(serviceSid)
-      .verificationChecks
-      .create({ to: `+91${phoneNumber}`, code: otp });
+    const storedSessionId = await redis.get(`otp:session:${phoneNumber}`);
+    if (!storedSessionId ) {
+      return res.status(400).json({ message: 'Invalid or expired OTP session.' });
+    }
 
-    if (verificationCheck.status === 'approved') {
+    const verifyUrl = `https://2factor.in/API/V1/${process.env.TWO_FACTOR_API_KEY}/SMS/VERIFY/${storedSessionId}/${otp}`;
+    const response = await axios.get(verifyUrl);
+
+    if (response.data.Status === 'Success' && response.data.Details === 'OTP Matched') {
+      await User.findByIdAndUpdate(userId, { phoneNumber: phoneNumber, 'verified.phoneNumber': true });
+      await redis.del(`otp:session:${phoneNumber}`);
       res.status(200).json({ message: 'OTP verified' });
-      await User.findByIdAndUpdate(userId ,{phoneNumber: phoneNumber ,  'verified.phoneNumber': true});
     } else {
       res.status(400).json({ message: 'Invalid OTP' });
     }
@@ -2211,157 +2168,47 @@ function validateEmail(email) {
 }
 
 // Enhanced endpoint with better error handling and responses
-app.post("/users/email/send-otp", verifyToken , async (req, res) => {
+app.post("/users/email/send-otp", verifyToken, async (req, res) => {
   let { email } = req.body;
 
-  // Input validation
   if (!email) {
-    return res.status(400).json({ 
-      message: 'Email address is required',
-      code: 'EMAIL_REQUIRED'
-    });
+    return res.status(400).json({ message: 'Email required', code: 'EMAIL_REQUIRED' });
   }
 
-  // Normalize email
   email = email.trim().toLowerCase();
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
 
-  // Validate email format
-  const emailValidation = validateEmail(email);
-  if (!emailValidation.valid) {
-    return res.status(400).json({ 
-      message: emailValidation.message,
-      code: 'INVALID_EMAIL_FORMAT'
+  const { valid, message } = validateEmail(email);
+  if (!valid) return res.status(400).json({ message, code: 'INVALID_EMAIL_FORMAT' });
+
+  const limitCheck = await isEmailOtpLimitExceeded(ip, email);
+  if (limitCheck.inCooldown || limitCheck.exceeded) {
+    return res.status(429).json({
+      message: 'Too many OTP requests',
+      code: 'RATE_LIMIT',
+      details: limitCheck
     });
   }
-
-  // Get client IP
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
-             req.socket?.remoteAddress || 
-             req.ip || 
-             'unknown';
 
   try {
-    // Check if user already exists
-    if (!req.user?.id) {
-      return res.status(401).json({
-        message: 'User must be authenticated to request an email OTP',
-        code: 'UNAUTHENTICATED'
-      });
-    }
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    await redis.setex(`email_otp:code:${email}`, EMAIL_OTP_EXPIRY_SECONDS, otp);
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    console.log("Existing user found:", existingUser);
-    console.log("Current user ID:", req.user?.id);
-
-    // Check if the email is already taken or verified
-    if (existingUser) {
-      const isCurrentUser = existingUser._id.toString() === req.user.id;
-      if (!isCurrentUser) {
-        // Email belongs to another user
-        return res.status(409).json({ 
-          message: 'This email is already registered by another user. Please try another email.',
-          code: 'EMAIL_EXISTS'
-        });
-      }
-      if (existingUser.verified?.email) {
-        // Email is already verified for the current user
-        return res.status(409).json({ 
-          message: 'This email is already verified for your account.',
-          code: 'EMAIL_ALREADY_VERIFIED'
-        });
-      }
-    }
-
-    // Check rate limits
-    const limitCheck = await isEmailOtpLimitExceeded(ip, email);
-    
-    if (limitCheck.inCooldown) {
-      return res.status(429).json({ 
-        message: 'Please wait before requesting another OTP for this email address.',
-        code: 'COOLDOWN_ACTIVE',
-        retryAfter: EMAIL_COOLDOWN_SECONDS
-      });
-    }
-
-    if (limitCheck.exceeded) {
-      const remainingAttempts = await getRemainingEmailOtpAttempts(ip, email);
-      return res.status(429).json({ 
-        message: 'Too many OTP requests. Please try again later.',
-        code: 'RATE_LIMIT_EXCEEDED',
-        details: {
-          ipCount: limitCheck.ipCount,
-          emailCount: limitCheck.emailCount,
-          limit: EMAIL_OTP_LIMIT,
-          remainingAttempts: Math.max(0, remainingAttempts),
-          resetTime: new Date(Date.now() + (EMAIL_OTP_EXPIRY_SECONDS * 1000)).toISOString()
-        }
-      });
-    }
-
-    // Record the OTP attempt BEFORE sending (in case Twilio fails)
     await recordEmailOtpRequest(ip, email);
+    await sendEmailOtp(email, otp);
 
-    // Send OTP via Twilio Email
-    const verification = await client.verify.v2.services(serviceSid)
-      .verifications
-      .create({ 
-        to: email, 
-        channel: 'email',
-        locale: 'en' // Optional: specify language
-      });
-
-    // Get remaining attempts for response
-    const remainingAttempts = await getRemainingEmailOtpAttempts(ip, email);
-
-    res.status(200).json({ 
-      message: 'OTP sent successfully to your email address',
-      code: 'OTP_SENT',
+    const remaining = await getRemainingEmailOtpAttempts(ip, email);
+    res.status(200).json({
+      message: "OTP sent successfully",
+      code: "OTP_SENT",
       data: {
-        sid: verification.sid,
-        email: email,
-        remainingAttempts: Math.max(0, remainingAttempts - 1),
-        expiresIn: 600, // Twilio default is 10 minutes
-        checkSpam: true // Remind user to check spam folder
+        email,
+        remainingAttempts: remaining - 1,
+        expiresIn: EMAIL_OTP_EXPIRY_SECONDS
       }
     });
-
   } catch (err) {
-    console.error('Email OTP sending error:', err);
-
-    // Handle specific Twilio errors
-    if (err.code === 20003) {
-      return res.status(403).json({ 
-        message: 'Authentication failed. Please contact support.',
-        code: 'TWILIO_AUTH_ERROR'
-      });
-    } else if (err.code === 21211) {
-      return res.status(400).json({ 
-        message: 'Invalid email address format.',
-        code: 'INVALID_EMAIL_TWILIO'
-      });
-    } else if (err.code === 21408) {
-      return res.status(400).json({ 
-        message: 'This email address cannot receive messages.',
-        code: 'EMAIL_UNREACHABLE'
-      });
-    } else if (err.code === 21610) {
-      return res.status(429).json({ 
-        message: 'Email sending rate limit exceeded. Please try again later.',
-        code: 'TWILIO_RATE_LIMIT'
-      });
-    } else if (err.code === 60200) {
-      return res.status(400).json({ 
-        message: 'Email service temporarily unavailable. Please try SMS verification.',
-        code: 'EMAIL_SERVICE_UNAVAILABLE'
-      });
-    }
-
-    // Generic error response
-    res.status(500).json({ 
-      message: 'Failed to send OTP to email. Please try again.',
-      code: 'EMAIL_OTP_SEND_FAILED'
-    });
+    res.status(500).json({ message: 'Failed to send OTP', code: err.message });
   }
 });
 
@@ -2455,21 +2302,28 @@ app.post("/users/email/verify-otp", async (req, res) => {
   const { email, otp, userId } = req.body;
 
   try {
-    const verificationCheck = await client.verify.v2.services(serviceSid)
-      .verificationChecks
-      .create({ to: email, code: otp });
-
-    if (verificationCheck.status === 'approved') {
-      await User.findByIdAndUpdate(userId, { email: email , 'verified.email': true });
-      res.status(200).json({ message: 'Email verified' });
-    } else {
-      res.status(400).json({ message: 'Invalid OTP' });
+    const cachedOtp = await redis.get(`email_otp:code:${email.toLowerCase()}`);
+    if (!cachedOtp) {
+      return res.status(410).json({ message: 'OTP expired or not found', code: 'OTP_NOT_FOUND' });
     }
+
+    if (cachedOtp !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP', code: 'INVALID_OTP' });
+    }
+
+    await User.findByIdAndUpdate(userId, {
+      email: email.toLowerCase(),
+      'verified.email': true
+    });
+
+    await redis.del(`email_otp:code:${email.toLowerCase()}`);
+    res.status(200).json({ message: 'Email verified', code: 'EMAIL_VERIFIED' });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to verify email OTP' });
+    console.error("Verify error:", err);
+    res.status(500).json({ message: 'Verification failed', code: 'EMAIL_VERIFY_ERROR' });
   }
 });
+
 
 app.post("/users/change-password", async (req, res) => {
   const { oldPassword, newPassword , email} = req.body;

@@ -48,6 +48,9 @@ const UserSchema = mongoose.Schema(
       sparse: true,
       unique: true,
     },
+    googlePhotoUrl: {
+      type: String
+    },
     linkedinId: {
       type: String,
       sparse: true,
