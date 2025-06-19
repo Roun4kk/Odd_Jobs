@@ -46,7 +46,7 @@ function ProfileComp({setComp , userId}) {
 
   const handleUnblock = async (userId) => {
     try {
-      await axios.post(`/api/unblock/${userId}`, null, {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/unblock/${userId}`, null, {
       withCredentials: true,
     });
       updateUser((prevUser) => ({

@@ -1,7 +1,7 @@
 import Sidebar from "./Sidebar";
 import useAuth from "./hooks/useAuth.jsx";
-import { useState, useCallback, useEffect, useRef } from "react";
-import { BadgeCheck, Paperclip, X, AlertCircle, ArrowLeft, MoreVertical } from "lucide-react";
+import { useState, useCallback, useEffect, useRef, memo } from "react";
+import { BadgeCheck, Paperclip, X, AlertCircle, ArrowLeft, MoreVertical, Search } from "lucide-react";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import socket from "./socket.js";
@@ -9,6 +9,38 @@ import SmallPostCard from "./components/smallPostCard";
 import useSocketRoomJoin from "./hooks/socketRoomJoin.js";
 import MessageComp from "./messageInfo.jsx";
 import { useMessageContext } from "./hooks/useMessageContext.js";
+import { formatDistanceToNow } from 'date-fns';
+import debounce from 'lodash.debounce';
+
+const MessageItem = memo(({ msg, user, selectedUser, renderMessageContent }) => {
+  if (msg.deletedFor.includes(user._id)) return null;
+  const senderId = typeof msg.sender === 'object' && msg.sender?._id
+    ? msg.sender._id.toString()
+    : msg.sender.toString();
+  const isSender = senderId === user._id;
+  const avatarSrc = isSender ? user.userImage : selectedUser.userImage;
+
+  return (
+    <div
+      key={msg._id || `${senderId}-${msg.createdAt}-${Math.random().toString(36).substring(2)}`}
+      className={`flex items-start mb-4 ${isSender ? "justify-end" : "justify-start"}`}
+    >
+      {!isSender && (
+        <img src={avatarSrc} className="w-8 h-8 rounded-full object-cover mr-2 mt-1" />
+      )}
+      <div
+        className={`p-3 rounded-lg max-w-sm ${
+          isSender ? "bg-teal-200 text-teal-900" : "bg-gray-200 text-gray-900"
+        } shadow-sm`}
+      >
+        {renderMessageContent(msg)}
+      </div>
+      {isSender && (
+        <img src={avatarSrc} className="w-8 h-8 rounded-full object-cover ml-2 mt-1" />
+      )}
+    </div>
+  );
+});
 
 function Messages() {
   const { state } = useLocation();
@@ -29,18 +61,20 @@ function Messages() {
   const [showRequests, setShowRequests] = useState(false);
   const { unseenMessages, setUnseenMessages, fetchUnseenCounts } = useMessageContext();
   const [comp, setComp] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
 
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, scrollToBottom]);
 
   useEffect(() => {
     if (user?._id) {
@@ -54,13 +88,16 @@ function Messages() {
 
   const refreshUserConnections = useCallback(async () => {
     if (!user?._id || !isValidObjectId(user._id)) return;
-    
+
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/connections`, {
         withCredentials: true,
       });
-      
-      setConversations(res.data?.connections?.filter((conv) => !conv.request) || []);
+
+      const sortedConversations = res.data?.connections
+        ?.filter((conv) => !conv.request)
+        ?.sort((a, b) => new Date(b.lastMessage?.createdAt || b.updatedAt || 0) - new Date(a.lastMessage?.createdAt || a.updatedAt || 0)) || [];
+      setConversations(sortedConversations);
       setRequests(res.data?.connections?.filter((conv) => conv.request) || []);
       setRequestCount(res.data?.connections?.filter((conv) => conv.request).length || 0);
     } catch (err) {
@@ -87,7 +124,7 @@ function Messages() {
     }
   };
 
-  const fetchMessages = async (userId) => {
+  const fetchMessages = useCallback(async (userId) => {
     if (!user?._id || !isValidObjectId(user._id) || !isValidObjectId(userId)) {
       setError("Invalid user ID. Please try again.");
       return;
@@ -97,16 +134,24 @@ function Messages() {
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/messages/${userId}`, {
         withCredentials: true,
       });
-      setMessages(res.data.filter((msg) => !msg.deletedFor.includes(user._id)));
+      setMessages((prev) => {
+        const newMessages = res.data.filter((msg) => !msg.deletedFor.includes(user._id));
+        const prevIds = new Set(prev.map((msg) => msg._id));
+        const mergedMessages = [
+          ...prev.filter((msg) => msg._id.startsWith("temp-") || !prevIds.has(msg._id)),
+          ...newMessages.filter((msg) => !prevIds.has(msg._id)),
+        ];
+        return mergedMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      });
       setLoadingMessages(false);
       await markMessagesAsSeen(userId);
     } catch (err) {
       setError(`Failed to fetch messages: ${err.response?.data?.error || err.message}`);
       setLoadingMessages(false);
     }
-  };
+  }, [user?._id, setUnseenMessages]);
 
-  const updateConversationTime = (message) => {
+  const updateConversationTime = useCallback((message) => {
     setConversations((prev) =>
       prev.map((conv) =>
         conv.user &&
@@ -124,7 +169,7 @@ function Messages() {
           : req
       )
     );
-  };
+  }, []);
 
   const sendMessage = async () => {
     if (!socket.connected) {
@@ -223,6 +268,7 @@ function Messages() {
       setSelectedFiles([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
       setUploading(false);
+      setIsTyping(false);
     } catch (err) {
       setUploading(false);
       setError(`Failed to send message: ${err.message}`);
@@ -292,22 +338,34 @@ function Messages() {
 
         if (selectedUser && message.sender.toString() === selectedUser._id) {
           markMessagesAsSeen(message.sender);
+          setIsTyping(false);
         }
       }
     };
 
     const handleMessageConfirmation = (message) => {
-      setMessages((prev) =>
-        prev.map((msg) =>
+      setMessages((prev) => {
+        const updatedMessages = prev.map((msg) =>
           msg._id.startsWith("temp-") &&
           msg.text === message.text &&
           msg.sender.toString() === message.sender.toString() &&
           msg.receiver.toString() === message.receiver.toString() &&
           msg.data?.url === message.data?.url
-            ? { ...msg, _id: message._id }
+            ? { ...msg, ...message, _id: message._id }
             : msg
-        )
-      );
+        );
+        const hasMessage = updatedMessages.some((msg) => msg._id === message._id);
+        if (!hasMessage) {
+          return [...updatedMessages, message];
+        }
+        return updatedMessages;
+      });
+
+      if (selectedUser) {
+        setTimeout(() => {
+          fetchMessages(selectedUser._id);
+        }, 1000);
+      }
     };
 
     const handleMessageError = ({ error }) => {
@@ -324,17 +382,31 @@ function Messages() {
       socket.off("messageConfirmation", handleMessageConfirmation);
       socket.off("messageError", handleMessageError);
     };
-  }, [user?._id, selectedUser, refreshUserConnections]);
+  }, [user?._id, selectedUser, refreshUserConnections, fetchMessages]);
 
-  const handleSelectUser = async (user) => {
+  const handleSelectUser = useCallback(async (user) => {
     if (!isValidObjectId(user._id)) {
       setError("Invalid user ID selected.");
+      return;
+    }
+    // Prevent re-fetching if the same user is selected
+    if (selectedUser?._id === user._id) {
+      setError("");
+      setIsTyping(false);
       return;
     }
     setSelectedUser(user);
     setError("");
     await fetchMessages(user._id);
-  };
+    setIsTyping(false);
+  }, [fetchMessages, selectedUser?._id]);
+
+  const debouncedSetTyping = useCallback(
+    debounce((value) => {
+      setIsTyping(!!value && !!selectedUser);
+    }, 300),
+    [selectedUser]
+  );
 
   useEffect(() => {
     if (!user?._id || !isValidObjectId(user._id)) {
@@ -363,7 +435,7 @@ function Messages() {
 
     fetchUnseenCounts();
     setLoadingConversation(false);
-  }, [initialUser, user, fetchUnseenCounts]);
+  }, [initialUser, user, fetchUnseenCounts, fetchMessages]);
 
   const handleRemoveFile = (index) => {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
@@ -398,7 +470,7 @@ function Messages() {
     setSelectedFiles(validFiles);
   };
 
-  const renderMessageContent = (msg) => {
+  const renderMessageContent = useCallback((msg) => {
     const content = {
       type: msg.type || "text",
       text: msg.text,
@@ -406,49 +478,87 @@ function Messages() {
       postId: msg.data?.postId,
     };
 
+    const MessageWrapper = ({ children }) => {
+      const messageTime = new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      return (
+        <div>
+          {children}
+          <div className="text-right text-xs text-gray-500/70 mt-1.5 -mb-1">
+            {messageTime}
+          </div>
+        </div>
+      );
+    };
+
     switch (content.type) {
       case "post":
         return (
-          <div className="max-w-xs">
-            {content.text && <p className="mb-2 break-words whitespace-pre-wrap">{content.text}</p>}
-            <SmallPostCard postId={content.postId?.toString()} />
-          </div>
+          <MessageWrapper>
+            <div className="max-w-xs">
+              {content.text && <p className="mb-2 break-words whitespace-pre-wrap">{content.text}</p>}
+              <SmallPostCard postId={content.postId?.toString()} />
+            </div>
+          </MessageWrapper>
         );
       case "link":
         return (
-          <a
-            href={content.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 underline break-words"
-          >
-            {content.text || content.url}
-          </a>
+          <MessageWrapper>
+            <a
+              href={content.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-teal-500 underline break-words hover:text-teal-600"
+            >
+              {content.text || content.url}
+            </a>
+          </MessageWrapper>
         );
       case "image":
         return (
-          <div className="max-w-xs">
-            {content.text && <p className="mb-2 break-words whitespace-pre-wrap">{content.text}</p>}
-            <img
-              src={content.url}
-              alt="Shared image"
-              className="max-w-full h-auto rounded-md cursor-pointer"
-              onClick={() => window.open(content.url, "_blank")}
-            />
-          </div>
+          <MessageWrapper>
+            <div className="max-w-xs">
+              {content.text && <p className="mb-2 break-words whitespace-pre-wrap">{content.text}</p>}
+              <img
+                src={content.url}
+                alt="Shared"
+                className="max-w-full h-auto rounded-md cursor-pointer"
+                onClick={() => window.open(content.url, "_blank")}
+              />
+            </div>
+          </MessageWrapper>
         );
       case "media":
         return (
-          <div className="max-w-xs">
-            {content.text && <p className="mb-2 break-words whitespace-pre-wrap">{content.text}</p>}
-            <video controls className="max-w-full h-auto rounded-md">
-              <source src={content.url} />
-              Your browser does not support the video tag.
-            </video>
-          </div>
+          <MessageWrapper>
+            <div className="max-w-xs">
+              {content.text && <p className="mb-2 break-words whitespace-pre-wrap">{content.text}</p>}
+              <video controls className="max-w-full h-auto rounded-md">
+                <source src={content.url} />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </MessageWrapper>
         );
       default:
-        return <p className="break-words whitespace-pre-wrap">{content.text || "[Empty message]"}</p>;
+        return (
+          <MessageWrapper>
+            <p className="break-words whitespace-pre-wrap">{content.text || ""}</p>
+          </MessageWrapper>
+        );
+    }
+  }, []);
+
+  const getMessagePreview = (lastMessage) => {
+    if (!lastMessage) return "No message yet";
+    switch (lastMessage.type) {
+      case "image":
+        return "[Photo]";
+      case "media":
+        return "[Video]";
+      case "post":
+        return lastMessage.text?.slice(0, 30) || "[Post]";
+      default:
+        return lastMessage.text?.slice(0, 30) || "No message yet";
     }
   };
 
@@ -457,42 +567,66 @@ function Messages() {
     return !isNaN(count) && count > 0;
   };
 
+  const filteredConversations = conversations.filter((conv) =>
+    conv.user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    conv.lastMessage?.text?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredRequests = requests.filter((req) =>
+    req.user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    req.lastMessage?.text?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar user={user} />
       <div className="w-[70%] fixed right-0 top-0 bg-white flex h-full overflow-y-hidden">
-        <div className="py-3 w-2/5 h-full flex flex-col overflow-y-auto">
+        <div className="py-3 w-2/5 h-full flex flex-col overflow-y-auto border-r border-gray-200">
           <div className="flex items-center gap-3 p-4">
             {showRequests && (
               <ArrowLeft
-                className="cursor-pointer text-gray-700 hover:text-black"
+                className="cursor-pointer text-teal-700 hover:text-teal-900"
                 onClick={() => setShowRequests(false)}
               />
             )}
-            <h1 className="text-2xl font-bold mb-0 ml-4">{showRequests ? "Message Requests" : "Messages"}</h1>
+            <h1 className="text-2xl font-bold mb-0 ml-4 text-teal-800">
+              {showRequests ? "Message Requests" : "Messages"}
+            </h1>
             {!showRequests && requestCount > 0 && (
               <button
                 onClick={() => setShowRequests(true)}
-                className="ml-auto text-gray-600 px-4 py-2 rounded-full text-sm cursor-pointer"
+                className="ml-auto text-teal-600 px-4 py-2 rounded-full text-sm cursor-pointer hover:bg-teal-100 transition"
               >
                 Requests ({requestCount})
               </button>
             )}
           </div>
+          <div className="px-4 mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search conversations..."
+                className="w-full pl-10 pr-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
           {showRequests &&
-            (requests.length === 0 ? (
+            (filteredRequests.length === 0 ? (
               <p className="text-gray-500 ml-4">No requests</p>
             ) : (
-              requests.map(({ user, lastMessage }) => (
+              filteredRequests.map(({ user, lastMessage, updatedAt }) => (
                 <div
                   key={user._id}
                   onClick={() => handleSelectUser(user)}
-                  className="flex items-center gap-3 p-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  className="flex items-center gap-3 p-4 py-3 hover:bg-teal-50 cursor-pointer transition"
                 >
                   <img src={user.userImage} alt="pfp" className="w-10 h-10 rounded-full object-cover" />
                   <div className="flex-1">
                     <div className="flex items-center gap-1">
-                      <p className={`${hasUnseenMessages(user._id) ? "font-bold" : "font-semibold"}`}>
+                      <p className={`${hasUnseenMessages(user._id) ? "font-bold" : "font-semibold"} text-teal-800`}>
                         {user.username}
                       </p>
                       {user.verified?.phoneNumber && user.verified?.email && (
@@ -500,7 +634,12 @@ function Messages() {
                       )}
                     </div>
                     <p className={`text-xs text-gray-500 ${hasUnseenMessages(user._id) ? "font-semibold" : ""}`}>
-                      {lastMessage?.createdAt ? new Date(lastMessage.createdAt).toLocaleString() : "No message yet"}
+                      {getMessagePreview(lastMessage)}
+                    </p>
+                    <p className="text-xs text-teal-600">
+                      {lastMessage?.createdAt || updatedAt
+                        ? formatDistanceToNow(new Date(lastMessage?.createdAt || updatedAt), { addSuffix: true })
+                        : "No time"}
                     </p>
                   </div>
                   {hasUnseenMessages(user._id) && (
@@ -516,19 +655,19 @@ function Messages() {
           )}
           {!loadingConversation &&
             !showRequests &&
-            (conversations.length === 0 ? (
+            (filteredConversations.length === 0 ? (
               <p className="text-gray-500 ml-4">No conversations found</p>
             ) : (
-              conversations.map(({ user, lastMessage }) => (
+              filteredConversations.map(({ user, lastMessage, updatedAt }) => (
                 <div
                   key={user._id}
                   onClick={() => handleSelectUser(user)}
-                  className="flex items-center gap-3 p-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  className="flex items-center gap-3 p-4 py-3 hover:bg-teal-50 cursor-pointer transition"
                 >
                   <img src={user.userImage} alt="pfp" className="w-10 h-10 rounded-full object-cover" />
                   <div className="flex-1">
                     <div className="flex items-center gap-1">
-                      <p className={`${hasUnseenMessages(user._id) ? "font-bold" : "font-semibold"}`}>
+                      <p className={`${hasUnseenMessages(user._id) ? "font-bold" : "font-semibold"} text-teal-800`}>
                         {user.username}
                       </p>
                       {user.verified?.phoneNumber && user.verified?.email && (
@@ -536,89 +675,88 @@ function Messages() {
                       )}
                     </div>
                     <p className={`text-xs text-gray-500 ${hasUnseenMessages(user._id) ? "font-semibold" : ""}`}>
-                      {lastMessage?.createdAt ? new Date(lastMessage.createdAt).toLocaleString() : "No message yet"}
+                      {getMessagePreview(lastMessage)}
+                    </p>
+                    <p className="text-xs text-teal-600">
+                      {lastMessage?.createdAt || updatedAt
+                        ? formatDistanceToNow(new Date(lastMessage?.createdAt || updatedAt), { addSuffix: true })
+                        : "No time"}
                     </p>
                   </div>
                   {hasUnseenMessages(user._id) && (
-                    <div className="w-3 h-3 bg-teal-500 rounded-full inline-block" />
+                    <div className="w-3 h-3 bg-teal-500 rounded-full flex-shrink-0"></div>
                   )}
                 </div>
               ))
             ))}
         </div>
 
-        <div className="w-px h-full bg-gray-300" />
+        <div className="w-px h-full bg-gray-200" />
 
         <div className="py-3 w-3/5 h-full flex flex-col">
           {socketError && (
-            <div className="p-4 text-red-500">
+            <div className="p-4 text-red-500 bg-red-50 rounded-lg mx-4">
               Connection error: {socketError}. Please try refreshing the page or logging in again.
             </div>
           )}
           {error && (
-            <div className="p-4 text-red-500">
+            <div className="p-4 text-red-500 bg-red-50 rounded-lg mx-4">
               {error}
             </div>
           )}
           {selectedUser ? (
             <>
-              <div className="flex items-center gap-2 px-4 py-2 border-b">
+              <div className="flex items-center gap-2 px-4 py-3 border-b bg-teal-50">
                 <img src={selectedUser.userImage} className="w-10 h-10 rounded-full object-cover" />
-                <div className="flex items-center gap-1">
-                  <button
-                    className="text-lg font-bold cursor-pointer"
-                    onClick={() => navigate(`/profile/${selectedUser._id}`)}
-                  >
-                    {selectedUser.username}
-                  </button>
-                  {selectedUser.verified?.phoneNumber && selectedUser.verified?.email && (
-                    <BadgeCheck className="text-teal-500 w-6 h-6" />
-                  )}
+                <div className="flex-1">
+                  <div className="flex items-center gap-1">
+                    <button
+                      className="text-lg font-bold cursor-pointer text-teal-800 hover:text-teal-900"
+                      onClick={() => navigate(`/profile/${selectedUser._id}`)}
+                    >
+                      {selectedUser.username}
+                    </button>
+                    {selectedUser.verified?.phoneNumber && selectedUser.verified?.email && (
+                      <BadgeCheck className="text-teal-500 w-6 h-6" />
+                    )}
+                  </div>
                 </div>
                 <button
                   onClick={() => setComp(true)}
-                  className="flex ml-auto items-center text-black cursor-pointer mr-4"
+                  className="flex items-center text-teal-400 hover:text-teal-600 cursor-pointer mr-4"
                 >
-                  <MoreVertical size={24} className="text-gray-400 cursor-pointer" />
+                  <MoreVertical size={24} />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4">
+              <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
                 {loadingMessages && (
-                  <div className="flex justify-center h-screen bg-white">
+                  <div className="flex justify-center h-full bg-white">
                     <div className="w-12 h-12 border-4 border-teal-500 border-dashed rounded-full animate-spin"></div>
                   </div>
                 )}
-                {!loadingMessages &&
-                  messages.map((msg) => {
-                    if (msg.deletedFor.includes(user._id)) return null;
-                    const senderId = typeof msg.sender === 'object' && msg.sender?._id
-                      ? msg.sender._id.toString()
-                      : msg.sender.toString();
-                    const isSender = senderId === user._id;
-                    const avatarSrc = isSender ? user.userImage : selectedUser.userImage;
-
-                    return (
-                      <div
-                        key={msg._id || `${senderId}-${msg.createdAt}-${Math.random().toString(36).substring(2)}`}
-                        className={`flex items-start mb-4 ${isSender ? "justify-end" : "justify-start"}`}
-                      >
-                        {!isSender && (
-                          <img src={avatarSrc} className="w-8 h-8 rounded-full object-cover mr-2 mt-1" />
-                        )}
-                        <div
-                          className={`p-2 rounded-lg max-w-xs ${
-                            isSender ? "bg-teal-200" : "bg-gray-200"
-                          }`}
-                        >
-                          {renderMessageContent(msg)}
-                        </div>
-                        {isSender && (
-                          <img src={avatarSrc} className="w-8 h-8 rounded-full object-cover ml-2 mt-1" />
-                        )}
+                {!loadingMessages && isTyping && selectedUser && (
+                  <div className="flex items-start mb-4 justify-start">
+                    <img src={selectedUser.userImage} className="w-8 h-8 rounded-full object-cover mr-2 mt-1" />
+                    <div className="p-2 rounded-lg bg-gray-200 max-w-xs">
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100"></div>
+                        <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200"></div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  </div>
+                )}
+                {!loadingMessages &&
+                  messages.map((msg) => (
+                    <MessageItem
+                      key={msg._id || `${msg.sender}-${msg.createdAt}-${Math.random().toString(36).substring(2)}`}
+                      msg={msg}
+                      user={user}
+                      selectedUser={selectedUser}
+                      renderMessageContent={renderMessageContent}
+                    />
+                  ))}
                 <div ref={messagesEndRef} />
               </div>
 
@@ -631,11 +769,11 @@ function Messages() {
 
               {selectedFiles.length > 0 && (
                 <div className="px-4 pb-2 mx-4 mb-2">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-4 bg-teal-50 rounded-lg">
                     {selectedFiles.map((file, index) => (
                       <div
                         key={index}
-                        className="relative bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm"
+                        className="relative bg-white border border-teal-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition"
                       >
                         {file.type.startsWith("image/") ? (
                           <img
@@ -644,18 +782,18 @@ function Messages() {
                             className="w-full h-24 object-cover"
                           />
                         ) : (
-                          <div className="w-full h-24 bg-gray-200 flex items-center justify-center text-gray-500 text-sm">
+                          <div className="w-full h-24 bg-teal-100 flex items-center justify-center text-teal-600 text-sm">
                             Video: {file.name}
                           </div>
                         )}
                         <div className="p-2">
-                          <span className="text-xs text-gray-600 truncate block" title={file.name}>
+                          <span className="text-xs text-teal-600 truncate block" title={file.name}>
                             {file.name}
                           </span>
                         </div>
                         <button
                           onClick={() => handleRemoveFile(index)}
-                          className={`absolute top-1 right-1 bg-teal-400 text-white rounded-full p-1 hover:bg-teal-600 transition duration-200 ${
+                          className={`absolute top-1 right-1 bg-teal-500 text-white rounded-full p-1 hover:bg-teal-600 transition duration-200 ${
                             uploading ? "opacity-50 cursor-not-allowed" : ""
                           } cursor-pointer`}
                           disabled={uploading}
@@ -669,9 +807,9 @@ function Messages() {
                 </div>
               )}
 
-              <div className="flex items-center p-3">
+              <div className="flex items-center p-3 bg-teal-50">
                 <label className="mr-2 cursor-pointer">
-                  <Paperclip className="w-5 h-5 text-gray-600" />
+                  <Paperclip className="w-5 h-5 text-teal-600 hover:text-teal-800" />
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -685,14 +823,17 @@ function Messages() {
                 <input
                   type="text"
                   placeholder="Type a message..."
-                  className="flex-1 border rounded-full px-4 py-2 focus:outline-none"
+                  className="flex-1 border border-teal-200 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-teal-900"
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
+                  onChange={(e) => {
+                    setNewMessage(e.target.value);
+                    debouncedSetTyping(e.target.value);
+                  }}
                   onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                   disabled={uploading || socketError}
                 />
                 <button
-                  className="ml-2 bg-teal-500 text-white px-4 py-2 rounded-full cursor-pointer hover:bg-teal-600 transition duration-200"
+                  className="ml-2 bg-teal-500 text-white px-4 py-2 rounded-full cursor-pointer hover:bg-teal-600 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => sendMessage()}
                   disabled={uploading || socketError}
                 >
@@ -701,9 +842,9 @@ function Messages() {
               </div>
             </>
           ) : (
-            <div className="p-4">
+            <div className="p-4 flex flex-col items-center justify-center h-full text-teal-800">
               <h1 className="text-xl font-bold">No messages yet</h1>
-              <p className="text-gray-500">Start a conversation with someone!</p>
+              <p className="text-teal-600">Start a conversation with someone!</p>
             </div>
           )}
         </div>
