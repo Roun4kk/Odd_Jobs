@@ -95,7 +95,7 @@ function SettingsComp({ setUserLog, user }) { // Add updateUser prop
           onClick={handleLogout}
           className="text-left hover:bg-gray-100 p-2 rounded-md text-black cursor-pointer"
         >
-          Log out @{user?.email || "user not found"}
+          Log out @{user?.username || "user not found"}
         </button>
       </div>
       <div className="absolute -bottom-2 left-1/2 w-4 h-4 bg-gray-200 rotate-45"></div>
