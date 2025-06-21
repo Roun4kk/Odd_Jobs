@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import {BadgeCheck  , Handshake , MoreVertical , X} from "lucide-react";
+import {BadgeCheck  , Handshake , MoreVertical , X , Star} from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth.jsx";
@@ -160,8 +160,6 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
       </div>
     );
   }
-  console.log("post", post);
-  console.log("bids" , bids);
   return (
     <div className="flex-1 overflow-y-auto space-y-2 mb-4">
       {bids.map((bid, index) => {
@@ -192,6 +190,17 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
                   <BadgeCheck className="h-5 w-5 text-teal-400 ml-1" />
                 )}
               </p>
+              {typeof bid.user.totalRating === 'number' && bid.user.totalRating > 0 && (
+                <div className="flex items-center gap-1 text-sm text-gray-600">
+                  <Star
+                    className="w-4 h-4 text-yellow-400"
+                    fill="#facc15"
+                  />
+                  <span className="font-medium">{bid.user.averageRating?.toFixed(1) || "0.0"}</span>
+                  <span className="text-gray-400">({bid.user.totalRating})</span>
+                </div>
+              )}
+
               <div className="ml-auto justify-between">
                 {user?._id === jobPosterId && post.status !== "winnerSelected" && !post.winningBidId && (<button onClick={() => {
                     setPendingWinner(bid.user._id);

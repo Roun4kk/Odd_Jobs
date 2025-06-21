@@ -15,6 +15,7 @@ function Landing() {
   const [refreshFlag, setRefreshFlag] = useState(false);
   const [showJobPost, setShowJobPost] = useState(false);
   const [showSkillsSearch, setShowSkillsSearch] = useState(false);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-white">
@@ -39,24 +40,26 @@ function Landing() {
   // Mobile layout
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-gray-50">
         {/* Mobile Header */}
-        <div className="sticky top-0 z-50 bg-white border-b border-gray-200 ">
-          <div className=" w-full max-w-60 h-9 overflow-hidden">
-                  <img
-                    src={logo}
-                    alt="JobDone Logo"
-                    className="size-30 object-cover object-center -mt-9"
-                  />
-                </div>
+        <div className="sticky top-0 z-50 bg-white shadow-sm">
+          <div className="flex items-center justify-center h-14 px-4">
+            <div className="w-full max-w-[160px]">
+              <img
+                src={logo}
+                alt="JobDone Logo"
+                className="w-full h-auto object-contain"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Job Post Overlay */}
         {showJobPost && (
-          <div className="fixed inset-0 z-50 bg-white">
-            <div className="sticky top-0 border-b border-gray-200 px-4 py-3 flex justify-between">
-              <button onClick={() => setShowJobPost(false)} className="text-gray-600">Cancel</button>
-              <h2 className="font-semibold text-lg">Create Post</h2>
+          <div className="fixed inset-0 z-50 bg-white transition-transform duration-300 transform translate-y-0">
+            <div className="sticky top-0 bg-white shadow-sm px-4 py-3 flex items-center justify-between">
+              <button onClick={() => setShowJobPost(false)} className="text-gray-600 font-medium">Cancel</button>
+              <h2 className="font-semibold text-lg text-gray-800">Create Post</h2>
               <div className="w-12" />
             </div>
             <div className="p-4">
@@ -73,10 +76,10 @@ function Landing() {
 
         {/* Skill Search Overlay */}
         {showSkillsSearch && (
-          <div className="fixed inset-0 z-50 bg-white">
-            <div className="sticky top-0 border-b border-gray-200 px-4 py-3 flex justify-between">
-              <button onClick={() => setShowSkillsSearch(false)} className="text-gray-600">Cancel</button>
-              <h2 className="font-semibold text-lg">Search Skills</h2>
+          <div className="fixed inset-0 z-50 bg-white transition-transform duration-300 transform translate-y-0">
+            <div className="sticky top-0 bg-white shadow-sm px-4 py-3 flex items-center justify-between">
+              <button onClick={() => setShowSkillsSearch(false)} className="text-gray-600 font-medium">Cancel</button>
+              <h2 className="font-semibold text-lg text-gray-800">Search Skills</h2>
               <div className="w-12" />
             </div>
             <div className="p-4">
@@ -95,7 +98,9 @@ function Landing() {
         )}
 
         {/* Bottom Nav */}
-        <BottomNavbar onPostClick={handleOverlay} activeTab="home" />
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-md">
+          <BottomNavbar onPostClick={handleOverlay} activeTab="home" />
+        </div>
       </div>
     );
   }

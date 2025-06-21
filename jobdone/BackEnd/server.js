@@ -1480,7 +1480,7 @@ app.get("/posts/bids", async (req, res) => {
   try {
     const post = await Post.findById(postId)
       .populate('user', '_id')
-      .populate('bids.user', 'username userImage verified _id'); 
+      .populate('bids.user', 'username userImage verified _id averageRating totalRating'); 
 
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
@@ -1867,7 +1867,7 @@ app.post("/posts/review", verifyToken, async (req, res) => {
       const totalRating = ratings.reduce((sum, r) => sum + r.rating, 0);
       const averageRating = ratings.length ? totalRating / ratings.length : 0;
 
-      updatedUser.totalRating = totalRating;
+      updatedUser.totalRating = ratings.length;
       updatedUser.averageRating = Math.round(averageRating * 10) / 10; // round to 1 decimal
       await updatedUser.save();
     }

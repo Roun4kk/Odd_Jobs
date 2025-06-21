@@ -108,24 +108,32 @@ function OtherProfile() {
                       {skill}
                     </span>
                   ))}
-                  <div className="mt-1 flex items-center gap-1 ml-auto">
-                    {Array.from({ length: 5 }, (_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-5 h-5 ${
-                          i < Math.round(profile?.averageRating || 0)
-                            ? "text-yellow-400"
-                            : "text-gray-300"
-                        }`}
-                        fill={i < Math.round(profile?.averageRating || 0) ? "#facc15" : "none"}
-                      />
-                    ))}
-                    {profile?.averageRating && (
-                      <span className="text-sm text-gray-600 ml-1">
-                        {profile.averageRating.toFixed(1)}
+                  {typeof profile?.totalRating === 'number' && profile.totalRating > 0 && (
+                    <div className="mt-1 flex items-center flex-wrap gap-1 ml-auto">
+                      {/* Star Icons */}
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-5 h-5 ${
+                            i < Math.round(profile.averageRating || 0)
+                              ? "text-yellow-400"
+                              : "text-gray-300"
+                          }`}
+                          fill={i < Math.round(profile.averageRating || 0) ? "#facc15" : "none"}
+                        />
+                      ))}
+
+                      {/* Average Rating */}
+                      <span className="text-sm text-gray-700 font-medium ml-1">
+                        {profile.averageRating?.toFixed(1) || "0.0"}
                       </span>
-                    )}
-                  </div>
+
+                      {/* Total Reviews */}
+                      <span className="text-sm text-gray-500 ml-1">
+                        ({profile.totalRating} {profile.totalRating === 1 ? "Review" : "Reviews"})
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

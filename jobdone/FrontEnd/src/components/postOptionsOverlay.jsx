@@ -148,10 +148,10 @@ function PostOptionsOverlay({ post, onClose , setPosts }) {
           === "open" ? handleCloseBidding() : handleOpenBidding()}}className="w-full flex items-center gap-2 px-4 py-2 rounded-md border hover:bg-gray-100 cursor-pointer transition-colors duration-200">
             {post?.status === 'open' ? "Close Bidding" : "Open Bidding"}
           </button>)}
-          {post?.user?._id === user._id  && (<button onClick={() => setOpenBidRange(true)} className="w-full flex items-center gap-2 px-4 py-2 rounded-md border hover:bg-gray-100 cursor-pointer transition-colors duration-200">
-            Set Bid Range 
+          {post?.user?._id === user._id && post.status === "open" && (<button onClick={() => setOpenBidRange(true)} className="w-full flex items-center gap-2 px-4 py-2 rounded-md border hover:bg-gray-100 cursor-pointer transition-colors duration-200">
+            Set Bid Range
           </button>)}
-          {post?.user?._id === user._id  && (<button onClick = {() => setDeleteComp(true)}className="w-full flex items-center gap-2 px-4 py-2 rounded-md border border-red-400 text-red-400 hover:bg-gray-100 cursor-pointer transition-colors duration-200">
+          {post?.user?._id === user._id  && post.status === "open" && (<button onClick = {() => setDeleteComp(true)}className="w-full flex items-center gap-2 px-4 py-2 rounded-md border border-red-400 text-red-400 hover:bg-gray-100 cursor-pointer transition-colors duration-200">
             Delete
           </button>)}
           {/* Add more options here in future (e.g., Report, Mute, etc.) */}
@@ -180,7 +180,7 @@ function PostOptionsOverlay({ post, onClose , setPosts }) {
             </div>
           </div>
         )}
-        {deleteComp && (
+        {deleteComp && post.status === "open" && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-100">
             <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-sm">
               <h2 className="text-xl font-semibold text-gray-800 mb-4 text-center">
@@ -210,7 +210,7 @@ function PostOptionsOverlay({ post, onClose , setPosts }) {
             </div>
           </div>
         )}
-        {openBidRange && (
+        {openBidRange && post.status === "open" && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-100">
             <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-sm">
               <h2 className="text-xl font-semibold text-gray-800 mb-4 text-center">
