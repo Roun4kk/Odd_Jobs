@@ -91,9 +91,9 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   if (isMobile) {
     return (
       <div className="fixed inset-0 z-60 bg-black/50 overflow-hidden">
-        <div className="flex flex-col w-full h-[100svh] bg-white">
+        <div className="flex flex-col h-screen w-full bg-white">
           
-          {/* Header */}
+          {/* ✅ Header: Never moves */}
           <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white flex-shrink-0 h-16">
             <img 
               src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"} 
@@ -115,10 +115,10 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </button>
           </div>
 
-          {/* Scrollable Content */}
+          {/* ✅ Scrollable Center Area: Shrinks, respects keyboard */}
           <div
             className="flex-1 overflow-y-auto min-h-0"
-            style={{ paddingBottom: keyboardOffset }}
+            style={{ paddingBottom: `${keyboardOffset}px` }}
           >
             <div className="p-4 border-b border-gray-100">
               <p className="text-gray-800 leading-relaxed">{post.postDescription}</p>
@@ -138,10 +138,14 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </div>
           </div>
 
-          {/* Input Bar */}
+          {/* ✅ Footer Bar: Floats above keyboard using transform */}
           {post?.status === "open" && (
             <div
               className="border-t border-gray-200 bg-white p-4 flex-shrink-0"
+              style={{
+                transform: `translateY(-${keyboardOffset}px)`,
+                transition: "transform 0.25s ease"
+              }}
             >
               <div className="flex flex-col gap-3">
                 <input
@@ -174,7 +178,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
     );
   }
 
-  // ✅ Desktop Layout (Unchanged)
+  // ✅ Desktop Layout (unchanged)
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center">
       <div className="bg-white w-full max-w-md h-full md:h-5/6 p-4 flex items-center shadow-lg overflow-hidden">
