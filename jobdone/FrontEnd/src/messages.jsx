@@ -11,6 +11,7 @@ import MessageComp from "./messageInfo.jsx";
 import { useMessageContext } from "./hooks/useMessageContext.js";
 import { formatDistanceToNow } from 'date-fns';
 import debounce from 'lodash.debounce';
+import useIsMobile from "./hooks/useIsMobile.js";
 
 const MessageItem = memo(({ msg, user, selectedUser, renderMessageContent }) => {
   if (msg.deletedFor.includes(user._id)) return null;
@@ -63,10 +64,10 @@ function Messages() {
   const [comp, setComp] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const isMobile = useIsMobile();
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -131,18 +132,12 @@ function Messages() {
     }
     try {
       setLoadingMessages(true);
+      setMessages([]); // Clear messages to avoid stale data
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/messages/${userId}`, {
         withCredentials: true,
       });
-      setMessages((prev) => {
-        const newMessages = res.data.filter((msg) => !msg.deletedFor.includes(user._id));
-        const prevIds = new Set(prev.map((msg) => msg._id));
-        const mergedMessages = [
-          ...prev.filter((msg) => msg._id.startsWith("temp-") || !prevIds.has(msg._id)),
-          ...newMessages.filter((msg) => !prevIds.has(msg._id)),
-        ];
-        return mergedMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-      });
+      const newMessages = res.data.filter((msg) => !msg.deletedFor.includes(user._id));
+      setMessages(newMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)));
       setLoadingMessages(false);
       await markMessagesAsSeen(userId);
     } catch (err) {
@@ -389,17 +384,11 @@ function Messages() {
       setError("Invalid user ID selected.");
       return;
     }
-    // Prevent re-fetching if the same user is selected
-    if (selectedUser?._id === user._id) {
-      setError("");
-      setIsTyping(false);
-      return;
-    }
     setSelectedUser(user);
     setError("");
     await fetchMessages(user._id);
     setIsTyping(false);
-  }, [fetchMessages, selectedUser?._id]);
+  }, [fetchMessages]);
 
   const debouncedSetTyping = useCallback(
     debounce((value) => {
@@ -577,6 +566,275 @@ function Messages() {
     req.lastMessage?.text?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 z-50 bg-white flex flex-col h-full">
+        {!selectedUser ? (
+          <>
+            {/* Conversations Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-teal-50">
+              <button onClick={() => navigate("/landing")} className="p-2 rounded-full hover:bg-teal-100">
+                <ArrowLeft className="w-6 h-6 text-teal-700 hover:text-teal-900" />
+              </button>
+              <h1 className="text-lg font-semibold text-teal-800">
+                {showRequests ? "Message Requests" : "Messages"}
+              </h1>
+              {!showRequests && requestCount > 0 && (
+                <button
+                  onClick={() => setShowRequests(true)}
+                  className="text-teal-600 px-3 py-1 rounded-full text-sm hover:bg-teal-100 transition"
+                >
+                  Requests ({requestCount})
+                </button>
+              )}
+            </div>
+
+            {/* Search Bar */}
+            <div className="p-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search conversations..."
+                  className="w-full pl-10 pr-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Conversations List */}
+            <div className="flex-1 overflow-y-auto">
+              {showRequests &&
+                (filteredRequests.length === 0 ? (
+                  <p className="text-gray-500 px-4">No requests</p>
+                ) : (
+                  filteredRequests.map(({ user, lastMessage, updatedAt }) => (
+                    <div
+                      key={user._id}
+                      onClick={() => handleSelectUser(user)}
+                      className="flex items-center gap-3 p-4 py-3 hover:bg-teal-50 cursor-pointer transition border-b border-gray-200"
+                    >
+                      <img src={user.userImage} alt="pfp" className="w-10 h-10 rounded-full object-cover" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-1">
+                          <p className={`${hasUnseenMessages(user._id) ? "font-bold" : "font-semibold"} text-teal-800`}>
+                            {user.username}
+                          </p>
+                          {user.verified?.phoneNumber && user.verified?.email && (
+                            <BadgeCheck className="text-teal-500 w-4 h-4" />
+                          )}
+                        </div>
+                        <p className={`text-xs text-gray-500 ${hasUnseenMessages(user._id) ? "font-semibold" : ""}`}>
+                          {getMessagePreview(lastMessage)}
+                        </p>
+                        <p className="text-xs text-teal-600">
+                          {lastMessage?.createdAt || updatedAt
+                            ? formatDistanceToNow(new Date(lastMessage?.createdAt || updatedAt), { addSuffix: true })
+                            : "No time"}
+                        </p>
+                      </div>
+                      {hasUnseenMessages(user._id) && (
+                        <div className="w-3 h-3 bg-teal-500 rounded-full flex-shrink-0"></div>
+                      )}
+                    </div>
+                  ))
+                ))}
+              {loadingConversation && !showRequests && (
+                <div className="flex justify-center h-full">
+                  <div className="w-12 h-12 border-4 border-teal-500 border-dashed rounded-full animate-spin"></div>
+                </div>
+              )}
+              {!loadingConversation &&
+                !showRequests &&
+                (filteredConversations.length === 0 ? (
+                  <p className="text-gray-500 px-4">No conversations found</p>
+                ) : (
+                  filteredConversations.map(({ user, lastMessage, updatedAt }) => (
+                    <div
+                      key={user._id}
+                      onClick={() => handleSelectUser(user)}
+                      className="flex items-center gap-3 p-4 py-3 hover:bg-teal-50 cursor-pointer transition border-b border-gray-200"
+                    >
+                      <img src={user.userImage} alt="pfp" className="w-10 h-10 rounded-full object-cover" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-1">
+                          <p className={`${hasUnseenMessages(user._id) ? "font-bold" : "font-semibold"} text-teal-800`}>
+                            {user.username}
+                          </p>
+                          {user.verified?.phoneNumber && user.verified?.email && (
+                            <BadgeCheck className="text-teal-500 w-4 h-4" />
+                          )}
+                        </div>
+                        <p className={`text-xs text-gray-500 ${hasUnseenMessages(user._id) ? "font-semibold" : ""}`}>
+                          {getMessagePreview(lastMessage)}
+                        </p>
+                        <p className="text-xs text-teal-600">
+                          {lastMessage?.createdAt || updatedAt
+                            ? formatDistanceToNow(new Date(lastMessage?.createdAt || updatedAt), { addSuffix: true })
+                            : "No time"}
+                        </p>
+                      </div>
+                      {hasUnseenMessages(user._id) && (
+                        <div className="w-3 h-3 bg-teal-500 rounded-full flex-shrink-0"></div>
+                      )}
+                    </div>
+                  ))
+                ))}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Chat Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-teal-50">
+              <button onClick={() => setSelectedUser(null)} className="p-2 rounded-full hover:bg-teal-100">
+                <ArrowLeft className="w-6 h-6 text-teal-700 hover:text-teal-900" />
+              </button>
+              <div className="flex items-center gap-2">
+                <img src={selectedUser.userImage} className="w-8 h-8 rounded-full object-cover" />
+                <button
+                  className="text-base font-semibold text-teal-800 hover:text-teal-900"
+                  onClick={() => navigate(`/profile/${selectedUser._id}`)}
+                >
+                  {selectedUser.username}
+                </button>
+                {selectedUser.verified?.phoneNumber && selectedUser.verified?.email && (
+                  <BadgeCheck className="text-teal-500 w-5 h-5" />
+                )}
+              </div>
+              <button
+                onClick={() => setComp(!comp)} // Toggle comp on click
+                className="p-2 rounded-full hover:bg-teal-100"
+              >
+                <MoreVertical className="w-6 h-6 text-teal-600 hover:text-teal-800" />
+              </button>
+            </div>
+
+            {/* Chat Area */}
+            <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+              {socketError && (
+                <div className="p-3 text-red-500 bg-red-50 rounded-lg mx-2 mb-2 text-sm">
+                  Connection error: {socketError}. Please try refreshing the page or logging in again.
+                </div>
+              )}
+              {error && (
+                <div className="p-3 text-red-500 bg-red-50 rounded-lg mx-2 mb-2 text-sm">
+                  {error}
+                </div>
+              )}
+              {loadingMessages && (
+                <div className="flex justify-center h-full">
+                  <div className="w-12 h-12 border-4 border-teal-500 border-dashed rounded-full animate-spin"></div>
+                </div>
+              )}
+              {!loadingMessages && isTyping && selectedUser && (
+                <div className="flex items-start mb-4 justify-start">
+                  <img src={selectedUser.userImage} className="w-8 h-8 rounded-full object-cover mr-2 mt-1" />
+                  <div className="p-2 rounded-lg bg-gray-200 max-w-xs">
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100"></div>
+                      <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200"></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {!loadingMessages &&
+                messages.map((msg) => (
+                  <MessageItem
+                    key={msg._id || `${msg.sender}-${msg.createdAt}-${Math.random().toString(36).substring(2)}`}
+                    msg={msg}
+                    user={user}
+                    selectedUser={selectedUser}
+                    renderMessageContent={renderMessageContent}
+                  />
+                ))}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* File Preview */}
+            {selectedFiles.length > 0 && (
+              <div className="px-4 pb-2 mx-2 mb-2">
+                <div className="grid grid-cols-2 gap-2 p-3 bg-teal-50 rounded-lg">
+                  {selectedFiles.map((file, index) => (
+                    <div
+                      key={index}
+                      className="relative bg-white border border-teal-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition"
+                    >
+                      {file.type.startsWith("image/") ? (
+                        <img
+                          src={getThumbnail(file)}
+                          alt={file.name}
+                          className="w-full h-20 object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-20 bg-teal-100 flex items-center justify-center text-teal-600 text-xs">
+                          Video: {file.name}
+                        </div>
+                      )}
+                      <div className="p-1">
+                        <span className="text-xs text-teal-600 truncate block" title={file.name}>
+                          {file.name}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveFile(index)}
+                        className={`absolute top-1 right-1 bg-teal-500 text-white rounded-full p-1 hover:bg-teal-600 transition duration-200 ${
+                          uploading ? "opacity-50 cursor-not-allowed" : ""
+                        } cursor-pointer`}
+                        disabled={uploading}
+                        aria-label={`Remove ${file.name}`}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Message Input */}
+            <div className="flex items-center p-3 bg-teal-50 border-t border-gray-200">
+              <label className="mr-2 cursor-pointer">
+                <Paperclip className="w-5 h-5 text-teal-600 hover:text-teal-800" />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  className="hidden"
+                  multiple
+                  onChange={handleFileSelect}
+                  disabled={uploading}
+                />
+              </label>
+              <input
+                type="text"
+                placeholder="Type a message..."
+                className="flex-1 border border-teal-200 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-teal-900 text-sm"
+                value={newMessage}
+                onChange={(e) => {
+                  setNewMessage(e.target.value);
+                  debouncedSetTyping(e.target.value);
+                }}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                disabled={uploading || socketError}
+              />
+              <button
+                className="ml-2 bg-teal-500 text-white px-4 py-2 rounded-full cursor-pointer hover:bg-teal-600 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                onClick={() => sendMessage()}
+                disabled={uploading || socketError}
+              >
+                {uploading ? "Uploading..." : "Send"}
+              </button>
+            </div>
+          </>
+        )}
+        {comp && <MessageComp setComp={setComp} fetchMessages={fetchMessages} userId={selectedUser?._id} />}
+      </div>
+    );
+  }
+
+  // Desktop UI (Unchanged)
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar user={user} />
@@ -722,7 +980,7 @@ function Messages() {
                   </div>
                 </div>
                 <button
-                  onClick={() => setComp(true)}
+                  onClick={() => setComp(!comp)}
                   className="flex items-center text-teal-400 hover:text-teal-600 cursor-pointer mr-4"
                 >
                   <MoreVertical size={24} />

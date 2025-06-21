@@ -88,16 +88,22 @@ function Landing() {
           </div>
         )}
 
-        {/* Feed */}
+        {/* Feed - Fixed container height to prevent navbar overlap */}
         {!showJobPost && !showSkillsSearch && (
-          <div className="w-full px-4 py-6 pb-28 flex justify-center">
+          <div 
+            className="w-full px-4 pt-6 flex justify-center overflow-y-auto"
+            style={{ 
+              height: 'calc(100vh - 4rem)', // Full height minus header (4rem)
+              paddingBottom: '4rem' // Padding equal to navbar height
+            }}
+          >
             <div className="w-full max-w-md">
               <JobFeed refreshFlag={refreshFlag} />
             </div>
           </div>
         )}
 
-        {/* Bottom Nav */}
+        {/* Bottom Nav - No gap, directly attached */}
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-md">
           <BottomNavbar onPostClick={handleOverlay} activeTab="home" />
         </div>

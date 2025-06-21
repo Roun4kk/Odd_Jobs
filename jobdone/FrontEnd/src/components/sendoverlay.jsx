@@ -5,6 +5,8 @@ import axios from "axios";
 import socket from "../socket.js";
 import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
 import { useNavigate } from "react-router-dom";
+import useIsMobile from "../hooks/useIsMobile.js";
+
 function SendOverlay({ post, onClose }) {
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
@@ -13,8 +15,9 @@ function SendOverlay({ post, onClose }) {
   const { user } = useAuth();
   const [socketError, setSocketError] = useState(null);
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
-  useSocketRoomJoin(user?._id, setSocketError);   // ONE line
+  useSocketRoomJoin(user?._id, setSocketError);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -53,21 +56,18 @@ function SendOverlay({ post, onClose }) {
   };
 
   const handleSend = () => {
-
     if (selectedUsers.length === 0) {
       return alert("Select at least one user to share with.");
     }
 
     selectedUsers.forEach((recipient, index) => {
       console.log(`Sending message ${index + 1}...`);
-      
       socket.emit("sendMessage", {
         receiverId: recipient._id,
         type: "post",
         text: message.trim() || undefined,
         data: { postId: post._id },
       });
-      
       console.log(`Message ${index + 1} emitted`);
     });
     navigate("/messages", { state: { newChatWith: selectedUsers[0] } });
@@ -81,79 +81,181 @@ function SendOverlay({ post, onClose }) {
     u.username.toLowerCase().includes(search.toLowerCase())
   );
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center">
-      <div className="bg-white w-full max-w-md p-4 rounded-xl shadow-lg relative h-[90vh] flex flex-col">
-        <div className="flex justify-between items-center pb-2">
-          <button className="opacity-0 pointer-events-none">X</button>
-          <h2 className="text-lg font-semibold text-center">Share</h2>
-          <button onClick={onClose}>
-            <X className="w-5 h-5 text-gray-600 hover:text-black" />
-          </button>
-        </div>
-        {socketError && (
-            <div className="p-4 text-red-500">
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center">
+        <div className="bg-white w-full max-w-sm p-4 rounded-2xl shadow-2xl relative flex flex-col h-[80vh]">
+          {/* Header */}
+          <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+            <h2 className="text-lg font-semibold">Share Post</h2>
+            <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100">
+              <X className="w-6 h-6 text-gray-600 hover:text-black" />
+            </button>
+          </div>
+
+          {/* Search Input */}
+          <input
+            type="text"
+            placeholder="Search by username..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="mt-3 px-4 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+          />
+
+          {/* Scrollable User List */}
+          <div className="flex-1 overflow-y-auto mt-2">
+            {filteredUsers.map((u) => {
+              const isSelected = selectedUsers.some((sel) => sel._id === u._id);
+              return (
+                <div
+                  key={u._id}
+                  onClick={() => toggleUserSelection(u)}
+                  className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer border ${
+                    isSelected ? "bg-teal-100 border-teal-400" : "hover:bg-gray-50 border-gray-200"
+                  }`}
+                >
+                  <img
+                    src={u.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
+                    alt={u.username}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                  <span className="font-medium text-sm">{u.username}</span>
+                  {isSelected && (
+                    <div className="ml-auto w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Message Input and Actions */}
+          {selectedUsers.length > 0 && (
+            <textarea
+              className="w-full mt-2 p-3 border border-gray-300 rounded-lg resize-none h-20 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+              placeholder={`Message to ${selectedUsers.length} user(s) (optional)`}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+            />
+          )}
+
+          {/* Fixed Action Bar */}
+          <div className="border-t border-gray-200 pt-2 mt-2 flex justify-end gap-2">
+            {selectedUsers.length > 0 ? (
+              <button
+                onClick={handleSend}
+                className="bg-teal-500 text-white px-4 py-2 rounded-full hover:bg-teal-600 flex items-center gap-1 text-sm font-medium"
+              >
+                <Send className="w-4 h-4" /> Share ({selectedUsers.length})
+              </button>
+            ) : (
+              <button
+                onClick={handleCopy}
+                className="bg-gray-300 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-400 flex items-center gap-1 text-sm font-medium"
+              >
+                <Copy className="w-4 h-4" /> Copy Link
+              </button>
+            )}
+          </div>
+
+          {/* Socket Error */}
+          {socketError && (
+            <div className="absolute bottom-16 left-0 right-0 p-3 text-red-500 text-sm border-t border-red-200 bg-red-50 text-center">
               Connection error: {socketError}. Please try refreshing the page or logging in again.
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop UI
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center">
+      <div className="bg-white w-full max-w-lg p-6 rounded-2xl shadow-2xl relative flex flex-col h-[80vh]">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
+          <h2 className="text-xl font-bold text-gray-800">Share Post</h2>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100">
+            <X className="w-6 h-6 text-gray-600 hover:text-black" />
+          </button>
+        </div>
+
+        {/* Search Input */}
         <input
           type="text"
           placeholder="Search by username..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="mt-3 mb-2 px-3 py-2 border rounded-md focus:outline-none"
+          className="mb-4 px-4 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
         />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {filteredUsers.map((u) => {
-            const isSelected = selectedUsers.some((sel) => sel._id === u._id);
-            return (
-              <div
-                key={u._id}
-                onClick={() => toggleUserSelection(u)}
-                className={`flex items-center gap-3 p-2 rounded-md cursor-pointer border ${
-                  isSelected ? "bg-teal-100 border-teal-400" : "hover:bg-gray-100"
-                }`}
-              >
-                <img src={u.userImage} alt={u.username} className="w-9 h-9 rounded-full object-cover" />
-                <span className="font-medium text-sm">{u.username}</span>
-
-                {isSelected && (
-                  <div className="ml-auto w-5 h-5 rounded-full bg-teal-600 flex items-center justify-center">
-                    <Check className="w-3 h-3 text-white" />
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        {/* User List */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid grid-cols-1 gap-2">
+            {filteredUsers.map((u) => {
+              const isSelected = selectedUsers.some((sel) => sel._id === u._id);
+              return (
+                <div
+                  key={u._id}
+                  onClick={() => toggleUserSelection(u)}
+                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer border ${
+                    isSelected ? "bg-teal-100 border-teal-400" : "hover:bg-gray-50 border-gray-200"
+                  }`}
+                >
+                  <img
+                    src={u.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
+                    alt={u.username}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <span className="font-medium text-sm">{u.username}</span>
+                  {isSelected && (
+                    <div className="ml-auto w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
+        {/* Message Input */}
         {selectedUsers.length > 0 && (
           <textarea
-            className="w-full mt-4 p-2 border rounded-md resize-none h-24 focus:outline-none"
+            className="w-full mt-4 p-3 border border-gray-300 rounded-lg resize-none h-24 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
             placeholder={`Message to ${selectedUsers.length} user(s) (optional)`}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
         )}
 
-        <div className="absolute bottom-4 right-4">
+        {/* Actions */}
+        <div className="flex justify-end gap-2 mt-4">
           {selectedUsers.length > 0 ? (
             <button
               onClick={handleSend}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-1 shadow-md"
+              className="bg-teal-500 text-white px-6 py-2 rounded-full hover:bg-teal-600 flex items-center gap-2 text-sm font-semibold"
             >
               <Send className="w-4 h-4" /> Share ({selectedUsers.length})
             </button>
           ) : (
             <button
               onClick={handleCopy}
-              className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 flex items-center gap-1 shadow-md"
+              className="bg-gray-300 text-gray-800 px-6 py-2 rounded-full hover:bg-gray-400 flex items-center gap-2 text-sm font-semibold"
             >
               <Copy className="w-4 h-4" /> Copy Link
             </button>
           )}
         </div>
+
+        {/* Socket Error */}
+        {socketError && (
+          <div className="absolute bottom-4 left-0 right-0 p-3 text-red-500 text-sm border-t border-red-200 bg-red-50 text-center">
+            Connection error: {socketError}. Please try refreshing the page or logging in again.
+          </div>
+        )}
       </div>
     </div>
   );

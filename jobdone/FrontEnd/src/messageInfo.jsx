@@ -10,16 +10,16 @@ function MessageComp({setComp , fetchMessages , userId}) {
     const [reportText , setReportText] = useState("");
     const { user , updateUser} = useAuth();
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (popoverRef.current && !popoverRef.current.contains(event.target)) {
-        setComp(false);
-      }
-    };
+  // useEffect(() => {
+  //   const handleClickOutside = (event) => {
+  //     if (popoverRef.current && !popoverRef.current.contains(event.target)) {
+  //       setComp(false);
+  //     }
+  //   };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [setComp]);
+  //   document.addEventListener("mousedown", handleClickOutside);
+  //   return () => document.removeEventListener("mousedown", handleClickOutside);
+  // }, [setComp]);
 
   const handleBlock = async (userId) => {
     try {
