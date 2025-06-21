@@ -25,8 +25,12 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
 
     if (window.visualViewport) {
       const updateOffset = () => {
-        const offset = window.innerHeight - window.visualViewport.height;
-        setKeyboardOffset(offset > 100 ? offset : 0);
+        const viewportHeight = window.visualViewport.height;
+        const windowHeight = window.innerHeight;
+        const offset = windowHeight - viewportHeight;
+        
+        // Only set offset if keyboard is actually open (significant height difference)
+        setKeyboardOffset(offset > 150 ? offset : 0);
       };
 
       window.visualViewport.addEventListener("resize", updateOffset);
@@ -138,17 +142,17 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </div>
           </div>
 
-          {/* Input Bar - Instagram style fixed positioning */}
+          {/* Input Bar - Instagram style sticky positioning */}
           {post?.status === "open" && (
             <div 
               className="border-t border-gray-200 bg-white p-4 flex-shrink-0"
               style={{ 
                 position: 'fixed',
-                bottom: `${keyboardOffset}px`,
+                bottom: keyboardOffset > 0 ? `${keyboardOffset}px` : '0px',
                 left: 0,
                 right: 0,
                 zIndex: 70,
-                transition: 'bottom 0.3s ease'
+                transition: 'bottom 0.2s ease-out'
               }}
             >
               <div className="flex flex-col gap-3">
