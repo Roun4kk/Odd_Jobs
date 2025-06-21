@@ -1,4 +1,3 @@
-// Updated mobile layout to use 100dvh and natural flex behavior
 import { useState, useEffect } from "react";
 import { X, BadgeCheck } from "lucide-react";
 import ImageSlider from "./ImageSlider";
@@ -18,10 +17,27 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   const navigate = useNavigate();
   const [socketError, setSocketError] = useState(null);
   const isMobile = useIsMobile();
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
   useSocketRoomJoin(user?._id, setSocketError);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
+
+    if (window.visualViewport) {
+      const updateOffset = () => {
+        const offset = window.innerHeight - window.visualViewport.height;
+        setKeyboardOffset(offset > 100 ? offset : 0);
+      };
+
+      window.visualViewport.addEventListener("resize", updateOffset);
+      updateOffset();
+
+      return () => {
+        document.body.style.overflow = "auto";
+        window.visualViewport.removeEventListener("resize", updateOffset);
+      };
+    }
+
     return () => {
       document.body.style.overflow = "auto";
     };
@@ -71,13 +87,13 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
     }
   };
 
-  // Mobile Layout
+  // ✅ Mobile Layout
   if (isMobile) {
     return (
       <div className="fixed inset-0 z-60 bg-black/50 overflow-hidden">
         <div className="flex flex-col w-full h-[100svh] bg-white">
           
-          {/* Header (fixed height) */}
+          {/* Header */}
           <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white flex-shrink-0 h-16">
             <img 
               src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"} 
@@ -99,8 +115,11 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </button>
           </div>
 
-          {/* Scrollable Content: fits between header and input */}
-          <div className="flex-1 overflow-y-auto min-h-0">
+          {/* Scrollable Content */}
+          <div
+            className="flex-1 overflow-y-auto min-h-0"
+            style={{ marginBottom: keyboardOffset }}
+          >
             <div className="p-4 border-b border-gray-100">
               <p className="text-gray-800 leading-relaxed">{post.postDescription}</p>
             </div>
@@ -119,9 +138,12 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </div>
           </div>
 
-          {/* Input Bar - Always visible, and pushed up with keyboard */}
+          {/* Input Bar */}
           {post?.status === "open" && (
-            <div className="border-t border-gray-200 bg-white p-4 flex-shrink-0">
+            <div
+              className="border-t border-gray-200 bg-white p-4 flex-shrink-0"
+              style={{ marginBottom: keyboardOffset }}
+            >
               <div className="flex flex-col gap-3">
                 <input
                   type="number"
@@ -153,7 +175,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
     );
   }
 
-  // Desktop Layout (unchanged)
+  // ✅ Desktop Layout (Unchanged)
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center">
       <div className="bg-white w-full max-w-md h-full md:h-5/6 p-4 flex items-center shadow-lg overflow-hidden">
@@ -163,15 +185,24 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
       </div>
       <div className="bg-white w-full max-w-md h-full md:h-5/6 p-4 flex flex-col shadow-lg overflow-hidden">
         <div className="flex gap-2 mb-2 flex items-center">
-          <img src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"} alt="User" className="w-12 h-12 rounded-full border-2 border-white object-cover"/>
+          <img
+            src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
+            alt="User"
+            className="w-12 h-12 rounded-full border-2 border-white object-cover"
+          />
           <button>
-            <h2 onClick={() => {
-              if (user._id === post.user._id) {
-                navigate(`/profile`); 
-              } else {
-                navigate(`/profile/${post.user._id}`); 
-              }
-            }} className="text-lg font-semibold cursor-pointer">{post.user.username}</h2>
+            <h2
+              onClick={() => {
+                if (user._id === post.user._id) {
+                  navigate(`/profile`);
+                } else {
+                  navigate(`/profile/${post.user._id}`);
+                }
+              }}
+              className="text-lg font-semibold cursor-pointer"
+            >
+              {post.user.username}
+            </h2>
           </button>
           {post.user.verified.email && post.user.verified.phoneNumber && (
             <BadgeCheck className="h-6 w-6 text-teal-400" />
@@ -181,11 +212,21 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
           </button>
         </div>
         <p className="py-2">{post.postDescription}</p>
-        <BidSection postId={post._id} sortBy={sortBy} refresh={refresh} currentUserId={userId} jobPosterId={post.user._id} post={post} setPosts={setPosts} setRefresh={setRefresh} setActiveBidPost={setActiveBidPost} />
+        <BidSection
+          postId={post._id}
+          sortBy={sortBy}
+          refresh={refresh}
+          currentUserId={userId}
+          jobPosterId={post.user._id}
+          post={post}
+          setPosts={setPosts}
+          setRefresh={setRefresh}
+          setActiveBidPost={setActiveBidPost}
+        />
         {post?.status === "open" && (
           <div className="flex gap-2">
-            <input 
-              type="number" 
+            <input
+              type="number"
               placeholder="   Bid"
               className="w-1/5 border border-gray-300 rounded-full px-4 py-2 focus:outline-none no-spinner appearance-none"
               onChange={(e) => setBidAmount(Number(e.target.value))}
@@ -198,7 +239,12 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
               onChange={(e) => setBidText(e.target.value)}
               value={BidText}
             />
-            <button className="bg-teal-400 text-white px-4 rounded-full hover:bg-teal-600 transition duration-200 cursor-pointer" onClick={handlePostSubmit}>Place</button>
+            <button
+              className="bg-teal-400 text-white px-4 rounded-full hover:bg-teal-600 transition duration-200 cursor-pointer"
+              onClick={handlePostSubmit}
+            >
+              Place
+            </button>
           </div>
         )}
       </div>
