@@ -123,7 +123,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
           {/* Bid input section - Single line limited to screen width */}
           {post?.status === "open" && (
             <div className="w-full bg-white z-50" style={{ position: 'absolute', bottom: '1rem' }}>
-              <div className="w-full max-w-full flex py-3 items-center flex-nowrap overflow-x-hidden">
+              <div className="w-full max-w-full flex py-2 px-2 items-center flex-nowrap overflow-x-hidden">
                 <input
                   type="number"
                   placeholder="Bid"
