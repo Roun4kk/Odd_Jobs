@@ -17,12 +17,29 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   const navigate = useNavigate();
   const [socketError, setSocketError] = useState(null);
   const isMobile = useIsMobile();
+  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
   useSocketRoomJoin(user?._id, setSocketError);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
+
+    // Simple viewport height tracking
+    const handleResize = () => {
+      if (window.visualViewport) {
+        setViewportHeight(window.visualViewport.height);
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      setViewportHeight(window.visualViewport.height);
+    }
+
     return () => {
       document.body.style.overflow = "auto";
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      }
     };
   }, []);
 
@@ -74,7 +91,10 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   if (isMobile) {
     return (
       <div className="fixed inset-0 z-60 bg-black/50 overflow-hidden">
-        <div className="flex flex-col w-full h-full bg-white">
+        <div 
+          className="flex flex-col w-full bg-white"
+          style={{ height: `${viewportHeight}px` }}
+        >
           
           {/* Header */}
           <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white flex-shrink-0 h-16">
