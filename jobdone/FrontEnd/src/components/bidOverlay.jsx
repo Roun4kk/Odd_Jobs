@@ -118,7 +118,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
           {/* Scrollable Content */}
           <div
             className="flex-1 overflow-y-auto min-h-0"
-            style={{ marginBottom: keyboardOffset }}
+            style={{ paddingBottom: keyboardOffset }}
           >
             <div className="p-4 border-b border-gray-100">
               <p className="text-gray-800 leading-relaxed">{post.postDescription}</p>
@@ -142,7 +142,6 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
           {post?.status === "open" && (
             <div
               className="border-t border-gray-200 bg-white p-4 flex-shrink-0"
-              style={{ marginBottom: keyboardOffset }}
             >
               <div className="flex flex-col gap-3">
                 <input
