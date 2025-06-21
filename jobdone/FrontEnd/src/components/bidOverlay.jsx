@@ -95,7 +95,12 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   if (isMobile) {
     return (
       <div className="fixed inset-0 z-60 bg-black/50 overflow-hidden">
-        <div className="flex flex-col w-full h-full bg-white">
+        <div 
+          className="flex flex-col w-full h-full bg-white"
+          style={{ 
+            paddingBottom: keyboardOffset 
+          }}
+        >
           
           {/* Header */}
           <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white flex-shrink-0 h-16">
@@ -120,10 +125,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
           </div>
 
           {/* Scrollable Content */}
-          <div 
-            className="flex-1 overflow-y-auto min-h-0"
-            style={{ marginBottom: keyboardOffset }}
-          >
+          <div className="flex-1 overflow-y-auto min-h-0">
             <div className="p-4 border-b border-gray-100">
               <p className="text-gray-800 leading-relaxed">{post.postDescription}</p>
             </div>
@@ -142,19 +144,9 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </div>
           </div>
 
-          {/* Input Bar - Instagram style sticky positioning */}
+          {/* Input Bar - Truly sticky like Instagram */}
           {post?.status === "open" && (
-            <div 
-              className="border-t border-gray-200 bg-white p-4 flex-shrink-0"
-              style={{ 
-                position: 'fixed',
-                bottom: keyboardOffset > 0 ? `${keyboardOffset}px` : '0px',
-                left: 0,
-                right: 0,
-                zIndex: 70,
-                transition: 'bottom 0.2s ease-out'
-              }}
-            >
+            <div className="border-t border-gray-200 bg-white p-4 flex-shrink-0">
               <div className="flex flex-col gap-3">
                 <input
                   type="number"
