@@ -1,22 +1,27 @@
-import { useEffect, useState , useCallback} from "react";
+import { useEffect, useState, useCallback } from "react";
 import { BadgeCheck } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth.jsx";
+import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
+import socket from "../socket.js";
 
-function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyingTo , setReplyUserId }) {
+function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyingTo, setReplyUserId }) {
   const [comments, setComments] = useState([]);
-  const [showRepliesFor, setShowRepliesFor] = useState({}); 
+  const [showRepliesFor, setShowRepliesFor] = useState({});
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [loading , setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [socketError, setSocketError] = useState(null);
+  useSocketRoomJoin(user?._id, setSocketError);
+  
 
   const eventHandler = (word) => async () => {
     const username = word.replace(/^@/, "");
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/user/username/${username}`);
       const targetUser = res.data;
-  
+
       if (user._id === targetUser._id) {
         navigate("/profile");
       } else {
@@ -25,7 +30,7 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
     } catch (err) {
       console.error("User fetch failed:", err.response?.data || err.message);
     }
-  }
+  };
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -33,15 +38,41 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
       try {
         const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts/comments`, { params: { postId } });
         setComments(response.data || []);
-        console.log("Comments fetched:", comments);
       } catch (error) {
         console.error("Error fetching post:", error);
       }
-      
       setLoading(false);
     };
     fetchPost();
   }, [refresh]);
+
+  useEffect(() => {
+    const handleNewComment = (commentData) => {
+      if (commentData.postId === postId) {
+        setComments((prev) => [...prev, commentData]);
+      }
+    };
+
+    const handleNewReply = (replyData) => {
+      if (replyData.postId === postId) {
+        setComments((prev) =>
+          prev.map((comment) =>
+            comment._id === replyData.commentId
+              ? { ...comment, replies: [...(comment.replies || []), replyData] }
+              : comment
+          )
+        );
+      }
+    };
+
+    socket.on("receiveNewComment", handleNewComment);
+    socket.on("receiveNewReply", handleNewReply);
+
+    return () => {
+      socket.off("receiveNewComment", handleNewComment);
+      socket.off("receiveNewReply", handleNewReply);
+    };
+  }, [postId]);
 
   if (loading) {
     return (
@@ -50,34 +81,37 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
       </div>
     );
   }
-  
+
   return (
     <div className="flex-1 overflow-y-auto space-y-2 mb-4">
       {comments.map((comment, index) => (
         <div key={index} className="bg-gray-100 p-2 rounded-lg">
           <div className="flex gap-2 mb-2 flex items-center">
-            <button onClick={() => {
-                    if (user._id === comment.user._id) {
-                      navigate(`/profile`); 
-                    } else {
-                      navigate(`/profile/${comment.user._id}`); 
-                    }
-                  }}className="font-semibold cursor-pointer">
+            <button
+              onClick={() => {
+                if (user._id === comment.user._id) {
+                  navigate(`/profile`);
+                } else {
+                  navigate(`/profile/${comment.user._id}`);
+                }
+              }}
+              className="font-semibold cursor-pointer"
+            >
               {comment.user.username}
             </button>
             {comment?.user?.verified?.email && comment?.user?.verified?.phoneNumber && (
-                    <BadgeCheck className="h-5 w-5 text-teal-400" />
-                  )}
+              <BadgeCheck className="h-5 w-5 text-teal-400" />
+            )}
           </div>
           <p>{comment.commentText}</p>
 
           <button
             className="text-gray-500 cursor-pointer mt-1"
             onClick={() => {
-              setReplyTo(comment._id); 
+              setReplyTo(comment._id);
               setReplyingTo(comment.user.username);
               setCommentText(`@${comment.user.username} `);
-              setReplyUserId (comment.user._id);
+              setReplyUserId(comment.user._id);
             }}
           >
             Reply
@@ -106,18 +140,21 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
                   {comment.replies.map((reply, idx) => (
                     <div key={idx} className="bg-white p-2 rounded shadow-sm">
                       <div className="flex gap-2 mb-2 flex items-center">
-                        <button onClick={() => {
+                        <button
+                          onClick={() => {
                             if (user._id === reply.user._id) {
-                              navigate(`/profile`); 
+                              navigate(`/profile`);
                             } else {
-                              navigate(`/profile/${reply.user._id}`); 
+                              navigate(`/profile/${reply.user._id}`);
                             }
-                          }}className="font-semibold cursor-pointer">
+                          }}
+                          className="font-semibold cursor-pointer"
+                        >
                           {reply.user.username}
                         </button>
                         {reply?.user?.verified?.email && reply?.user?.verified?.phoneNumber && (
-                                <BadgeCheck className="h-5 w-5 text-teal-400" />
-                              )}
+                          <BadgeCheck className="h-5 w-5 text-teal-400" />
+                        )}
                       </div>
                       <p className="text-sm">
                         {reply.replyText.split(" ").map((word, i) => {
@@ -139,8 +176,8 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
                       <button
                         className="text-gray-500 cursor-pointer mt-1"
                         onClick={() => {
-                          setReplyTo(comment._id); 
-                          setReplyingTo(reply.user.username); 
+                          setReplyTo(comment._id);
+                          setReplyingTo(reply.user.username);
                           setCommentText(`@${reply.user.username} `);
                           setReplyUserId(reply.user._id);
                         }}
