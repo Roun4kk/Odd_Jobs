@@ -158,13 +158,6 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             <p className="text-gray-800 leading-relaxed">{post.postDescription}</p>
           </div>
 
-          {/* Images */}
-          {post.mediaUrls && post.mediaUrls.length > 0 && (
-            <div className="border-b border-gray-100">
-              <ImageSlider mediaUrls={post.mediaUrls} />
-            </div>
-          )}
-
           {/* Bid Section - This will scroll if too long */}
           <div className="p-4">
             <BidSection 
