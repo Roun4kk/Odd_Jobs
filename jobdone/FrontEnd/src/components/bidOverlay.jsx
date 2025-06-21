@@ -123,8 +123,8 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
 
           {/* Bid input section - Absolute positioned at bottom with no gap */}
           {post?.status === "open" && (
-            <div className="fixed bottom-16 left-0 right-0 w-full border-t border-gray-200 p-4 bg-white z-50">
-              <div className="flex gap-2 items-center max-w-md mx-auto px-2">
+            <div className="fixed bottom-16 left-0 right-0 w-full border-t border-gray-200 bg-white z-50 overflow-x-hidden">
+              <div className="w-full max-w-md mx-auto px-4 py-3 flex gap-2 items-center">
                 <input
                   type="number"
                   placeholder="Bid"
@@ -148,6 +148,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
               </div>
             </div>
           )}
+
           {/* Socket error display */}
           {socketError && (
             <div className="absolute bottom-20 left-0 right-0 p-4 text-red-500 text-sm border-t border-red-200 bg-red-50">
