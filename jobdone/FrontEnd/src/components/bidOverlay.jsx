@@ -8,7 +8,6 @@ import { useNavigate } from "react-router-dom";
 import socket from "../socket.js";
 import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
 import useIsMobile from "../hooks/useIsMobile.js";
-import BottomNavbar from "../bottomNavBar.jsx";
 
 function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   const [refresh, setRefresh] = useState(false);
@@ -27,29 +26,36 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
     
     // Mobile keyboard detection
     if (isMobile) {
+      let initialViewportHeight = window.innerHeight;
+      
       const handleResize = () => {
-        // Detect if keyboard is visible by checking viewport height change
-        const viewportHeight = window.visualViewport?.height || window.innerHeight;
-        const screenHeight = window.screen.height;
-        const keyboardThreshold = screenHeight * 0.75;
+        const currentHeight = window.innerHeight;
+        const heightDifference = initialViewportHeight - currentHeight;
         
-        setIsKeyboardVisible(viewportHeight < keyboardThreshold);
+        // Keyboard is considered visible if height decreased by more than 150px
+        setIsKeyboardVisible(heightDifference > 150);
       };
 
-      // Modern viewport API
+      const handleVisualViewportResize = () => {
+        if (window.visualViewport) {
+          const currentHeight = window.visualViewport.height;
+          const heightDifference = initialViewportHeight - currentHeight;
+          setIsKeyboardVisible(heightDifference > 150);
+        }
+      };
+
+      // Use both methods for better compatibility
+      window.addEventListener('resize', handleResize);
+      
       if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', handleResize);
-      } else {
-        // Fallback for older browsers
-        window.addEventListener('resize', handleResize);
+        window.visualViewport.addEventListener('resize', handleVisualViewportResize);
       }
 
       return () => {
         document.body.style.overflow = "auto";
+        window.removeEventListener('resize', handleResize);
         if (window.visualViewport) {
-          window.visualViewport.removeEventListener('resize', handleResize);
-        } else {
-          window.removeEventListener('resize', handleResize);
+          window.visualViewport.removeEventListener('resize', handleVisualViewportResize);
         }
       };
     }
@@ -106,15 +112,15 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   // Mobile Layout
   if (isMobile) {
     return (
-      <div className="fixed inset-0 z-60 bg-black/50 flex flex-col">
+      <div className="fixed inset-0 z-40 bg-black/50 flex flex-col">
         {/* Main Content Area */}
         <div 
           className={`bg-white flex-1 flex flex-col transition-all duration-300 ${
-            isKeyboardVisible && inputFocused ? 'pb-0' : 'pb-20'
+            isKeyboardVisible ? 'pb-40' : 'pb-20'
           }`}
           style={{
-            maxHeight: isKeyboardVisible && inputFocused 
-              ? `${window.visualViewport?.height || window.innerHeight}px`
+            height: isKeyboardVisible 
+              ? `${window.visualViewport?.height || (window.innerHeight - 300)}px`
               : 'calc(100vh - 5rem)'
           }}
         >
@@ -183,18 +189,18 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
         {/* Input Bar - Fixed at bottom */}
         {post?.status === "open" && (
           <div 
-            className={`bg-white border-t border-gray-200 transition-all duration-300 ${
-              isKeyboardVisible && inputFocused 
-                ? 'fixed bottom-0 left-0 right-0 z-50' 
+            className={`bg-white border-t border-gray-200 transition-transform duration-300 ease-in-out ${
+              isKeyboardVisible 
+                ? 'fixed bottom-0 left-0 right-0 z-50 transform translate-y-0' 
                 : 'relative'
             }`}
             style={{
-              bottom: isKeyboardVisible && inputFocused 
-                ? '0px' 
-                : 'auto'
+              transform: isKeyboardVisible 
+                ? `translateY(-${window.visualViewport ? (window.innerHeight - window.visualViewport.height) : 0}px)` 
+                : 'none'
             }}
           >
-            <div className="p-4 space-y-3">
+            <div className="p-4 space-y-3 bg-white">
               {/* Bid Amount Input */}
               <div className="flex items-center gap-3">
                 <div className="flex-1">
@@ -208,7 +214,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
                     onChange={(e) => setBidAmount(Number(e.target.value))}
                     value={BidAmount}
                     onFocus={() => setInputFocused(true)}
-                    onBlur={() => setTimeout(() => setInputFocused(false), 100)}
+                    onBlur={() => setTimeout(() => setInputFocused(false), 200)}
                   />
                 </div>
               </div>
@@ -222,7 +228,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
                   onChange={(e) => setBidText(e.target.value)}
                   value={BidText}
                   onFocus={() => setInputFocused(true)}
-                  onBlur={() => setTimeout(() => setInputFocused(false), 100)}
+                  onBlur={() => setTimeout(() => setInputFocused(false), 200)}
                 />
                 <button 
                   className="bg-teal-500 text-white px-6 py-3 rounded-lg hover:bg-teal-600 transition duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed" 
@@ -233,8 +239,9 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
                 </button>
               </div>
             </div>
+
             {/* Safe area for home indicator on newer iPhones */}
-            <div className="h-safe-area-inset-bottom" />
+            <div className="h-4 bg-white" />
           </div>
         )}
 
