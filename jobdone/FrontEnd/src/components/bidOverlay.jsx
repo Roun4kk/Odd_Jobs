@@ -91,7 +91,14 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   if (isMobile) {
     return (
       <div className="fixed inset-0 z-60 bg-black/50 overflow-hidden">
-        <div className="flex flex-col w-full h-[100svh] bg-white">
+        <div 
+          className="flex flex-col w-full bg-white"
+          style={{ 
+            height: `${window.innerHeight}px`,
+            transform: `translateY(-${keyboardOffset}px)`,
+            transition: 'transform 0.3s ease'
+          }}
+        >
           
           {/* Header */}
           <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white flex-shrink-0 h-16">
@@ -116,10 +123,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
           </div>
 
           {/* Scrollable Content */}
-          <div
-            className="flex-1 overflow-y-auto min-h-0"
-            style={{ paddingBottom: keyboardOffset }}
-          >
+          <div className="flex-1 overflow-y-auto min-h-0">
             <div className="p-4 border-b border-gray-100">
               <p className="text-gray-800 leading-relaxed">{post.postDescription}</p>
             </div>
@@ -136,13 +140,13 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
                 setActiveBidPost={setActiveBidPost}
               />
             </div>
+            {/* Add bottom padding to prevent content from being hidden behind input */}
+            <div style={{ height: post?.status === "open" ? '140px' : '20px' }} />
           </div>
 
-          {/* Input Bar */}
+          {/* Input Bar - Fixed at bottom */}
           {post?.status === "open" && (
-            <div
-              className="border-t border-gray-200 bg-white p-4 flex-shrink-0"
-            >
+            <div className="border-t border-gray-200 bg-white p-4 flex-shrink-0">
               <div className="flex flex-col gap-3">
                 <input
                   type="number"
