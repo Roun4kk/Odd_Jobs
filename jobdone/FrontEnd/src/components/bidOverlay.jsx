@@ -72,8 +72,8 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
 
   if (isMobile) {
     return (
-      <div className="fixed inset-0 z-50 bg-white">
-        <div className="flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 4rem)' }}>
+      <div className="fixed inset-0 z-50 bg-white flex justify-center">
+        <div className="flex flex-col overflow-hidden relative max-w-md w-full" style={{ height: 'calc(100dvh - 4rem)' }}>
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto">
             <div className="p-4 border-b border-gray-100">
@@ -120,10 +120,10 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </div>
           </div>
 
-          {/* Bid input section - Centered with max width */}
+          {/* Bid input section - Centered with responsive width */}
           {post?.status === "open" && (
-            <div className="fixed bottom-16 left-0 right-0 w-full bg-white z-50 overflow-x-hidden">
-              <div className="max-w-md mx-auto px-4 py-3 flex gap-2 items-center">
+            <div className="w-full p-4 bg-white z-50" style={{ position: 'absolute', bottom: '1rem' }}>
+              <div className="max-w-md mx-auto flex gap-2 items-center flex-wrap">
                 <input
                   type="number"
                   placeholder="Bid"
@@ -134,13 +134,13 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
                 <input
                   type="text"
                   placeholder="Add a comment..."
-                  className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                  className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200 flex-shrink-0"
                   onChange={(e) => setBidText(e.target.value)}
                   value={BidText}
                 />
                 <button
                   onClick={handlePostSubmit}
-                  className="bg-teal-500 text-white px-4 py-2 rounded-full hover:bg-teal-600 transition text-sm font-medium min-w-[60px] flex-shrink-0"
+                  className="bg-teal-500 text-white px-4 py-2 rounded-full hover:bg-teal-600 transition text-sm font-medium flex-shrink-0"
                   style={{ minWidth: '60px' }}
                 >
                   Place
