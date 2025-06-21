@@ -37,43 +37,27 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
       
       if (heightDifference > keyboardThreshold) {
         setIsKeyboardOpen(true);
+        // Use the current height when keyboard is open
         setOverlayHeight(`${currentHeight}px`);
       } else {
         setIsKeyboardOpen(false);
-        setOverlayHeight('calc(var(--vh, 1vh) * 100 - 4rem)');
-        setViewportHeight(currentHeight);
+        setOverlayHeight('100vh');
+        if (heightDifference < 50) { // Only update viewport height when keyboard is closed
+          setViewportHeight(currentHeight);
+        }
       }
     };
 
     // Initial call
-    handleResize();
     setViewportHeight(window.innerHeight);
+    handleResize();
 
     // Listen for resize events (e.g., keyboard show/hide)
     window.addEventListener('resize', handleResize);
 
-    // Additional listeners for better keyboard detection on iOS
-    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-      window.addEventListener('focusin', () => {
-        setTimeout(() => {
-          setIsKeyboardOpen(true);
-        }, 300);
-      });
-      
-      window.addEventListener('focusout', () => {
-        setTimeout(() => {
-          setIsKeyboardOpen(false);
-        }, 300);
-      });
-    }
-
     return () => {
       document.body.style.overflow = "auto";
       window.removeEventListener('resize', handleResize);
-      if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-        window.removeEventListener('focusin', () => {});
-        window.removeEventListener('focusout', () => {});
-      }
     };
   }, [viewportHeight]);
 
@@ -127,7 +111,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
         <div 
           className="flex flex-col overflow-hidden relative w-full max-w-full" 
           style={{ 
-            height: isKeyboardOpen ? '100vh' : overlayHeight, 
+            height: overlayHeight, 
             maxWidth: '100vw' 
           }}
         >
@@ -162,7 +146,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </div>
 
             {/* Bid section with padding to prevent overlap with input bar */}
-            <div className="px-4 py-2 flex-1" style={{ paddingBottom: isKeyboardOpen ? '80px' : '70px' }}>
+            <div className="px-4 py-2 flex-1 pb-20">
               <BidSection
                 postId={post._id}
                 sortBy={sortBy}
@@ -177,19 +161,9 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </div>
           </div>
 
-          {/* Bid input section - Fixed at bottom, above keyboard */}
+          {/* Bid input section - Sticky at bottom */}
           {post?.status === "open" && (
-            <div 
-              className="w-full p-2 bg-white border-t border-gray-200 z-50"
-              style={{
-                position: 'fixed',
-                bottom: isKeyboardOpen ? '0' : 'env(safe-area-inset-bottom, 0px)',
-                left: '0',
-                right: '0',
-                transform: isKeyboardOpen ? 'translateY(0)' : 'none',
-                transition: 'all 0.3s ease-in-out'
-              }}
-            >
+            <div className="w-full p-2 bg-white border-t border-gray-200 z-50 flex-shrink-0">
               <div className="w-full max-w-full flex gap-2 items-center flex-nowrap overflow-x-hidden">
                 <input
                   type="number"
@@ -219,10 +193,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
 
           {/* Socket error display */}
           {socketError && (
-            <div 
-              className="absolute left-0 right-0 p-4 text-red-500 text-sm border-t border-red-200 bg-red-50"
-              style={{ bottom: isKeyboardOpen ? '80px' : '70px' }}
-            >
+            <div className="absolute bottom-20 left-0 right-0 p-4 text-red-500 text-sm border-t border-red-200 bg-red-50">
               Connection error: {socketError}. Please try refreshing the page or logging in again.
             </div>
           )}
