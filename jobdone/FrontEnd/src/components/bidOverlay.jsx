@@ -112,7 +112,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   // Mobile Layout
   if (isMobile) {
     return (
-      <div className="fixed inset-0 z-40 bg-black/50 flex flex-col">
+      <div className="fixed inset-0 z-60 bg-black/50 flex flex-col">
         {/* Main Content Area */}
         <div 
           className={`bg-white flex-1 flex flex-col transition-all duration-300 ${
@@ -189,7 +189,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
         {/* Input Bar - Fixed at bottom */}
         {post?.status === "open" && (
           <div 
-            className={`bg-white border-t border-gray-200 transition-transform duration-300 ease-in-out ${
+            className={`bg-white border-t border-gray-200 transition-transform duration-300 ease-in-out w-full ${
               isKeyboardVisible 
                 ? 'fixed bottom-0 left-0 right-0 z-50 transform translate-y-0' 
                 : 'relative'
@@ -197,51 +197,50 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             style={{
               transform: isKeyboardVisible 
                 ? `translateY(-${window.visualViewport ? (window.innerHeight - window.visualViewport.height) : 0}px)` 
-                : 'none'
+                : 'none',
+              maxWidth: '100vw'
             }}
           >
-            <div className="p-4 space-y-3 bg-white">
+            <div className="px-3 py-4 space-y-3 bg-white w-full max-w-full">
               {/* Bid Amount Input */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Bid Amount (₹{post.minimumBid} - ₹{post.maximumBid || '∞'})
-                  </label>
-                  <input 
-                    type="number" 
-                    placeholder="Enter your bid amount"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-lg"
-                    onChange={(e) => setBidAmount(Number(e.target.value))}
-                    value={BidAmount}
-                    onFocus={() => setInputFocused(true)}
-                    onBlur={() => setTimeout(() => setInputFocused(false), 200)}
-                  />
-                </div>
+              <div className="w-full">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Bid Amount (₹{post.minimumBid} - ₹{post.maximumBid || '∞'})
+                </label>
+                <input 
+                  type="number" 
+                  placeholder="Enter your bid amount"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-base min-w-0"
+                  onChange={(e) => setBidAmount(Number(e.target.value))}
+                  value={BidAmount}
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setTimeout(() => setInputFocused(false), 200)}
+                />
               </div>
 
-              {/* Comment Input */}
-              <div className="flex items-end gap-3">
+              {/* Comment Input and Button */}
+              <div className="flex items-end gap-2 w-full">
                 <input
                   type="text"
-                  placeholder="Add a comment (optional)..."
-                  className="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  placeholder="Add comment..."
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-base min-w-0"
                   onChange={(e) => setBidText(e.target.value)}
                   value={BidText}
                   onFocus={() => setInputFocused(true)}
                   onBlur={() => setTimeout(() => setInputFocused(false), 200)}
                 />
                 <button 
-                  className="bg-teal-500 text-white px-6 py-3 rounded-lg hover:bg-teal-600 transition duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed" 
+                  className="bg-teal-500 text-white px-4 py-3 rounded-lg hover:bg-teal-600 transition duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm whitespace-nowrap flex-shrink-0" 
                   onClick={handlePostSubmit}
                   disabled={!BidAmount || BidAmount < post.minimumBid || (post.maximumBid && BidAmount > post.maximumBid)}
                 >
-                  Place Bid
+                  Place
                 </button>
               </div>
             </div>
 
             {/* Safe area for home indicator on newer iPhones */}
-            <div className="h-4 bg-white" />
+            <div className="h-4 bg-white w-full" />
           </div>
         )}
 
