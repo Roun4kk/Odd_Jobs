@@ -19,10 +19,27 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   const isMobile = useIsMobile();
   useSocketRoomJoin(user?._id, setSocketError);
 
+  const [overlayHeight, setOverlayHeight] = useState('calc(100vh - 4rem)');
+
   useEffect(() => {
     document.body.style.overflow = "hidden";
+
+    const handleResize = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+      const newHeight = `calc(var(--vh, 1vh) * 100 - 4rem)`;
+      setOverlayHeight(newHeight);
+    };
+
+    // Initial call
+    handleResize();
+
+    // Listen for resize events (e.g., keyboard show/hide)
+    window.addEventListener('resize', handleResize);
+
     return () => {
       document.body.style.overflow = "auto";
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
 
@@ -73,7 +90,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   if (isMobile) {
     return (
       <div className="fixed inset-0 z-50 bg-white flex justify-center">
-        <div className="flex flex-col overflow-hidden relative w-full max-w-full" style={{ height: 'calc(100dvh - 4rem)', maxWidth: '100vw' }}>
+        <div className="flex flex-col overflow-hidden relative w-full max-w-full" style={{ height: overlayHeight, maxWidth: '100vw' }}>
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto">
             <div className="p-4 border-b border-gray-100">
@@ -95,7 +112,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
                 {post.user.verified.email && post.user.verified.phoneNumber && (
                   <BadgeCheck className="h-4 w-4 text-teal-400" />
                 )}
-                <button onClick={onClose} className="ml-auto p-2">
+                <button onClose={onClose} className="ml-auto p-2">
                   <X className="text-gray-600 hover:text-black w-6 h-6" />
                 </button>
               </div>
@@ -105,7 +122,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </div>
 
             {/* Bid section with padding to prevent overlap with input bar */}
-            <div className="px-4 py-2 flex-1 pb-24">
+            <div className="px-4 py-2 flex-1 pb-16">
               <BidSection
                 postId={post._id}
                 sortBy={sortBy}
@@ -122,8 +139,8 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
 
           {/* Bid input section - Single line limited to screen width */}
           {post?.status === "open" && (
-            <div className="w-full bg-white z-50" style={{ position: 'absolute', bottom: '1rem' }}>
-              <div className="w-full max-w-full flex py-2 px-2 items-center flex-nowrap overflow-x-hidden">
+            <div className="w-full p-2 bg-white z-50">
+              <div className="w-full max-w-full flex gap-2 items-center flex-nowrap overflow-x-hidden">
                 <input
                   type="number"
                   placeholder="Bid"
