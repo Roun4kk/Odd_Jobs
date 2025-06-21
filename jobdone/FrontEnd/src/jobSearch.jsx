@@ -168,8 +168,8 @@ function JobSearch() {
               loading={feedLoading}
               setPosts={setFilteredPosts}
               posts={filteredPosts}
-              topBids={{}}
-              setTopBids={() => {}}
+              topBids={topBids}
+              setTopBids={setTopBids}
               sortByMap={{}}
               setSortByMap={() => {}}
             />
