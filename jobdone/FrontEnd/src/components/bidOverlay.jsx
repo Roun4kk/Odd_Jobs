@@ -74,7 +74,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   if (isMobile) {
     return (
       <div className="fixed inset-0 z-50 bg-white">
-        <div className="flex flex-col overflow-hidden relative" style={{ height: 'calc(100vh - 4rem)' }}>
+        <div className="flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 4rem)' }}>
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto">
             <div className="p-4 border-b border-gray-100">
