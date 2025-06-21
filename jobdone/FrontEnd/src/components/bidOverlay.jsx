@@ -99,7 +99,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
           </div>
 
           {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto min-h-0">
             <div className="p-4 border-b border-gray-100">
               <p className="text-gray-800 leading-relaxed">{post.postDescription}</p>
             </div>
@@ -120,7 +120,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
 
           {/* Bottom input bar */}
           {post?.status === "open" && (
-            <div className="border-t border-gray-200 bg-white p-4">
+            <div className="border-t border-gray-200 bg-white p-4 mt-auto">
               <div className="flex flex-col gap-3">
                 <input
                   type="number"
