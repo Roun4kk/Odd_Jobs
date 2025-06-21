@@ -74,11 +74,11 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   // Mobile Layout
   if (isMobile) {
     return (
-      <div className="fixed inset-0 z-60 bg-black/50 overflow-auto">
-        <div className="flex flex-col w-full bg-white min-h-screen">
-
-          {/* Header */}
-          <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white">
+      <div className="fixed inset-0 z-60 bg-black/50 overflow-hidden">
+        <div className="flex flex-col w-full h-[100svh] bg-white">
+          
+          {/* Header (fixed height) */}
+          <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white flex-shrink-0 h-16">
             <img 
               src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"} 
               alt="User" 
@@ -87,7 +87,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
               onClick={() =>
                 navigate(user._id === post.user._id ? `/profile` : `/profile/${post.user._id}`)
               }
-              className="text-base font-semibold"
+              className="text-base font-semibold truncate"
             >
               {post.user.username}
             </button>
@@ -99,8 +99,8 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </button>
           </div>
 
-          {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto min-h-0 max-h-[calc(100svh-200px)]">
+          {/* Scrollable Content: fits between header and input */}
+          <div className="flex-1 overflow-y-auto min-h-0">
             <div className="p-4 border-b border-gray-100">
               <p className="text-gray-800 leading-relaxed">{post.postDescription}</p>
             </div>
@@ -119,9 +119,9 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </div>
           </div>
 
-          {/* Bottom input bar */}
+          {/* Input Bar - Always visible, and pushed up with keyboard */}
           {post?.status === "open" && (
-            <div className="border-t border-gray-200 bg-white p-4 mt-auto">
+            <div className="border-t border-gray-200 bg-white p-4 flex-shrink-0">
               <div className="flex flex-col gap-3">
                 <input
                   type="number"
@@ -146,13 +146,6 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
                   </button>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Socket error */}
-          {socketError && (
-            <div className="p-4 text-red-500 bg-red-100 text-sm">
-              Connection error: {socketError}
             </div>
           )}
         </div>
