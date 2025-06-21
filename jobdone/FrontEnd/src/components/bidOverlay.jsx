@@ -123,7 +123,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
 
           {/* Bid input section - Absolute positioned at bottom with no gap */}
           {post?.status === "open" && (
-            <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 p-4 bg-white">
+            <div className="absolute bottom-0 left-0 right-0 w-full border-t border-gray-200 p-4 bg-white">
               <div className="flex gap-2 items-center">
                 <input
                   type="number"
