@@ -74,8 +74,9 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   // Mobile Layout
   if (isMobile) {
     return (
-      <div className="fixed inset-0 z-60 bg-black/50 flex">
-        <div className="flex flex-col w-full bg-white" style={{ height: '100dvh' }}>
+      <div className="fixed inset-0 z-60 bg-black/50 overflow-auto">
+        <div className="flex flex-col w-full bg-white min-h-screen">
+
           {/* Header */}
           <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white">
             <img 
@@ -99,7 +100,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
           </div>
 
           {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex-1 overflow-y-auto min-h-0 max-h-[calc(100svh-200px)]">
             <div className="p-4 border-b border-gray-100">
               <p className="text-gray-800 leading-relaxed">{post.postDescription}</p>
             </div>
