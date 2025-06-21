@@ -1,4 +1,3 @@
-// Updated BidOverlay.jsx with improved mobile UI and proper z-index layering
 import { useState, useEffect } from "react";
 import { X, BadgeCheck } from "lucide-react";
 import ImageSlider from "./ImageSlider";
@@ -121,14 +120,14 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </div>
           </div>
 
-          {/* Bid input section - Absolute positioned at bottom with no gap */}
+          {/* Bid input section - Centered with max width */}
           {post?.status === "open" && (
-            <div className="fixed bottom-16 left-0 right-0 w-full border-t border-gray-200 bg-white z-50 overflow-x-hidden">
-              <div className="w-full max-w-md mx-auto px-4 py-3 flex gap-2 items-center">
+            <div className="fixed bottom-16 left-0 right-0 w-full bg-white z-50 overflow-x-hidden">
+              <div className="max-w-md mx-auto px-4 py-3 flex gap-2 items-center">
                 <input
                   type="number"
                   placeholder="Bid"
-                  className="w-20 border border-gray-300 rounded-full px-3 py-2 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                  className="w-20 border border-gray-300 rounded-full px-3 py-2 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200 flex-shrink-0"
                   onChange={(e) => setBidAmount(Number(e.target.value))}
                   value={BidAmount}
                 />
@@ -141,7 +140,8 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
                 />
                 <button
                   onClick={handlePostSubmit}
-                  className="bg-teal-500 text-white px-4 py-2 rounded-full hover:bg-teal-600 transition text-sm font-medium min-w-[60px]"
+                  className="bg-teal-500 text-white px-4 py-2 rounded-full hover:bg-teal-600 transition text-sm font-medium min-w-[60px] flex-shrink-0"
+                  style={{ minWidth: '60px' }}
                 >
                   Place
                 </button>
