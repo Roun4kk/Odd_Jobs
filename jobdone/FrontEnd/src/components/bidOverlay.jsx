@@ -109,22 +109,20 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
     }
   };
 
-  // ✅ Mobile Layout - Using paddingBottom to push the entire view up
-  if (isMobile) {
+if (isMobile) {
+    // This layout uses pure CSS flexbox to adapt to the keyboard.
+    // No JavaScript for keyboard detection is needed.
     return (
-      <div className="fixed inset-0 z-60 bg-black/50 overflow-hidden">
-        <div 
-          className="flex flex-col w-full h-full bg-white transition-all duration-200 ease-in-out"
-          style={{ 
-            transform: `translateY(-${keyboardOffset}px)`
-          }}
-        >
-          {/* Header */}
-          <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white flex-shrink-0 h-16">
-            <img 
-              src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"} 
-              alt="User" 
-              className="w-10 h-10 rounded-full object-cover border" />
+      <div className="fixed inset-0 z-60 bg-white">
+        <div className="flex flex-col h-full">
+
+          {/* 1. Header: Stays fixed at the top */}
+          <div className="flex items-center gap-3 p-4 border-b border-gray-200 flex-shrink-0">
+            <img
+              src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
+              alt="User"
+              className="w-10 h-10 rounded-full object-cover border"
+            />
             <button
               onClick={() =>
                 navigate(user._id === post.user._id ? `/profile` : `/profile/${post.user._id}`)
@@ -141,12 +139,15 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </button>
           </div>
 
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto min-h-0">
+          {/* 2. Scrollable Content Area */}
+          {/* This is the key: It takes up the remaining space and scrolls.
+              'flex-1' makes it grow and shrink.
+              'min-h-0' is crucial to allow it to shrink properly in flexbox. */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="p-4 border-b border-gray-100">
               <p className="text-gray-800 leading-relaxed">{post.postDescription}</p>
             </div>
-            <div className="p-4 pb-32">
+            <div className="p-4">
               <BidSection
                 postId={post._id}
                 sortBy={sortBy}
@@ -161,7 +162,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </div>
           </div>
 
-          {/* Input Bar */}
+          {/* 3. Input Bar: Stays fixed at the bottom */}
           {post?.status === "open" && (
             <div className="border-t border-gray-200 bg-white p-4 flex-shrink-0">
               <div className="flex flex-col gap-3">
