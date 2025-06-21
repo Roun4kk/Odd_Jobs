@@ -113,85 +113,80 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   if (isMobile) {
     return (
       <div className="fixed inset-0 z-60 bg-black/50 flex flex-col">
-        {/* Main Content Area */}
+        {/* Header - Fixed at top */}
+        <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white flex-shrink-0">
+          <img 
+            src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"} 
+            alt="User" 
+            className="w-10 h-10 rounded-full border-2 border-gray-200 object-cover flex-shrink-0"
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h2 
+                onClick={() => {
+                  if (user._id === post.user._id) {
+                    navigate(`/profile`); 
+                  } else {
+                    navigate(`/profile/${post.user._id}`); 
+                  }
+                }} 
+                className="text-lg font-semibold cursor-pointer truncate"
+              >
+                {post.user.username}
+              </h2>
+              {post.user.verified.email && post.user.verified.phoneNumber && (
+                <BadgeCheck className="h-5 w-5 text-teal-400 flex-shrink-0" />
+              )}
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full flex-shrink-0">
+            <X className="h-6 w-6 text-gray-600" />
+          </button>
+        </div>
+
+        {/* Scrollable Content Area - Takes remaining space */}
         <div 
-          className={`bg-white flex-1 flex flex-col transition-all duration-300 ${
-            isKeyboardVisible ? 'pb-40' : 'pb-20'
-          }`}
+          className="flex-1 overflow-y-auto bg-white"
           style={{
             height: isKeyboardVisible 
-              ? `${window.visualViewport?.height || (window.innerHeight - 300)}px`
-              : 'calc(100vh - 5rem)'
+              ? `${(window.visualViewport?.height || window.innerHeight) - 200}px` // Reserve space for header + input bar
+              : 'calc(100vh - 80px - 160px)' // 80px header + 160px input area
           }}
         >
-          {/* Header */}
-          <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
-            <img 
-              src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"} 
-              alt="User" 
-              className="w-10 h-10 rounded-full border-2 border-gray-200 object-cover flex-shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 
-                  onClick={() => {
-                    if (user._id === post.user._id) {
-                      navigate(`/profile`); 
-                    } else {
-                      navigate(`/profile/${post.user._id}`); 
-                    }
-                  }} 
-                  className="text-lg font-semibold cursor-pointer truncate"
-                >
-                  {post.user.username}
-                </h2>
-                {post.user.verified.email && post.user.verified.phoneNumber && (
-                  <BadgeCheck className="h-5 w-5 text-teal-400 flex-shrink-0" />
-                )}
-              </div>
-            </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
-              <X className="h-6 w-6 text-gray-600" />
-            </button>
+          {/* Post Description */}
+          <div className="p-4 border-b border-gray-100">
+            <p className="text-gray-800 leading-relaxed">{post.postDescription}</p>
           </div>
 
-          {/* Content Area - Scrollable */}
-          <div className="flex-1 overflow-y-auto">
-            {/* Post Description */}
-            <div className="p-4 border-b border-gray-100">
-              <p className="text-gray-800 leading-relaxed">{post.postDescription}</p>
+          {/* Images */}
+          {post.mediaUrls && post.mediaUrls.length > 0 && (
+            <div className="border-b border-gray-100">
+              <ImageSlider mediaUrls={post.mediaUrls} />
             </div>
+          )}
 
-            {/* Images */}
-            {post.mediaUrls && post.mediaUrls.length > 0 && (
-              <div className="border-b border-gray-100">
-                <ImageSlider mediaUrls={post.mediaUrls} />
-              </div>
-            )}
-
-            {/* Bid Section */}
-            <div className="p-4">
-              <BidSection 
-                postId={post._id} 
-                sortBy={sortBy} 
-                refresh={refresh} 
-                currentUserId={userId} 
-                jobPosterId={post.user._id} 
-                post={post} 
-                setPosts={setPosts} 
-                setRefresh={setRefresh} 
-                setActiveBidPost={setActiveBidPost} 
-              />
-            </div>
+          {/* Bid Section - This will scroll if too long */}
+          <div className="p-4">
+            <BidSection 
+              postId={post._id} 
+              sortBy={sortBy} 
+              refresh={refresh} 
+              currentUserId={userId} 
+              jobPosterId={post.user._id} 
+              post={post} 
+              setPosts={setPosts} 
+              setRefresh={setRefresh} 
+              setActiveBidPost={setActiveBidPost} 
+            />
           </div>
         </div>
 
-        {/* Input Bar - Fixed at bottom */}
+        {/* Input Bar - Always fixed at bottom */}
         {post?.status === "open" && (
           <div 
-            className={`bg-white border-t border-gray-200 transition-transform duration-300 ease-in-out w-full ${
+            className={`bg-white border-t border-gray-200 transition-transform duration-300 ease-in-out w-full flex-shrink-0 ${
               isKeyboardVisible 
-                ? 'fixed bottom-0 left-0 right-0 z-50 transform translate-y-0' 
+                ? 'fixed bottom-0 left-0 right-0 z-50' 
                 : 'relative'
             }`}
             style={{
