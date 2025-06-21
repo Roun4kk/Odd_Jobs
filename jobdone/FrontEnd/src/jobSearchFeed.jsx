@@ -100,14 +100,14 @@ function JobSearchFeed({
   // Show search loading
   if (loading) {
     return (
-      <div className="w-3/4 mt-4">
+      <div className="w-full lg:w-3/4 mt-4 space-y-4 max-w-md lg:max-w-none mx-auto">
         <LoadingSpinner />
       </div>
     );
   }
 
   return (
-    <div className="w-3/4 mt-4 space-y-4">
+    <div className="w-full lg:w-3/4 mt-4 space-y-4 max-w-md lg:max-w-none mx-auto">
       {posts.length === 0 ? (
         <EmptyState hasSearchTerm={true} />
       ) : (

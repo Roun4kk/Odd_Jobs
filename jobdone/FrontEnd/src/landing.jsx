@@ -43,8 +43,8 @@ function Landing() {
       <div className="min-h-screen bg-gray-50">
         {/* Mobile Header */}
         <div className="sticky top-0 z-50 bg-white shadow-sm">
-          <div className="flex items-center justify-center h-14 px-4">
-            <div className="w-full max-w-[160px]">
+          <div className="flex items-center justify-center h-12 px-4">
+            <div className="w-full items-center mt-4 justify-center max-w-[160px]">
               <img
                 src={logo}
                 alt="JobDone Logo"
