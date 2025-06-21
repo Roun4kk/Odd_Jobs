@@ -120,28 +120,28 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </div>
           </div>
 
-          {/* Bid input section - Centered with responsive width */}
+          {/* Bid input section - Single line with responsive width */}
           {post?.status === "open" && (
             <div className="w-full p-4 bg-white z-50" style={{ position: 'absolute', bottom: '1rem' }}>
-              <div className="max-w-md mx-auto flex gap-2 items-center flex-wrap">
+              <div className="max-w-md mx-auto flex gap-2 items-center flex-nowrap">
                 <input
                   type="number"
                   placeholder="Bid"
-                  className="w-20 border border-gray-300 rounded-full px-3 py-2 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200 flex-shrink-0"
+                  className="w-16 border border-gray-300 rounded-full px-3 py-2 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200 flex-shrink"
                   onChange={(e) => setBidAmount(Number(e.target.value))}
                   value={BidAmount}
                 />
                 <input
                   type="text"
                   placeholder="Add a comment..."
-                  className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200 flex-shrink-0"
+                  className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200 flex-shrink"
                   onChange={(e) => setBidText(e.target.value)}
                   value={BidText}
                 />
                 <button
                   onClick={handlePostSubmit}
-                  className="bg-teal-500 text-white px-4 py-2 rounded-full hover:bg-teal-600 transition text-sm font-medium flex-shrink-0"
-                  style={{ minWidth: '60px' }}
+                  className="bg-teal-500 text-white px-3 py-2 rounded-full hover:bg-teal-600 transition text-sm flex-shrink-0"
+                  style={{ minWidth: '50px' }}
                 >
                   Place
                 </button>
