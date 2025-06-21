@@ -17,31 +17,10 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   const navigate = useNavigate();
   const [socketError, setSocketError] = useState(null);
   const isMobile = useIsMobile();
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
   useSocketRoomJoin(user?._id, setSocketError);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
-
-    if (window.visualViewport) {
-      const updateKeyboardHeight = () => {
-        const viewportHeight = window.visualViewport.height;
-        const windowHeight = window.innerHeight;
-        const keyboardOffset = windowHeight - viewportHeight;
-        
-        // Only set keyboard height if keyboard is actually open (significant height difference)
-        setKeyboardHeight(keyboardOffset > 150 ? keyboardOffset : 0);
-      };
-
-      window.visualViewport.addEventListener("resize", updateKeyboardHeight);
-      updateKeyboardHeight();
-
-      return () => {
-        document.body.style.overflow = "auto";
-        window.visualViewport.removeEventListener("resize", updateKeyboardHeight);
-      };
-    }
-
     return () => {
       document.body.style.overflow = "auto";
     };
@@ -91,7 +70,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
     }
   };
 
-  // ✅ Mobile Layout - Instagram-like keyboard behavior
+  // ✅ Mobile Layout - Simple Instagram-like behavior
   if (isMobile) {
     return (
       <div className="fixed inset-0 z-60 bg-black/50 overflow-hidden">
@@ -120,13 +99,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
           </div>
 
           {/* Scrollable Content */}
-          <div 
-            className="flex-1 overflow-y-auto min-h-0"
-            style={{ 
-              // Reduce available height when keyboard is open, but don't use padding
-              height: keyboardHeight > 0 ? `calc(100vh - 64px - 88px - ${keyboardHeight}px)` : 'auto'
-            }}
-          >
+          <div className="flex-1 overflow-y-auto min-h-0">
             <div className="p-4 border-b border-gray-100">
               <p className="text-gray-800 leading-relaxed">{post.postDescription}</p>
             </div>
@@ -145,16 +118,9 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </div>
           </div>
 
-          {/* Input Bar - Fixed position, sits right above keyboard */}
+          {/* Input Bar - Fixed to bottom, browser handles keyboard */}
           {post?.status === "open" && (
-            <div 
-              className="border-t border-gray-200 bg-white p-4 flex-shrink-0 absolute bottom-0 left-0 right-0"
-              style={{ 
-                // Position it exactly at the top of the keyboard
-                bottom: keyboardHeight > 0 ? `${keyboardHeight}px` : '0px',
-                transition: 'bottom 0.2s ease-in-out'
-              }}
-            >
+            <div className="border-t border-gray-200 bg-white p-4 flex-shrink-0">
               <div className="flex flex-col gap-3">
                 <input
                   type="number"
