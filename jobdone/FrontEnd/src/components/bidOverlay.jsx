@@ -114,10 +114,7 @@ if (isMobile) {
     // No JavaScript for keyboard detection is needed.
     return (
       <div className="fixed inset-0 z-60 bg-white">
-        <div 
-          className="flex flex-col h-full"
-          style={{ paddingBottom: `${keyboardOffset}px` }}
-        >
+        <div className="flex flex-col h-full">
 
           {/* 1. Header: Stays fixed at the top */}
           <div className="flex items-center gap-3 p-4 border-b border-gray-200 flex-shrink-0">
@@ -146,7 +143,10 @@ if (isMobile) {
           {/* This is the key: It takes up the remaining space and scrolls.
               'flex-1' makes it grow and shrink.
               'min-h-0' is crucial to allow it to shrink properly in flexbox. */}
-          <div className="flex-1 min-h-0 overflow-y-auto">
+          <div 
+            className="flex-1 min-h-0 overflow-y-auto"
+            style={{ paddingBottom: `${keyboardOffset}px` }}
+          >
             <div className="p-4 border-b border-gray-100">
               <p className="text-gray-800 leading-relaxed">{post.postDescription}</p>
             </div>
@@ -165,7 +165,7 @@ if (isMobile) {
             </div>
           </div>
 
-          {/* 3. Input Bar: Stays fixed at the bottom */}
+          {/* 3. Input Bar: Stays at bottom, moves with scroll but not above keyboard */}
           {post?.status === "open" && (
             <div className="border-t border-gray-200 bg-white p-4 flex-shrink-0">
               <div className="flex flex-col gap-3">
