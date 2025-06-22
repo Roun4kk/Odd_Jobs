@@ -133,7 +133,7 @@ function JobPostInput({ refresh, user }) {
   };
 
   return (
-    <div className="w-3/4 mx-auto bg-white p-6 rounded-xl shadow-lg flex flex-col gap-4 my-4">
+    <div className="w-full bg-white p-4 flex flex-col gap-4 lg:w-3/4 lg:mx-auto lg:p-6 lg:rounded-xl lg:shadow-lg lg:my-4">
       {/* Textarea */}
       <div className="w-full">
         <textarea

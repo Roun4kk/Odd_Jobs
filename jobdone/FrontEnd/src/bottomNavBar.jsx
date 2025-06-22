@@ -3,7 +3,7 @@ import {
   Search,
   MessageCircle,
   User,
-  PlusSquare,
+  Settings,
   Bell
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -36,13 +36,6 @@ function BottomNavbar({ onPostClick }) {
         </button>
 
         <button
-          onClick={() => onPostClick("post")}
-          className="flex flex-col items-center py-2 px-3 rounded text-white hover:bg-teal-600 transition"
-        >
-          <PlusSquare size={24} />
-        </button>
-
-        <button
           onClick={() => navigate("/messages")}
           className={`flex flex-col items-center py-2 px-3 rounded relative transition ${
             isActive("/messages") ? "bg-teal-600 text-white" : "text-white hover:bg-teal-600"
@@ -70,6 +63,11 @@ function BottomNavbar({ onPostClick }) {
           }`}
         >
           <User size={24} />
+        </button>
+        <button
+          className="flex flex-col items-center py-2 px-3 rounded text-white hover:bg-teal-600 transition"
+        >
+          <Settings size={24} />
         </button>
       </div>
     </div>

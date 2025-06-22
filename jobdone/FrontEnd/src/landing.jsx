@@ -54,50 +54,22 @@ function Landing() {
           </div>
         </div>
 
-        {/* Job Post Overlay */}
-        {showJobPost && (
-          <div className="fixed inset-0 z-50 bg-white transition-transform duration-300 transform translate-y-0">
-            <div className="sticky top-0 bg-white shadow-sm px-4 py-3 flex items-center justify-between">
-              <button onClick={() => setShowJobPost(false)} className="text-gray-600 font-medium">Cancel</button>
-              <h2 className="font-semibold text-lg text-gray-800">Create Post</h2>
-              <div className="w-12" />
-            </div>
-            <div className="p-4">
-              <JobPostInput
-                refresh={() => {
-                  setRefreshFlag((prev) => !prev);
-                  setShowJobPost(false);
-                }}
-                user={user}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Skill Search Overlay */}
-        {showSkillsSearch && (
-          <div className="fixed inset-0 z-50 bg-white transition-transform duration-300 transform translate-y-0">
-            <div className="sticky top-0 bg-white shadow-sm px-4 py-3 flex items-center justify-between">
-              <button onClick={() => setShowSkillsSearch(false)} className="text-gray-600 font-medium">Cancel</button>
-              <h2 className="font-semibold text-lg text-gray-800">Search Skills</h2>
-              <div className="w-12" />
-            </div>
-            <div className="p-4">
-              <SearchSkills />
-            </div>
-          </div>
-        )}
 
         {/* Feed - Fixed container height to prevent navbar overlap */}
         {!showJobPost && !showSkillsSearch && (
           <div 
-            className="w-full px-4 pt-6 flex justify-center overflow-y-auto"
+            className="w-full overflow-y-auto" // Removed padding and flex properties
             style={{ 
-              height: 'calc(100vh - 4rem)', // Full height minus header (4rem)
-              paddingBottom: '4rem' // Padding equal to navbar height
+              height: 'calc(100dvh - 7rem)',
             }}
-          >
-            <div className="w-full max-w-md">
+          > 
+            {/* JobPostInput is now a direct child and will control its own width */}
+            <JobPostInput
+              refresh={() => setRefreshFlag((prev) => !prev)}
+              user={user}
+            />
+            {/* A new wrapper for JobFeed to constrain its width and add padding */}
+            <div className="w-full max-w-md mx-auto px-4">
               <JobFeed refreshFlag={refreshFlag} />
             </div>
           </div>
@@ -105,7 +77,7 @@ function Landing() {
 
         {/* Bottom Nav - No gap, directly attached */}
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-md">
-          <BottomNavbar onPostClick={handleOverlay} activeTab="home" />
+          <BottomNavbar />
         </div>
       </div>
     );
