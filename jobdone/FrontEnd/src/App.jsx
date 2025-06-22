@@ -514,7 +514,7 @@ function App() {
   const renderAuthForm = () => (
     <div className="flex flex-col items-center justify-center gap-4 bg-teal-400 w-full p-4 h-screen">
       <div className="flex-shrink-0">
-        <div className="w-36 h-36">
+        <div className="w-60 h-60">
           <img
             src={logo}
             alt="JobDone Logo"
