@@ -154,13 +154,13 @@ function OtherProfile() {
               <div className="flex gap-2 flex-shrink-0">
                 <button 
                   onClick={() => navigate("/")}
-                  className="px-3 py-1 text-[10px] text-teal-600 border whitespace-nowrap border-teal-600 rounded-full hover:bg-teal"
+                  className="px-3 py-1 text-sm text-teal-600 border whitespace-nowrap border-teal-600 rounded-full hover:bg-teal"
                 >
                   Sign In
                 </button>
                 <button 
                   onClick={() => navigate("/")}
-                  className="px-3 py-1 text-[10px] bg-teal-600 text-white rounded-full hover:bg-teal-700 whitespace-nowrap"
+                  className="px-3 py-1 text-sm bg-teal-600 text-white rounded-full hover:bg-teal-700 whitespace-nowrap"
                 >
                   Sign Up
                 </button>
