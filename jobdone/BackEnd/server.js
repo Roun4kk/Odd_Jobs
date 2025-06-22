@@ -815,15 +815,15 @@ app.get('/posts', async (req, res) => {
       })
       .populate({
         path: 'bids.user',
-        select: 'username userImage verified _id ratings'
+        select: 'username userImage verified _id ratings averageRating totalRating',
       })
       .populate({
         path: 'comments.user',
-        select: 'username userImage verified _id ratings'
+        select: 'username userImage verified _id '
       })
       .populate({
         path: 'comments.replies.user',
-        select: 'username userImage verified _id ratings'
+        select: 'username userImage verified _id '
       });
 
     res.status(200).json(posts);
@@ -1387,50 +1387,56 @@ app.post("/posts/comments/replies", async (req, res) => {
   }
 });
 
-app.post("/posts/bids", async (req, res) => {
-  const { postId, BidText, username, BidAmount } = req.body;
+app.get("/posts/bids", async (req, res) => {
+  const { postId, currentUserId, sortBy } = req.query;
 
-  if (!postId || !BidAmount || !username) {
-    return res.status(400).json({ message: "Missing required fields" });
+  if (!postId) {
+    return res.status(400).json({ message: "postId is missing" });
   }
 
   try {
-    const user = await User.findOne({ username });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    const post = await Post.findById(postId)
+      .populate('user', '_id')
+      .populate('bids.user', 'username userImage verified _id averageRating totalRating');
 
-    await User.updateOne(
-      { username },
-      { $push: { bidIds: postId } }
-    );
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
 
-    const post = await Post.findById(postId);
-    if (!post) return res.status(404).json({ message: "Post not found" });
+    let bids = post.bids || [];
 
-    post.bids.push({
-      user: user._id,     
-      BidText,
-      BidAmount
-    });
-
-    await post.save();
-    res.status(200).json({ 
-      message: "Bid added successfully", 
-      bid: { 
-        user: {
-          _id: user._id,
-          username: user.username,
-          verified: user.verified || {},
-          userImage: user.userImage
-        }, 
-        BidText, 
-        BidAmount 
+    // Sort logic
+    bids.sort((a, b) => {
+      if (sortBy === "rating") {
+        const ratingDiff = (b.user.averageRating || 0) - (a.user.averageRating || 0);
+        if (ratingDiff !== 0) return ratingDiff;
+      } else {
+        const amountDiff = sortBy === "1"
+          ? a.BidAmount - b.BidAmount
+          : b.BidAmount - a.BidAmount;
+        if (amountDiff !== 0) return amountDiff;
       }
+
+      // Tie-breaker: verified
+      const aVer = a.user.verified?.email && a.user.verified?.phoneNumber;
+      const bVer = b.user.verified?.email && b.user.verified?.phoneNumber;
+      if (aVer !== bVer) return aVer ? -1 : 1;
+
+      // Tie-breaker: earlier bid
+      const timeDiff = new Date(a.createdAt) - new Date(b.createdAt);
+      if (timeDiff !== 0) return timeDiff;
+
+      // Final fallback
+      return a._id.toString().localeCompare(b._id.toString());
     });
+
+    res.status(200).json(bids);
   } catch (error) {
-    console.error("❌ Error while adding bid:", error);
+    console.error("❌ Error while loading bids:", error);
     res.status(500).json({ message: error.message });
   }
 });
+
 
 app.delete("/posts/bids", async (req, res) => {
   const { postId, userId, BidAmount } = req.body;
@@ -1527,10 +1533,16 @@ app.get("/posts/topbid", async (req, res) => {
     let bids = post.bids || [];
 
     bids.sort((a, b) => {
-      // amount comparison
-      const amountDiff = sortBy === '1'
-        ? a.BidAmount - b.BidAmount
-        : b.BidAmount - a.BidAmount;
+      if (sortBy === "rating") {
+        const ratingDiff = (b.user.averageRating || 0) - (a.user.averageRating || 0);
+        if (ratingDiff !== 0) return ratingDiff;
+      } else {
+        const amountDiff = sortBy === '1'
+          ? a.BidAmount - b.BidAmount
+          : b.BidAmount - a.BidAmount;
+        if (amountDiff !== 0) return amountDiff;
+      }
+
       if (amountDiff !== 0) return amountDiff;
 
       // verified‐user tiebreaker
@@ -1576,15 +1588,15 @@ app.get("/user/posts", async (req, res) => {
       })
       .populate({
         path: 'bids.user',
-        select: 'username userImage verified _id ratings'
+        select: 'username userImage verified _id averageRating totalRating'
       })
       .populate({
         path: 'comments.user',
-        select: 'username userImage verified _id ratings'
+        select: 'username userImage verified _id '
       })
       .populate({
         path: 'comments.replies.user',
-        select: 'username userImage verified _id ratings'
+        select: 'username userImage verified _id '
       });
 
     res.status(200).json(posts);
@@ -1618,15 +1630,15 @@ app.get("/user/bids", async (req, res) => {
       })
       .populate({
         path: 'bids.user',
-        select: 'username userImage verified _id ratings'
+        select: 'username userImage verified _id averageRating totalRating'
       })
       .populate({
         path: 'comments.user',
-        select: 'username userImage verified _id ratings'
+        select: 'username userImage verified _id'
       })
       .populate({
         path: 'comments.replies.user',
-        select: 'username userImage verified _id ratings'
+        select: 'username userImage verified _id'
       });
 
     res.status(200).json(posts);
@@ -1663,15 +1675,15 @@ app.get("/user/reviews", async (req, res) => {
       })
       .populate({
         path: 'bids.user',
-        select: 'username userImage verified _id ratings'
+        select: 'username userImage verified _id averageRating totalRating'
       })
       .populate({
         path: 'comments.user',
-        select: 'username userImage verified _id ratings'
+        select: 'username userImage verified _id'
       })
       .populate({
         path: 'comments.replies.user',
-        select: 'username userImage verified _id ratings'
+        select: 'username userImage verified _id'
       });
 
     res.status(200).json(posts);
@@ -2689,15 +2701,15 @@ app.get("/users/saved", async (req, res) => {
       })
       .populate({
         path: 'bids.user',
-        select: 'username userImage verified _id ratings'
+        select: 'username userImage verified _id averageRating totalRating'
       })
       .populate({
         path: 'comments.user',
-        select: 'username userImage verified _id ratings'
+        select: 'username userImage verified _id '
       })
       .populate({
         path: 'comments.replies.user',
-        select: 'username userImage verified _id ratings'
+        select: 'username userImage verified _id '
       });
     
     res.status(200).json(posts);

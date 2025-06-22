@@ -24,25 +24,12 @@ function Landing() {
     );
   }
 
-  const handleOverlay = (type) => {
-    if (type === "post") {
-      setShowJobPost(true);
-      setShowSkillsSearch(false);
-    } else if (type === "skills") {
-      setShowSkillsSearch(true);
-      setShowJobPost(false);
-    } else {
-      setShowJobPost(false);
-      setShowSkillsSearch(false);
-    }
-  };
-
   // Mobile layout
   if (isMobile) {
     return (
       <div className="min-h-screen flex flex-col">
         {/* Mobile Header */}
-        <div className="sticky top-0 bg-white shadow-sm flex-shrink-0">
+        <div className="sticky top-0 bg-teal-50 z-10 shadow-sm flex-shrink-0">
           <div className="flex items-center justify-center h-12 px-4">
             <div className="w-full items-center mt-4 justify-center max-w-[160px]">
               <img

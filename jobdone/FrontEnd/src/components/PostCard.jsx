@@ -74,17 +74,25 @@ const PostCard = ({
     }
 
     const sorted = [...bids].sort((a, b) => {
-      const amountDiff =
-        sortByMap[localPost._id] === "1"
-          ? a.BidAmount - b.BidAmount
-          : b.BidAmount - a.BidAmount;
+      const sortBy = sortByMap[localPost._id];
 
-      if (amountDiff !== 0) return amountDiff;
+      if (sortBy === "rating") {
+        // Descending by averageRating
+        const ratingDiff = (b.user.averageRating || 0) - (a.user.averageRating || 0);
+        if (ratingDiff !== 0) return ratingDiff;
+      } else {
+        // BidAmount sorting
+        const amountDiff =
+          sortBy === "1" ? a.BidAmount - b.BidAmount : b.BidAmount - a.BidAmount;
+        if (amountDiff !== 0) return amountDiff;
+      }
 
+      // Tie-breaker 1: verified user
       const aVer = a.user.verified?.email && a.user.verified?.phoneNumber;
       const bVer = b.user.verified?.email && b.user.verified?.phoneNumber;
       if (aVer !== bVer) return aVer ? -1 : 1;
 
+      // Tie-breaker 2: earliest bid
       return new Date(a.createdAt) - new Date(b.createdAt);
     });
 
@@ -170,11 +178,11 @@ const PostCard = ({
           >
             Sort Bids
             <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
             </svg>
           </button>
           {dropdownPostId === localPost._id && (
-            <div className="absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+            <div className="absolute right-0 bottom-full mb-2 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-10">
               <ul className="py-1 text-sm text-gray-700">
                 <li>
                   <button
@@ -184,7 +192,7 @@ const PostCard = ({
                     }}
                     className="block w-full px-4 py-2 hover:bg-gray-100 cursor-pointer"
                   >
-                    Highest First
+                    Highest
                     {sortByMap[localPost._id] === "-1" && <span className="ml-1">✅</span>}
                   </button>
                 </li>
@@ -196,8 +204,20 @@ const PostCard = ({
                     }}
                     className="block w-full px-4 py-2 hover:bg-gray-100 cursor-pointer"
                   >
-                    Lowest First
+                    Lowest
                     {sortByMap[localPost._id] === "1" && <span className="ml-1">✅</span>}
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      setSortByMap(prev => ({ ...prev, [localPost._id]: "rating" }));
+                      setDropdownPostId(null);
+                    }}
+                    className="block w-full px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  >
+                    Ratings
+                    {sortByMap[localPost._id] === "rating" && <span className="ml-1">✅</span>}
                   </button>
                 </li>
               </ul>

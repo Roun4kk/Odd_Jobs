@@ -53,13 +53,18 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
         
         setBids((prev) => {
           const updated = [...prev, normalizedBid];
-          if (sortBy === "1") {
+
+          if (sortBy === "rating") {
+            updated.sort((a, b) => (b.user.averageRating || 0) - (a.user.averageRating || 0));
+          } else if (sortBy === "1") {
             updated.sort((a, b) => a.BidAmount - b.BidAmount);
           } else {
             updated.sort((a, b) => b.BidAmount - a.BidAmount);
           }
+
           return updated;
         });
+
       }
     };
     socket.on("receiveNewBid", handleNewBid);
