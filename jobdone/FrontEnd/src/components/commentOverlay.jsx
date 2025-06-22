@@ -141,84 +141,83 @@ function CommentOverlay({ post, onClose }) {
 
   if (isMobile) {
     return (
-      <div className="fixed inset-0 z-60 bg-white flex flex-col" role="dialog" aria-labelledby="comment-overlay-header">
-        {/* Header: Fixed at the top */}
-        <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white shadow-sm flex-shrink-0" id="comment-overlay-header">
-          <img
-            src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
-            alt={`Profile of ${post.user.username}`}
-            className="w-10 h-10 rounded-full object-cover border border-gray-300"
-          />
-          <button
-            onClick={() => navigate(user._id === post.user._id ? `/profile` : `/profile/${post.user._id}`)}
-            className="text-base font-semibold text-gray-900 truncate flex-1"
-            aria-label={`View profile of ${post.user.username}`}
-          >
-            {post.user.username}
-          </button>
-          {post.user.verified.email && post.user.verified.phoneNumber && (
-            <BadgeCheck className="h-5 w-5 text-teal-500" aria-label="Verified user" />
-          )}
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100" aria-label="Close overlay">
-            <X className="h-6 w-6 text-gray-600" />
-          </button>
-        </div>
+      <div className="fixed inset-0 z-60 bg-white">
+        <div className="flex flex-col h-full">
 
-        {/* Scrollable Content Area */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <div className="p-4 border-b border-gray-100">
-            <p className="text-gray-800 leading-relaxed text-base" aria-label="Post description">
-              {post.postDescription}
-            </p>
-          </div>
-          <div className="p-4">
-            <CommentSection
-              postId={post._id}
-              setReplyTo={setReplyTo}
-              setReplyUserId={setReplyUserId}
-              setReplyingTo={setReplyingTo}
-              setCommentText={setCommentText}
-              refresh={refresh}
+          {/* Header: Stays fixed at the top */}
+          <div className="flex items-center gap-3 p-4 border-b border-gray-200 flex-shrink-0">
+            <img
+              src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
+              alt="User"
+              className="w-10 h-10 rounded-full object-cover border"
             />
+            <button
+              onClick={() =>
+                navigate(user._id === post.user._id ? `/profile` : `/profile/${post.user._id}`)
+              }
+              className="text-base font-semibold truncate"
+            >
+              {post.user.username}
+            </button>
+            {post.user.verified.email && post.user.verified.phoneNumber && (
+              <BadgeCheck className="h-5 w-5 text-teal-400" />
+            )}
+            <button onClick={onClose} className="ml-auto">
+              <X className="h-6 w-6 text-gray-600" />
+            </button>
           </div>
-        </div>
 
-        {/* Input Bar: Fixed at bottom, moves down with keyboard */}
-        {post?.status === "open" && (
+          {/* Scrollable Content Area */}
           <div
-            className="bg-white border-t border-gray-200 p-3 flex-shrink-0 fixed inset-x-0"
-            style={{ bottom: `${keyboardOffset}px`, zIndex: 10, transition: "bottom 0.2s ease-in-out" }}
+            className="flex-1 min-h-0 overflow-y-auto"
+            style={{ paddingBottom: `${keyboardOffset}px` }}
           >
-            <div className="flex items-center gap-2">
-              <label htmlFor="comment-input" className="text-sm font-medium text-gray-700 sr-only">
-                Add a comment
-              </label>
-              <input
-                id="comment-input"
-                type="text"
-                placeholder="Add comment..."
-                className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                onChange={handleChange}
-                value={commentText}
-                aria-label="Comment input"
+            <div className="p-4 border-b border-gray-100">
+              <p className="text-gray-800 leading-relaxed">{post.postDescription}</p>
+            </div>
+            <div className="p-4">
+              <CommentSection
+                postId={post._id}
+                setReplyTo={setReplyTo}
+                setReplyUserId={setReplyUserId}
+                setReplyingTo={setReplyingTo}
+                setCommentText={setCommentText}
+                refresh={refresh}
               />
-              <button
-                onClick={handlePostSubmit}
-                className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-teal-300 disabled:cursor-not-allowed"
-                disabled={!commentText.trim()}
-                aria-label="Post comment"
-              >
-                Post
-              </button>
             </div>
           </div>
-        )}
 
-        {socketError && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm absolute bottom-16 left-4 right-4 rounded-md" role="alert">
-            {socketError}. Please try refreshing the page or logging in again.
-          </div>
-        )}
+          {/* Input Bar: Stays at bottom, moves up with keyboard */}
+          {post?.status === "open" && (
+            <div
+              className="border-t border-gray-200 bg-white p-4 flex-shrink-0 fixed bottom-0 left-0 right-0"
+              style={{
+                transform: `translateY(-${keyboardOffset}px)`,
+                transition: "transform 0.2s ease-in-out",
+                zIndex: 10,
+              }}
+            >
+              <div className="flex flex-col gap-3">
+                <input
+                  type="text"
+                  placeholder="Add comment..."
+                  className="w-full border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  onChange={handleChange}
+                  value={commentText}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handlePostSubmit}
+                    className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 text-sm font-medium"
+                    disabled={!commentText.trim()}
+                  >
+                    Post
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
