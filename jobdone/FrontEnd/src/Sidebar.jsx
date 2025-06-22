@@ -7,6 +7,7 @@ import axios from "axios";
 import socket from "./socket.js"; 
 import { useMessageContext } from "./hooks/useMessageContext.js";
 import useSocketRoomJoin from "./hooks/socketRoomJoin.js";
+import { useLocation } from "react-router-dom";
 
 
 function Sidebar({ user }) {
@@ -14,6 +15,8 @@ function Sidebar({ user }) {
   const [userLog, setUserLog] = useState(false);
   const [unseenNotifications, setUnseenNotifications] = useState(0);
   const { unseenConversations, unseenMessages } = useMessageContext();
+  const location = useLocation();
+  const isActive = (path) => location.pathname === path;
 
   const isValidObjectId = (id) => {
     return /^[0-9a-fA-F]{24}$/.test(id);
@@ -73,18 +76,24 @@ function Sidebar({ user }) {
 
       <button
         onClick={() => navigate("/landing")}
-        className="ml-8 flex items-center gap-2 px-6 py-2 text-lg text-white rounded-md hover:bg-gray-200 hover:text-black transition cursor-pointer"
+        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer ${
+          isActive("/landing") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
+        }`}
       >
         <Home className="h-6 w-6" /> Home
       </button>
       <button onClick={() => navigate("/jobSearch")}
-        className="ml-8 flex items-center gap-2 px-6 py-2 text-white rounded-md hover:bg-gray-200 hover:text-black transition cursor-pointer"
+        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer ${
+          isActive("/jobSearch") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
+        }`}
       >
         <Search className="h-6 w-6" /> Job Search
       </button>
       <button
         onClick={() => navigate("/messages")}
-        className="ml-8 flex items-center gap-2 px-6 py-2 text-white rounded-md hover:bg-gray-200 hover:text-black transition cursor-pointer relative"
+        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer ${
+          isActive("/messages") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
+        }`}
       >
         <MessageCircle className="h-6 w-6" /> Messages
         {unseenConversations > 0 && (
@@ -95,7 +104,9 @@ function Sidebar({ user }) {
       </button>
       <button
         onClick={() => navigate("/notifications")}
-        className="ml-8 flex items-center gap-2 px-6 py-2 text-white rounded-md hover:bg-gray-200 hover:text-black transition cursor-pointer relative"
+        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer ${
+          isActive("/notifications") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
+        }`}
       >
         <Bell className="h-6 w-6" /> Notifications
         {unseenNotifications > 0 && (
@@ -106,18 +117,22 @@ function Sidebar({ user }) {
       </button>
       <button
         onClick={() => navigate("/profile")}
-        className="ml-8 flex items-center gap-2 px-6 py-2 text-white rounded-md hover:bg-gray-200 hover:text-black transition cursor-pointer"
+        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer ${
+          isActive("/profile") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
+        }`}
       >
         <User className="h-6 w-6" /> Profile
       </button>
       <button
         onClick={() => navigate("/settings")}
-        className="ml-8 flex items-center gap-2 px-6 py-2 text-white rounded-md hover:bg-gray-200 hover:text-black transition cursor-pointer"
+        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer ${
+          isActive("/settings") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
+        }`}
       >
         <Settings className="h-6 w-6" /> Settings
       </button>
       <button
-        onClick={() => setUserLog(true)}
+        onClick={() => setUserLog(prev => !prev)}
         className="ml-8 flex items-start px-6 py-2 justify-center rounded-md hover:bg-gray-200 transition cursor-pointer group"
       >
         <img

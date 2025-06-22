@@ -17,12 +17,12 @@ function BottomNavbar({ onPostClick }) {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-teal-500 ">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-teal-500">
       <div className="flex items-center justify-around py-2">
         <button
           onClick={() => navigate("/landing")}
           className={`flex flex-col items-center py-2 px-3 rounded transition ${
-            isActive("/landing") ? "bg-teal-600 text-white" : "text-white hover:bg-teal-600"
+            isActive("/landing") ? "bg-gray-200 text-black" : "text-white hover:bg-teal-600"
           }`}
         >
           <Home size={24} />
@@ -30,7 +30,9 @@ function BottomNavbar({ onPostClick }) {
 
         <button
           onClick={() => navigate("/jobSearch")}
-          className="flex flex-col items-center py-2 px-3 rounded text-white hover:bg-teal-600 transition"
+          className={`flex flex-col items-center py-2 px-3 rounded transition ${
+            isActive("/jobSearch") ? "bg-gray-200 text-black" : "text-white hover:bg-teal-600"
+          }`}
         >
           <Search size={24} />
         </button>
@@ -38,7 +40,7 @@ function BottomNavbar({ onPostClick }) {
         <button
           onClick={() => navigate("/messages")}
           className={`flex flex-col items-center py-2 px-3 rounded relative transition ${
-            isActive("/messages") ? "bg-teal-600 text-white" : "text-white hover:bg-teal-600"
+            isActive("/messages") ? "bg-gray-200 text-black" : "text-white hover:bg-teal-600"
           }`}
         >
           <MessageCircle size={24} />
@@ -51,7 +53,9 @@ function BottomNavbar({ onPostClick }) {
 
         <button
           onClick={() => navigate("/Notifications")}
-          className="flex flex-col items-center py-2 px-3 rounded text-white hover:bg-teal-600 transition"
+          className={`flex flex-col items-center py-2 px-3 rounded transition ${
+            isActive("/Notifications") ? "bg-gray-200 text-black" : "text-white hover:bg-teal-600"
+          }`}
         >
           <Bell size={24} />
         </button>
@@ -59,14 +63,17 @@ function BottomNavbar({ onPostClick }) {
         <button
           onClick={() => navigate("/profile")}
           className={`flex flex-col items-center py-2 px-3 rounded transition ${
-            isActive("/profile") ? "bg-teal-600 text-white" : "text-white hover:bg-teal-600"
+            isActive("/profile") ? "bg-gray-200 text-black" : "text-white hover:bg-teal-600"
           }`}
         >
           <User size={24} />
         </button>
+
         <button
           onClick={() => navigate("/settings")}
-          className="flex flex-col items-center py-2 px-3 rounded text-white hover:bg-teal-600 transition"
+          className={`flex flex-col items-center py-2 px-3 rounded transition ${
+            isActive("/settings") ? "bg-gray-200 text-black" : "text-white hover:bg-teal-600"
+          }`}
         >
           <Settings size={24} />
         </button>
