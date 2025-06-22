@@ -40,9 +40,9 @@ function Landing() {
   // Mobile layout
   if (isMobile) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen flex flex-col">
         {/* Mobile Header */}
-        <div className="sticky top-0 bg-white shadow-sm">
+        <div className="sticky top-0 bg-white shadow-sm flex-shrink-0">
           <div className="flex items-center justify-center h-12 px-4">
             <div className="w-full items-center mt-4 justify-center max-w-[160px]">
               <img
@@ -54,29 +54,30 @@ function Landing() {
           </div>
         </div>
 
-
-        {/* Feed - Fixed container height to prevent navbar overlap */}
+        {/* Feed - Properly constrained container to prevent navbar overlap */}
         {!showJobPost && !showSkillsSearch && (
-          <div 
-            className="w-full overflow-y-auto" // Removed padding and flex properties
-            style={{ 
-              height: 'calc(100dvh - 7rem)',
-            }}
-          > 
-            {/* JobPostInput is now a direct child and will control its own width */}
-            <JobPostInput
-              refresh={() => setRefreshFlag((prev) => !prev)}
-              user={user}
-            />
-            {/* A new wrapper for JobFeed to constrain its width and add padding */}
-            <div className="w-full max-w-md mx-auto px-4">
-              <JobFeed refreshFlag={refreshFlag} />
+          <div className="flex-1 overflow-hidden">
+            <div 
+              className="h-full overflow-y-auto"
+              style={{ 
+                paddingBottom: '80px' // Account for bottom navbar height
+              }}
+            > 
+              {/* JobPostInput is now a direct child and will control its own width */}
+              <JobPostInput
+                refresh={() => setRefreshFlag((prev) => !prev)}
+                user={user}
+              />
+              {/* A wrapper for JobFeed to constrain its width and add padding */}
+              <div className="w-full max-w-md mx-auto px-4">
+                <JobFeed refreshFlag={refreshFlag} />
+              </div>
             </div>
           </div>
         )}
 
-        {/* Bottom Nav - No gap, directly attached */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white shadow-md">
+        {/* Bottom Nav - Fixed at bottom */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
           <BottomNavbar />
         </div>
       </div>
