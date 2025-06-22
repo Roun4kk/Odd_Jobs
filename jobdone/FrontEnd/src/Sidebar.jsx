@@ -91,7 +91,7 @@ function Sidebar({ user }) {
       </button>
       <button
         onClick={() => navigate("/messages")}
-        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer ${
+        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer relative ${
           isActive("/messages") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
         }`}
       >
