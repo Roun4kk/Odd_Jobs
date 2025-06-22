@@ -459,6 +459,11 @@ function Messages() {
     setSelectedFiles(validFiles);
   };
 
+  // Handler for textarea focus to scroll to bottom
+  const handleTextareaFocus = () => {
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+  };
+
   const renderMessageContent = useCallback((msg) => {
     const content = {
       type: msg.type || "text",
@@ -568,7 +573,7 @@ function Messages() {
 
   if (isMobile) {
     return (
-      <div className="fixed inset-0 z-50 bg-white flex flex-col h-full">
+      <div className="fixed inset-0 z-50 bg-white flex flex-col h-[100dvh]">
         {!selectedUser ? (
           <>
             {/* Conversations Header */}
@@ -711,7 +716,7 @@ function Messages() {
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 bg-gray-50">
               {socketError && (
                 <div className="p-3 text-red-500 bg-red-50 rounded-lg mx-2 mb-2 text-sm">
                   Connection error: {socketError}. Please try refreshing the page or logging in again.
@@ -794,7 +799,7 @@ function Messages() {
             )}
 
             {/* Message Input */}
-            <div className="px-3 py-2 bg-teal-50 sticky bottom-0 z-10 flex items-end gap-2">
+            <div className="flex items-end gap-2 px-3 py-2 bg-teal-50 ">
               <label className="cursor-pointer">
                 <Paperclip className="w-5 h-5 text-teal-600 hover:text-teal-800" />
                 <input
@@ -811,6 +816,7 @@ function Messages() {
                 placeholder="Message..."
                 rows={1}
                 value={newMessage}
+                onFocus={handleTextareaFocus}
                 onChange={(e) => {
                   setNewMessage(e.target.value);
                   debouncedSetTyping(e.target.value);
