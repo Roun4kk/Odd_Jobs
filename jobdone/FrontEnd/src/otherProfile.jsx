@@ -390,7 +390,7 @@ function OtherProfile() {
                   </div>
                 </div>
                 <p className="text-gray-600">{profile?.email || "User not found"}</p>
-                <p className="text-gray-600">{profile?.userBio || "there is many many many many many many something"}</p>
+                <p className="text-gray-600">{profile?.userBio || ""}</p>
                 <div className="flex gap-2 mt-2 flex-wrap">
                   {profile?.userSkills?.map((skill, index) => (
                     <span key={index} className="bg-teal-400 text-white px-2 py-1 rounded-full text-sm">
