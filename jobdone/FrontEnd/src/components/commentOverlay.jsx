@@ -201,7 +201,7 @@ function CommentOverlay({ post, onClose }) {
           {/* 3. Input Bar: Stays fixed at the bottom */}
           {post?.status === "open" && (
             <div className="border-t border-gray-200 bg-white p-4 flex-shrink-0">
-              <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-center gap-3">
                 <input
                   type="text"
                   placeholder="Add comment..."
@@ -209,15 +209,13 @@ function CommentOverlay({ post, onClose }) {
                   onChange={handleChange}
                   value={commentText}
                 />
-                <div className="flex gap-2">
-                  <button
+                <button
                     onClick={handlePostSubmit}
                     className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 text-sm font-medium"
                     disabled={!commentText.trim()}
                   >
                     Post
-                  </button>
-                </div>
+                </button>
               </div>
             </div>
           )}
