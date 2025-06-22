@@ -7,6 +7,7 @@ import UserJobs from "./userJobs";
 import logo from "./assets/logo/logo-transparent-jobdone.svg";
 import useIsMobile from "./hooks/useIsMobile.js";
 import BottomNavbar from "./bottomNavBar.jsx";
+import toast from 'react-hot-toast';
 
 function Profile() {
   const { user, updateUser, loading } = useAuth();
@@ -115,7 +116,7 @@ function Profile() {
                       onClick={() => {
                         const publicUrl = `${window.location.origin}/profile/${user._id}`;
                         navigator.clipboard.writeText(publicUrl);
-                        alert("Public profile link copied to clipboard!");
+                        toast.success("Public profile link copied to clipboard!");
                       }}
                       className="px-2 py-1 bg-teal-400 text-white rounded-full text-[10px] hover:bg-teal-600 transition cursor-pointer duration-200"
                     >
@@ -273,7 +274,7 @@ function Profile() {
                   onClick={() => {
                     const publicUrl = `${window.location.origin}/profile/${user._id}`;
                     navigator.clipboard.writeText(publicUrl);
-                    alert("Public profile link copied to clipboard!");
+                    toast.success("Public profile link copied to clipboard!");
                   }}
                   className="px-4 py-2 bg-teal-400 text-white rounded-3xl hover:bg-teal-600 transition cursor-pointer duration-200"
                 >

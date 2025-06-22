@@ -7,6 +7,7 @@ import { ArrowLeft, X, Plus, Camera } from "lucide-react";
 import useIsMobile from "./hooks/useIsMobile.js";
 import BottomNavbar from "./bottomNavBar.jsx";
 import logo from "./assets/logo/logo-transparent-jobdone.svg";
+import toast from "react-hot-toast";
 
 function EditProfile() {
   const { user, updateUser } = useAuth();
@@ -105,10 +106,10 @@ function EditProfile() {
       updateUser(updatedUser);
 
       navigate("/Profile");
-      alert("Profile updated successfully!");
+      toast.success("Profile updated successfully!");
     } catch (err) {
       console.error("Error updating profile:", err);
-      alert("Failed to update profile.");
+      toast.error("Failed to update profile.");
     }
     setIsSaving(false);
   };

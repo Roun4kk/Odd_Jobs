@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth.jsx";
 import socket from "../socket.js";
 import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
+import toast from "react-hot-toast";
 
 function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post , setPosts , setRefresh , setActiveBidPost}) {
   const [bids, setBids] = useState([]);
@@ -108,7 +109,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
 
       setReportText("");
       setOpenReport(false);
-      alert("Report sent successfully!");
+      toast.success("Report sent successfully!");
     } catch (err) {
       console.error("Failed to send report:", err);
     }
@@ -154,7 +155,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
               setConfirmWinner(false);
             } catch (err) {
               console.error("Error selecting winner:", err);
-              alert("Failed to select winner.");
+              toast.error("Failed to select winner.");
             }
           }
 

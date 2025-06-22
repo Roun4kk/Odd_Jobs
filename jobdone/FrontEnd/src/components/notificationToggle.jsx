@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import useAuth from "../hooks/useAuth";
+import toast from "react-hot-toast";
 
 const NotificationToggle = ({ label, type, checked }) => {
   const { user, updateUser } = useAuth();
@@ -25,7 +26,7 @@ const NotificationToggle = ({ label, type, checked }) => {
       setIsChecked(!isChecked);
     } catch (err) {
       console.error(`Failed to update ${type} notifications`, err);
-      alert("Failed to update notification settings.");
+      toast.error("Failed to update notification settings.");
     } finally {
       setLoading(false);
     }

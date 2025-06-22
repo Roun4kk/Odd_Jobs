@@ -8,6 +8,7 @@ import NotificationToggle from "./components/notificationToggle";
 import useIsMobile from "./hooks/useIsMobile.js";
 import BottomNavbar from "./bottomNavBar";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 function Settings() {
     const { user, updateUser } = useAuth();
@@ -92,7 +93,7 @@ function Settings() {
         if (!window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) return;
         try {
             await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/users/delete`, { withCredentials: true });
-            alert("Your account has been deleted successfully.");
+            toast.success("Your account has been deleted successfully.");
             // Clear user data and redirect to home
             localStorage.clear();
             sessionStorage.clear();
@@ -102,7 +103,7 @@ function Settings() {
             navigate("/");
         } catch (error) {
             console.error("Failed to delete account:", error);
-            alert(error.response?.data?.message || "Failed to delete account. Please try again later.");
+            toast.error(error.response?.data?.message || "Failed to delete account. Please try again later.");
         }
     };
 
@@ -145,7 +146,7 @@ function Settings() {
         try {
             const response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/users/changeUsername/${user.id || user._id}`, { newUsername }, { withCredentials: true });
             updateUser({ ...user, username: response.data.username || newUsername });
-            alert("Username updated successfully!");
+            toast.success("Username updated successfully!");
             setActiveSection("accountInformation");
         } catch (error) {
             setErrorMessage(error.response?.data?.message || "Failed to update username.");
@@ -193,7 +194,7 @@ function Settings() {
 
         try {
             await axios.post(`${import.meta.env.VITE_API_BASE_URL}${endpoint}`, payload, { withCredentials: true });
-            alert(`${type === 'phone' ? 'Phone number' : 'Email'} verified and updated successfully!`);
+            toast.success(`${type === 'phone' ? 'Phone number' : 'Email'} verified and updated successfully!`);
             const updatedField = type === 'phone' ? { phoneNumber: value } : { email: value };
             updateUser({ ...user, ...updatedField, verified: { ...user.verified, [type === 'phone' ? 'phoneNumber' : 'email']: true }});
             setActiveSection("accountInformation");
@@ -211,7 +212,7 @@ function Settings() {
 
         try {
             await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/change-password`, { oldPassword, newPassword, email: user.email }, { withCredentials: true });
-            alert("Password changed successfully!");
+            toast.success("Password changed successfully!");
             setActiveSection("yourAccount");
             resetPasswordStates();
         } catch (error) {
@@ -249,7 +250,7 @@ function Settings() {
         
         try {
             await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/change-password`, { newPassword, email: user.email }, { withCredentials: true });
-            alert("Password has been reset successfully. For security, you will be logged out.");
+            toast.success("Password has been reset successfully. For security, you will be logged out.");
             // Add your logout logic here, then navigate to login page.
             window.location.href = '/logout'; // Example logout redirect
         } catch (error) {

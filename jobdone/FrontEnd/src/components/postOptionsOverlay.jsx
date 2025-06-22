@@ -3,6 +3,7 @@ import { X, Copy, Flag, DollarSign, Lock, Unlock, Trash2 } from "lucide-react";
 import { useState } from "react";
 import axios from "axios";
 import useIsMobile from "../hooks/useIsMobile.js";
+import toast from "react-hot-toast";
 
 function PostOptionsOverlay({ post, onClose, setPosts }) {
   const { user } = useAuth();
@@ -16,7 +17,7 @@ function PostOptionsOverlay({ post, onClose, setPosts }) {
 
   const handleCopy = () => {
     navigator.clipboard.writeText(`${window.location.origin}/post/${post._id}`);
-    alert("Link copied to clipboard!");
+    toast.success("Link copied to clipboard!");
   };
 
   const handleSetBidRange = async () => {
@@ -39,7 +40,7 @@ function PostOptionsOverlay({ post, onClose, setPosts }) {
       setMinBid('');
       setMaxBid('');
       onClose();
-      alert("Bid range updated!");
+      toast.success("Bid range updated!");
     } catch (err) {
       console.error("Failed to set bid range:", err);
     }
@@ -55,7 +56,7 @@ function PostOptionsOverlay({ post, onClose, setPosts }) {
       setReportText("");
       setOpenReport(false);
       onClose();
-      alert("Report sent successfully!");
+      toast.success("Report sent successfully!");
     } catch (err) {
       console.error("Failed to send report:", err);
     }

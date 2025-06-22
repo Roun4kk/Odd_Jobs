@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, ImagePlus, X, AlertCircle } from "lucide-react";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 function JobPostInput({ refresh, user }) {
   const [postText, setPostText] = useState("");
@@ -75,7 +76,7 @@ function JobPostInput({ refresh, user }) {
       setMedia([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
       refresh();
-      alert("Post created successfully!");
+      toast.success("Post created successfully!");
     } catch (error) {
       console.error("Error posting:", error.response?.data || error.message);
       setError(error.response?.data?.message || "Failed to create post");

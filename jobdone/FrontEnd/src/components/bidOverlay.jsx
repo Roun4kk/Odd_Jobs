@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import socket from "../socket.js";
 import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
 import useIsMobile from "../hooks/useIsMobile.js";
+import  toast  from "react-hot-toast";
 
 function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   const [refresh, setRefresh] = useState(false);
@@ -67,7 +68,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
 
     const handlePostSubmit = async () => {
     if (BidAmount < post.minimumBid || (post.maximumBid && BidAmount > post.maximumBid)) {
-      alert(`Bid out of bid range : ${post.minimumBid} to ${post.maximumBid}`);
+      toast.error(`Bid out of bid range : ${post.minimumBid} to ${post.maximumBid}`);
       return;
     }
     try {

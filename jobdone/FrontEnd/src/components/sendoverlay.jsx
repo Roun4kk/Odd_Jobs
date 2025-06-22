@@ -6,6 +6,7 @@ import socket from "../socket.js";
 import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
 import { useNavigate } from "react-router-dom";
 import useIsMobile from "../hooks/useIsMobile.js";
+import toast from "react-hot-toast";
 
 function SendOverlay({ post, onClose }) {
   const [message, setMessage] = useState("");
@@ -44,7 +45,7 @@ function SendOverlay({ post, onClose }) {
 
   const handleCopy = () => {
     navigator.clipboard.writeText(`${window.location.origin}/post/${post._id}`);
-    alert("Link copied to clipboard!");
+    toast.success("Link copied to clipboard!");
   };
 
   const toggleUserSelection = (u) => {
@@ -57,7 +58,7 @@ function SendOverlay({ post, onClose }) {
 
   const handleSend = () => {
     if (selectedUsers.length === 0) {
-      return alert("Select at least one user to share with.");
+      return toast.error("Select at least one user to share with.");
     }
 
     selectedUsers.forEach((recipient, index) => {
@@ -71,7 +72,7 @@ function SendOverlay({ post, onClose }) {
       console.log(`Message ${index + 1} emitted`);
     });
     navigate("/messages", { state: { newChatWith: selectedUsers[0] } });
-    alert(`Post shared with ${selectedUsers.map((u) => u.username).join(", ")}`);
+    toast.success(`Post shared with ${selectedUsers.map((u) => u.username).join(", ")}`);
     setMessage("");
     setSelectedUsers([]);
     onClose();
