@@ -7,12 +7,14 @@ import ReportForm from "./reportComp";
 import NotificationToggle from "./components/notificationToggle";
 import useIsMobile from "./hooks/useIsMobile.js";
 import BottomNavbar from "./bottomNavBar";
+import { useNavigate } from "react-router-dom";
 
 function Settings() {
     const { user, updateUser } = useAuth();
     const isMobile = useIsMobile();
     const [activeSection, setActiveSection] = useState("yourAccount");
     const [previousSection, setPreviousSection] = useState("yourAccount");
+    const navigate = useNavigate();
 
     // State for various inputs
     const [password, setPassword] = useState("");
