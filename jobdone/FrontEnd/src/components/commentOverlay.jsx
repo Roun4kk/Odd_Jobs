@@ -22,14 +22,18 @@ function CommentOverlay({ post, onClose }) {
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   useSocketRoomJoin(user?._id, setSocketError);
 
+  // More robust useEffect for handling the mobile keyboard (matching bidOverlay)
   useEffect(() => {
     document.body.style.overflow = "hidden";
 
+    // A simple debounce function to prevent rapid-fire event handling
     const debounce = (func, delay) => {
       let timeoutId;
       return (...args) => {
         clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => func.apply(this, args), delay);
+        timeoutId = setTimeout(() => {
+          func.apply(this, args);
+        }, delay);
       };
     };
 
@@ -37,18 +41,23 @@ function CommentOverlay({ post, onClose }) {
       if (window.visualViewport) {
         const viewportHeight = window.visualViewport.height;
         const windowHeight = window.innerHeight;
-        const offset = Math.max(0, windowHeight - viewportHeight);
-        setKeyboardOffset(offset);
+        const offset = windowHeight - viewportHeight;
+        setKeyboardOffset(offset > 0 ? offset : 0);
       }
     };
 
     const debouncedHandler = debounce(handleResize, 50);
-    const initialCheckTimeout = setTimeout(handleResize, 100);
+
+    // Delay the initial check slightly to avoid race conditions on mount
+    const initialCheckTimeout = setTimeout(() => {
+        handleResize();
+    }, 100);
 
     if (window.visualViewport) {
       window.visualViewport.addEventListener("resize", debouncedHandler);
     }
 
+    // Cleanup function
     return () => {
       document.body.style.overflow = "auto";
       clearTimeout(initialCheckTimeout);
@@ -56,7 +65,7 @@ function CommentOverlay({ post, onClose }) {
         window.visualViewport.removeEventListener("resize", debouncedHandler);
       }
     };
-  }, []);
+  }, []); // Empty dependency array is correct here as it manages its own lifecycle
 
   const handleChange = (e) => {
     const value = e.target.value;
@@ -140,11 +149,13 @@ function CommentOverlay({ post, onClose }) {
   };
 
   if (isMobile) {
+    // This layout uses pure CSS flexbox to adapt to the keyboard.
+    // No JavaScript for keyboard detection is needed.
     return (
       <div className="fixed inset-0 z-60 bg-white">
         <div className="flex flex-col h-full">
 
-          {/* Header: Stays fixed at the top */}
+          {/* 1. Header: Stays fixed at the top */}
           <div className="flex items-center gap-3 p-4 border-b border-gray-200 flex-shrink-0">
             <img
               src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
@@ -167,11 +178,11 @@ function CommentOverlay({ post, onClose }) {
             </button>
           </div>
 
-          {/* Scrollable Content Area */}
-          <div
-            className="flex-1 min-h-0 overflow-y-auto"
-            style={{ paddingBottom: `${keyboardOffset}px` }}
-          >
+          {/* 2. Scrollable Content Area */}
+          {/* This is the key: It takes up the remaining space and scrolls.
+              'flex-1' makes it grow and shrink.
+              'min-h-0' is crucial to allow it to shrink properly in flexbox. */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="p-4 border-b border-gray-100">
               <p className="text-gray-800 leading-relaxed">{post.postDescription}</p>
             </div>
@@ -187,16 +198,9 @@ function CommentOverlay({ post, onClose }) {
             </div>
           </div>
 
-          {/* Input Bar: Stays at bottom, moves up with keyboard */}
+          {/* 3. Input Bar: Stays fixed at the bottom */}
           {post?.status === "open" && (
-            <div
-              className="border-t border-gray-200 bg-white p-4 flex-shrink-0 fixed bottom-0 left-0 right-0"
-              style={{
-                transform: `translateY(-${keyboardOffset}px)`,
-                transition: "transform 0.2s ease-in-out",
-                zIndex: 10,
-              }}
-            >
+            <div className="border-t border-gray-200 bg-white p-4 flex-shrink-0">
               <div className="flex flex-col gap-3">
                 <input
                   type="text"
