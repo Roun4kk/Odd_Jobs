@@ -7,7 +7,7 @@ import useAuth from "./hooks/useAuth.jsx";
 import UserJobs from "./userJobs";
 import { useNavigate } from "react-router-dom";
 import ProfileComp from "./profileComp.jsx";
-import logo from "./assets/logo/logo-transparent-jobdone.svg";
+import logo from "./assets/logo/logo-jobddone.svg";
 import useIsMobile from "./hooks/useIsMobile.js";
 import BottomNavbar from "./bottomNavBar.jsx";
 
@@ -21,6 +21,7 @@ function OtherProfile() {
   const [comp, setComp] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -41,6 +42,7 @@ function OtherProfile() {
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
+        setError("Failed to load profile or profile not found");
       }
     };
 
@@ -55,16 +57,116 @@ function OtherProfile() {
     );
   }
 
+  if (error) {
+    return (
+      <div className={`${isMobile ? 'min-h-screen flex flex-col' : 'flex h-screen'}`}>
+        {/* Mobile Header */}
+        {isMobile && (
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-teal-50 flex-shrink-0">
+            {hasToken ? (
+              <>
+                <button 
+                  onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/landing")} 
+                  className="p-2 rounded-full hover:bg-teal-100"
+                >
+                  <ArrowLeft className="w-6 h-6 text-teal-700 hover:text-teal-900" />
+                </button>
+                <h1 className="text-lg font-semibold text-teal-800">Post</h1>
+                <div className="w-6 h-6" /> {/* Spacer for alignment */}
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-start h-12 px-4">
+                  <div className="w-full items-center mt-4 justify-center max-w-[160px]">
+                    <img
+                      src={logo}
+                      alt="JobDone Logo"
+                      className="w-full h-auto object-contain"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => navigate("/")}
+                    className="px-3 py-1 text-sm text-teal-600 border border-teal-600 rounded-full hover:bg-teal-50"
+                  >
+                    Sign In
+                  </button>
+                  <button 
+                    onClick={() => navigate("/")}
+                    className="px-3 py-1 text-sm bg-teal-600 text-white rounded-full hover:bg-teal-700"
+                  >
+                    Sign Up
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+        
+        {/* Desktop Sidebar */}
+        {!isMobile && user && <Sidebar user={user} />}
+        
+        <div className={`${
+          isMobile 
+            ? "flex-1 flex justify-center items-center bg-white px-4" 
+            : hasToken ? "w-[70%] fixed right-0 bg-white h-full overflow-y-scroll" : "w-full flex justify-center bg-white h-full overflow-y-scroll"
+        }`}>
+          <div className="flex justify-center items-center h-full text-red-500 text-center">
+            {error}
+          </div>
+        </div>
+        
+        {/* Mobile Bottom Navbar */}
+        {isMobile && hasToken && (
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
+            <BottomNavbar />
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (isMobile) {
     return (
       <div className="min-h-screen flex flex-col">
         {/* Mobile Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-teal-50 flex-shrink-0">
-          <button onClick={() => navigate("/landing")} className="p-2 rounded-full hover:bg-teal-100">
-            <ArrowLeft className="w-6 h-6 text-teal-700 hover:text-teal-900" />
-          </button>
-          <h1 className="text-lg font-semibold text-teal-800">Profile</h1>
-          <div className="w-6 h-6" /> {/* Spacer for alignment */}
+          {hasToken ? (
+            <>
+              <button onClick={() => navigate("/landing")} className="p-2 rounded-full hover:bg-teal-100">
+                <ArrowLeft className="w-6 h-6 text-teal-700 hover:text-teal-900" />
+              </button>
+              <h1 className="text-lg font-semibold text-teal-800">Profile</h1>
+              <div className="w-6 h-6" /> {/* Spacer for alignment */}
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-start h-12 px-4">
+                <div className="w-full items-center mt-4 justify-center max-w-[160px]">
+                  <img
+                    src={logo}
+                    alt="JobDone Logo"
+                    className="w-full h-auto object-contain"
+                    />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => navigate("/")}
+                  className="px-3 py-1 text-sm text-teal-600 border border-teal-600 rounded-full hover:bg-teal-50"
+                >
+                  Sign In
+                </button>
+                <button 
+                  onClick={() => navigate("/")}
+                  className="px-3 py-1 text-sm bg-teal-600 text-white rounded-full hover:bg-teal-700"
+                >
+                  Sign Up
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Mobile Profile Content - Constrained container */}
@@ -218,6 +320,33 @@ function OtherProfile() {
     <div className="flex h-screen overflow-hidden">
       {hasToken && <Sidebar user={user} />}
       <div className={`h-full overflow-y-scroll ${hasToken ? "fixed right-0 w-[70%]" : "w-full"} bg-white`}>
+        { !isMobile && !hasToken && (
+          <div className=" flex items-center justify-between p-4 border-b border-gray-200 bg-teal-50 flex-shrink-0">
+            <div className="flex items-center justify-start h-12 px-4">
+                <div className="w-full items-center mt-4 justify-center max-w-[160px]">
+                  <img
+                    src={logo}
+                    alt="JobDone Logo"
+                    className="w-full h-auto object-contain"
+                    />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => navigate("/")}
+                  className="px-3 py-1 text-sm text-teal-600 border border-teal-600 rounded-full hover:bg-teal-50 cursor-pointer"
+                >
+                  Sign In
+                </button>
+                <button 
+                  onClick={() => navigate("/")}
+                  className="px-3 py-1 text-sm bg-teal-600 text-white rounded-full hover:bg-teal-700 cursor-pointer"
+                >
+                  Sign Up
+                </button>
+              </div>
+          </div>
+          )}
         {profile.blockedUsers?.includes(user?._id) ? (
           <div className="flex items-center text-bold justify-center h-screen text-gray-500">
             User not available.

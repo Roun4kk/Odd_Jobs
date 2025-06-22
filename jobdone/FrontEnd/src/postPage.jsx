@@ -1,18 +1,23 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import PostCard from "./components/PostCard";
 import useAuth from "./hooks/useAuth";
 import Sidebar from "./Sidebar";
 import axios from "axios";
 import CommentOverlay from "./components/commentOverlay";
 import BidOverlay from "./components/bidOverlay";
-import logo from "./assets/logo/logo-transparent.png";
+import logo from "./assets/logo/logo-jobddone.svg";
 import PostOptionsOverlay from "./components/postOptionsOverlay";
 import SendOverlay from "./components/sendoverlay";
+import useIsMobile from "./hooks/useIsMobile.js";
+import BottomNavbar from "./bottomNavBar.jsx";
+import { ArrowLeft } from "lucide-react";
 
 export default function PostPage() {
   const { postId } = useParams();
   const { user, updateUser } = useAuth();
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -26,7 +31,9 @@ export default function PostPage() {
   const [refreshFlag, setRefreshFlag] = useState(false);
   const [activeSendPost, setActiveSendPost] = useState(null);
   const [activeOptionsPost, setActiveOptionsPost] = useState(null);
-  console .log("User in PostPage component:", user);
+  
+  console.log("User in PostPage component:", user);
+  
   const refresh = useCallback(() => {
     setRefreshFlag((prev) => !prev);
   }, []);
@@ -69,7 +76,6 @@ export default function PostPage() {
       setHasToken(false);
     }
   }, []);
-
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -117,78 +123,280 @@ export default function PostPage() {
   }, [user, post, topBids]);
 
   if (loading) {
-  return (
-    <div className="flex items-center justify-center h-screen bg-white">
-      <img src={logo} alt="Loading..." className="w-40 h-40 animate-pulse" />
-    </div>
-  );
+    return (
+      <div className="flex items-center justify-center h-screen bg-white">
+        <img src={logo} alt="Loading..." className="w-40 h-40 animate-pulse" />
+      </div>
+    );
   }
 
   if (error) {
     return (
-    <div className="flex h-screen">
-      {user && <Sidebar user={user} />}
-      <div className={`${
-          hasToken ? "w-[70%] fixed right-0" : "w-full flex justify-center"
-        } bg-white h-full overflow-y-scroll`}>
-        <div className="flex justify-center items-center h-screen text-red-500">{error}</div>;
+      <div className={`${isMobile ? 'min-h-screen flex flex-col' : 'flex h-screen'}`}>
+        {/* Mobile Header */}
+        {isMobile && (
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-teal-50 flex-shrink-0">
+            {hasToken ? (
+              <>
+                <button 
+                  onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/landing")} 
+                  className="p-2 rounded-full hover:bg-teal-100"
+                >
+                  <ArrowLeft className="w-6 h-6 text-teal-700 hover:text-teal-900" />
+                </button>
+                <h1 className="text-lg font-semibold text-teal-800">Post</h1>
+                <div className="w-6 h-6" /> {/* Spacer for alignment */}
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-start h-12 px-4">
+                  <div className="w-full items-center mt-4 justify-center max-w-[160px]">
+                    <img
+                      src={logo}
+                      alt="JobDone Logo"
+                      className="w-full h-auto object-contain"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => navigate("/")}
+                    className="px-3 py-1 text-sm text-teal-600 border border-teal-600 rounded-full hover:bg-teal-50"
+                  >
+                    Sign In
+                  </button>
+                  <button 
+                    onClick={() => navigate("/")}
+                    className="px-3 py-1 text-sm bg-teal-600 text-white rounded-full hover:bg-teal-700"
+                  >
+                    Sign Up
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+        
+        {/* Desktop Sidebar */}
+        {!isMobile && user && <Sidebar user={user} />}
+        
+        <div className={`${
+          isMobile 
+            ? "flex-1 flex justify-center items-center bg-white px-4" 
+            : hasToken ? "w-[70%] fixed right-0 bg-white h-full overflow-y-scroll" : "w-full flex justify-center bg-white h-full overflow-y-scroll"
+        }`}>
+          <div className="flex justify-center items-center h-full text-red-500 text-center">
+            {error}
+          </div>
+        </div>
+        
+        {/* Mobile Bottom Navbar */}
+        {isMobile && hasToken && (
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
+            <BottomNavbar />
+          </div>
+        )}
       </div>
-    </div>);
+    );
   }
 
-  return (
-    <div className="flex h-screen">
-      {user && <Sidebar user={user} />}
+  // Mobile Layout
+  if (isMobile) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        {/* Mobile Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-teal-50 flex-shrink-0">
+          {hasToken ? (
+            <>
+              <button 
+                onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/landing")} 
+                className="p-2 rounded-full hover:bg-teal-100"
+              >
+                <ArrowLeft className="w-6 h-6 text-teal-700 hover:text-teal-900" />
+              </button>
+              <h1 className="text-lg font-semibold text-teal-800">Post</h1>
+              <div className="w-6 h-6" /> {/* Spacer for alignment */}
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-start h-12 px-4">
+                  <div className="w-full items-center mt-4 justify-center max-w-[160px]">
+                    <img
+                      src={logo}
+                      alt="JobDone Logo"
+                      className="w-full h-auto object-contain"
+                    />
+                  </div>
+                </div>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => navigate("/")}
+                  className="px-3 py-1 text-sm text-teal-600 border border-teal-600 rounded-full hover:bg-teal-50"
+                >
+                  Sign In
+                </button>
+                <button 
+                  onClick={() => navigate("/")}
+                  className="px-3 py-1 text-sm bg-teal-600 text-white rounded-full hover:bg-teal-700"
+                >
+                  Sign Up
+                </button>
+              </div>
+            </>
+          )}
+        </div>
 
-      <div
-        className={`${
-          hasToken ? "w-[70%] fixed right-0" : "w-full flex justify-center"
-        } bg-white h-full overflow-y-scroll`}
-      >
+        {/* Mobile Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {(post?.user?.blockedUsers?.includes(user?._id)) || (user?.blockedUsers?.includes(post?.user?._id)) ? (
+            <div className="flex-1 flex items-center justify-center bg-white">
+              <div className="text-gray-500 text-center px-4">
+                <div className="text-lg font-medium mb-2">Post Unavailable</div>
+                <div className="text-sm">This post cannot be displayed</div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-hidden">
+              <div 
+                className="h-full overflow-y-auto"
+                style={{
+                  paddingBottom: hasToken ? '100px' : '20px' // Account for bottom navbar height
+                }}
+              >
+                <div className="w-full max-w-md mx-auto p-4">
+                  <PostCard
+                    post={post}
+                    userProfile={user}
+                    topBid={topBids[postId]}
+                    toggleSavePost={toggleSavePost}
+                    setActiveCommentPost={setActiveCommentPost}
+                    setActiveBidPost={setActiveBidPost}
+                    setActiveOptionsPost={setActiveOptionsPost}
+                    setActiveSendPost={setActiveSendPost}
+                    shouldBlur={shouldBlur}
+                    setTopBids={setTopBids}
+                    setSortByMap={setSortByMap}
+                    sortByMap={sortByMap}
+                    dropdownPostId={dropdownPostId}
+                    setDropdownPostId={setDropdownPostId}
+                    hasToken={hasToken}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Bottom Navbar */}
+        {hasToken && (
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
+            <BottomNavbar />
+          </div>
+        )}
+
+        {/* Overlays */}
+        {activeCommentPost && (
+          <CommentOverlay post={activeCommentPost} onClose={() => setActiveCommentPost(null)} />
+        )}
+        {activeBidPost && (
+          <BidOverlay
+            post={activeBidPost}
+            postRefresh={refresh}
+            onClose={() => setActiveBidPost(null)}
+            sortBy={sortByMap[activeBidPost._id] || "1"}
+          />
+        )}
+        {activeOptionsPost && (
+          <PostOptionsOverlay post={activeOptionsPost} onClose={() => setActiveOptionsPost(null)} />
+        )}
+        {activeSendPost && (
+          <SendOverlay post={activeSendPost} onClose={() => setActiveSendPost(null)} />
+        )}
+      </div>
+    );
+  }
+
+  // Desktop Layout (Original)
+  return (
+    <div className="flex h-screen overflow-hidden">
+      {hasToken && <Sidebar user={user} />}
+
+      <div className={`h-full overflow-y-scroll ${hasToken ? "fixed right-0 w-[70%]" : "w-full"} bg-white`}>
+        
+        {/* Header for guest users on desktop */}
+        {!isMobile && !hasToken && (
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-teal-50 flex-shrink-0">
+            <div className="flex items-center justify-start h-12 px-4">
+              <div className="w-full mt-4 max-w-[160px]">
+                <img
+                  src={logo}
+                  alt="JobDone Logo"
+                  className="w-full h-auto object-contain"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => navigate("/")}
+                className="px-3 py-1 text-sm text-teal-600 border border-teal-600 rounded-full hover:bg-teal-50 cursor-pointer"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => navigate("/")}
+                className="px-3 py-1 text-sm bg-teal-600 text-white rounded-full hover:bg-teal-700"
+              >
+                Sign Up
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Main content */}
         {(post?.user?.blockedUsers?.includes(user?._id)) || (user?.blockedUsers?.includes(post?.user?._id)) ? (
           <div className="flex items-center justify-center h-screen bg-white">
             <div className="text-gray-500">Post Unavailable</div>
           </div>
         ) : (
-          <div
-            className={`py-6 ${
-              hasToken ? "w-2/3 max-w-md ml-auto mr-auto" : "w-full max-w-md"
-            }`}
-          >
-            <PostCard
-              post={post}
-              userProfile={user}
-              topBid={topBids[postId]}
-              toggleSavePost={toggleSavePost}
-              setActiveCommentPost={setActiveCommentPost}
-              setActiveBidPost={setActiveBidPost}
-              setActiveOptionsPost={setActiveOptionsPost}
-              setActiveSendPost={setActiveSendPost}
-              shouldBlur={shouldBlur}
-              setTopBids={setTopBids}
-              setSortByMap={setSortByMap}
-              sortByMap={sortByMap}
-              dropdownPostId={dropdownPostId}
-              setDropdownPostId={setDropdownPostId}
-              hasToken={hasToken}
-            />
-            {activeCommentPost && (
-              <CommentOverlay post={activeCommentPost} onClose={() => setActiveCommentPost(null)} />
-            )}
-            {activeBidPost && (
-              <BidOverlay
-                post={activeBidPost}
-                postRefresh={refresh}
-                onClose={() => setActiveBidPost(null)}
-                sortBy={sortByMap[activeBidPost._id] || "1"}
+          <div className={`h-full flex flex-col items-center justify-start ${!hasToken ? 'mx-auto max-w-[70%]' : ''}`}>
+            <div className={`py-6 ${hasToken ? "w-2/3 max-w-md mx-auto" : "w-full max-w-md"}`}>
+              <PostCard
+                post={post}
+                userProfile={user}
+                topBid={topBids[postId]}
+                toggleSavePost={toggleSavePost}
+                setActiveCommentPost={setActiveCommentPost}
+                setActiveBidPost={setActiveBidPost}
+                setActiveOptionsPost={setActiveOptionsPost}
+                setActiveSendPost={setActiveSendPost}
+                shouldBlur={shouldBlur}
+                setTopBids={setTopBids}
+                setSortByMap={setSortByMap}
+                sortByMap={sortByMap}
+                dropdownPostId={dropdownPostId}
+                setDropdownPostId={setDropdownPostId}
+                hasToken={hasToken}
               />
-            )}
-            {activeOptionsPost && (
-              <PostOptionsOverlay post={activeOptionsPost} onClose={() => setActiveOptionsPost(null)} />
-            )}
-            {activeSendPost && (
-              <SendOverlay post={activeSendPost} onClose={() => setActiveSendPost(null)} />
-            )}
+
+              {/* Overlays */}
+              {activeCommentPost && (
+                <CommentOverlay post={activeCommentPost} onClose={() => setActiveCommentPost(null)} />
+              )}
+              {activeBidPost && (
+                <BidOverlay
+                  post={activeBidPost}
+                  postRefresh={refresh}
+                  onClose={() => setActiveBidPost(null)}
+                  sortBy={sortByMap[activeBidPost._id] || "1"}
+                />
+              )}
+              {activeOptionsPost && (
+                <PostOptionsOverlay post={activeOptionsPost} onClose={() => setActiveOptionsPost(null)} />
+              )}
+              {activeSendPost && (
+                <SendOverlay post={activeSendPost} onClose={() => setActiveSendPost(null)} />
+              )}
+            </div>
           </div>
         )}
       </div>
