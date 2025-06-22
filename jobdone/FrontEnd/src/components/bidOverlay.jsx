@@ -271,11 +271,11 @@ if (isMobile) {
           </div>
         )}
       </div>
-      {socketError && (
+      {/* {socketError && (
         <div className="p-4 text-red-500">
           Connection error: {socketError}. Please try refreshing the page or logging in again.
         </div>
-      )}
+      )} */}
     </div>
   );
 }

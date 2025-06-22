@@ -717,11 +717,11 @@ function Messages() {
 
             {/* Chat Area */}
             <div className="flex-1 min-h-0 overflow-y-auto p-4 bg-gray-50">
-              {socketError && (
+              {/* {socketError && (
                 <div className="p-3 text-red-500 bg-red-50 rounded-lg mx-2 mb-2 text-sm">
                   Connection error: {socketError}. Please try refreshing the page or logging in again.
                 </div>
-              )}
+              )} */}
               {error && (
                 <div className="p-3 text-red-500 bg-red-50 rounded-lg mx-2 mb-2 text-sm">
                   {error}
@@ -963,11 +963,11 @@ function Messages() {
         <div className="w-px h-full bg-gray-200" />
 
         <div className="py-3 w-3/5 h-full flex flex-col">
-          {socketError && (
+          {/* {socketError && (
             <div className="p-4 text-red-500 bg-red-50 rounded-lg mx-4">
               Connection error: {socketError}. Please try refreshing the page or logging in again.
             </div>
-          )}
+          )} */}
           {error && (
             <div className="p-4 text-red-500 bg-red-50 rounded-lg mx-4">
               {error}

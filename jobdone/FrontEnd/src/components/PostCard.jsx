@@ -243,9 +243,9 @@ const PostCard = ({
               </p>
             </div>
           ) : <span>No bids yet.</span>}
-          {socketError && (
+          {/* {socketError && (
             <div className="p-4 text-red-500">Connection error: {socketError}. Please try refreshing the page or logging in again.</div>
-          )}
+          )} */}
         </div>
       )}
 

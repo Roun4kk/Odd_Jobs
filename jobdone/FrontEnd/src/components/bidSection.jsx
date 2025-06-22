@@ -224,11 +224,11 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
           </div>
         );
       })}
-      {socketError && (
+      {/* {socketError && (
             <div className="p-4 text-red-500">
               Connection error: {socketError}. Please try refreshing the page or logging in again.
             </div>
-          )}
+          )} */}
       {bidComp && (
         <div className="fixed inset-0 z-[100] bg-black/50 flex justify-center items-center">
           <div className="bg-white w-full max-w-md h-full md:h-auto p-6 rounded-lg shadow-lg flex flex-col gap-4">

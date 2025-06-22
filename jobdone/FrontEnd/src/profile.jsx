@@ -249,7 +249,7 @@ function Profile() {
                   "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"
                 }
                 alt="User"
-                className="w-full h-full rounded-full border-2 border-white object-cover"
+                className="w-full h-full rounded-full border-4 border-teal-400 object-cover"
               />
             </button>
           </div>

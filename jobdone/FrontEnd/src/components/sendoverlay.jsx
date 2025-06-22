@@ -164,11 +164,11 @@ function SendOverlay({ post, onClose }) {
           </div>
 
           {/* Socket Error */}
-          {socketError && (
+          {/* {socketError && (
             <div className="absolute bottom-16 left-0 right-0 p-3 text-red-500 text-sm border-t border-red-200 bg-red-50 text-center">
               Connection error: {socketError}. Please try refreshing the page or logging in again.
             </div>
-          )}
+          )} */}
         </div>
       </div>
     );
@@ -255,11 +255,11 @@ function SendOverlay({ post, onClose }) {
         </div>
 
         {/* Socket Error */}
-        {socketError && (
+        {/* {socketError && (
           <div className="absolute bottom-4 left-0 right-0 p-3 text-red-500 text-sm border-t border-red-200 bg-red-50 text-center">
             Connection error: {socketError}. Please try refreshing the page or logging in again.
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );
