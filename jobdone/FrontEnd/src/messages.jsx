@@ -68,7 +68,6 @@ function Messages() {
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const isMobile = useIsMobile();
-  const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -399,39 +398,6 @@ function Messages() {
   );
 
   useEffect(() => {
-    const debounce = (func, delay) => {
-      let timeoutId;
-      return (...args) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => func.apply(this, args), delay);
-      };
-    };
-
-    const handleResize = () => {
-      if (window.visualViewport) {
-        const viewportHeight = window.visualViewport.height;
-        const windowHeight = window.innerHeight;
-        const offset = Math.max(0, windowHeight - viewportHeight);
-        setKeyboardOffset(offset);
-      }
-    };
-
-    const debouncedHandler = debounce(handleResize, 50);
-    const initialCheckTimeout = setTimeout(handleResize, 100);
-
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", debouncedHandler);
-    }
-
-    return () => {
-      clearTimeout(initialCheckTimeout);
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener("resize", debouncedHandler);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
     if (!user?._id || !isValidObjectId(user._id)) {
       setError("Invalid user ID. Please log in again.");
       setLoadingConversation(false);
@@ -745,7 +711,7 @@ function Messages() {
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 overflow-y-auto p-4 bg-gray-50" style={{ paddingBottom: `${keyboardOffset}px` }}>
+            <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
               {socketError && (
                 <div className="p-3 text-red-500 bg-red-50 rounded-lg mx-2 mb-2 text-sm">
                   Connection error: {socketError}. Please try refreshing the page or logging in again.
@@ -828,10 +794,7 @@ function Messages() {
             )}
 
             {/* Message Input */}
-            <div
-              className="flex items-center p-3 bg-teal-50 border-t border-gray-200 fixed bottom-0 left-0 right-0"
-              style={{ transform: `translateY(-${keyboardOffset}px)`, transition: "transform 0.2s ease-in-out", zIndex: 10 }}
-            >
+            <div className="flex items-center p-3 bg-teal-50 border-t border-gray-200">
               <label className="mr-2 cursor-pointer">
                 <Paperclip className="w-5 h-5 text-teal-600 hover:text-teal-800" />
                 <input
