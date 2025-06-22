@@ -107,7 +107,7 @@ function Profile() {
                   <div className="ml-auto flex gap-1">
                     <button
                       onClick={() => navigate("/EditProfile")}
-                      className="px-2 py-1 bg-teal-400 text-white rounded-full text-xs hover:bg-teal-600 transition cursor-pointer duration-200"
+                      className="px-2 py-1 text-[10px] bg-teal-400 text-white rounded-full hover:bg-teal-600 transition cursor-pointer duration-200"
                     >
                       Edit Profile
                     </button>
@@ -117,7 +117,7 @@ function Profile() {
                         navigator.clipboard.writeText(publicUrl);
                         alert("Public profile link copied to clipboard!");
                       }}
-                      className="px-2 py-1 bg-teal-400 text-white rounded-full text-xs hover:bg-teal-600 transition cursor-pointer duration-200"
+                      className="px-2 py-1 bg-teal-400 text-white rounded-full text-[10px] hover:bg-teal-600 transition cursor-pointer duration-200"
                     >
                       Public Profile
                     </button>
