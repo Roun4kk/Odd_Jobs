@@ -88,13 +88,13 @@ function OtherProfile() {
                 <div className="flex gap-2">
                   <button 
                     onClick={() => navigate("/")}
-                    className="px-3 py-1 text-[10px] text-teal-600 border border-teal-600 rounded-full hover:bg-teal-50"
+                    className="px-3 py-1 text-[10px] text-teal-600 border whitespace-nowrap border-teal-600 rounded-full hover:bg-teal-50"
                   >
                     Sign In
                   </button>
                   <button 
                     onClick={() => navigate("/")}
-                    className="px-3 py-1 text-[10px] bg-teal-600 text-white rounded-full hover:bg-teal-700"
+                    className="px-3 py-1 text-[10px] bg-teal-600 text-white rounded-full hover:bg-teal-700 whitespace-nowrap"
                   >
                     Sign Up
                   </button>
