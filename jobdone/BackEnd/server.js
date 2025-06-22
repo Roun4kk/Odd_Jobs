@@ -1476,53 +1476,30 @@ app.delete("/posts/bids", async (req, res) => {
   }
 });
 
-app.get("/posts/bids", async (req, res) => {
-  const { postId,currentUserId, sortBy } = req.query;
-
-  if (!postId) {
-    return res.status(400).json({ message: "postId is missing" });
+app.post("/posts/bids", async (req, res) => {
+  const { postId, userId, BidAmount , BidText } = req.body;
+  if (!postId || !userId || !BidAmount) {
+    return res.status(400).json({ message: "Missing required fields" });
   }
-
   try {
-    const post = await Post.findById(postId)
-      .populate('user', '_id')
-      .populate('bids.user', 'username userImage verified _id averageRating totalRating'); 
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ message: "Post not found" });
 
-    if (!post) {
-      return res.status(404).json({ message: "Post not found" });
-    }
+    const newBid = {
+      user: userId,
+      BidAmount,
+      BidText
+    };
 
-    let bids = post.bids || [];
+    post.bids.push(newBid);
+    await post.save();
 
-  bids.sort((a, b) => {
-    // amount comparison
-    const amountDiff = sortBy === '1'
-      ? a.BidAmount - b.BidAmount
-      : b.BidAmount - a.BidAmount;
-    if (amountDiff !== 0) return amountDiff;
-
-    // verified‐user tiebreaker
-    const aVer = a.user.verified?.email && a.user.verified?.phoneNumber;
-    const bVer = b.user.verified?.email && b.user.verified?.phoneNumber;
-    if (aVer !== bVer) return aVer ? -1 : 1;
-
-    // earliest bid tiebreaker
-    const timeDiff = new Date(a.createdAt) - new Date(b.createdAt);
-    if (timeDiff !== 0) return timeDiff;
-
-    // final fallback: lexicographic ObjectId compare
-    return a._id.toString().localeCompare(b._id.toString());
-  });
-
-  res.status(200).json(bids);
-
+    res.status(201).json({ message: "Bid created successfully", bid: newBid });
   } catch (error) {
-    console.error("❌ Error while loading bids:", error);
+    console.error("❌ Error while creating bid:", error);
     res.status(500).json({ message: error.message });
   }
 });
-
-
 
 app.get("/posts/topbid", async (req, res) => {
   const { postId, sortBy } = req.query;
@@ -2334,7 +2311,7 @@ app.post("/users/email/verify-otp", async (req, res) => {
 });
 
 app.post("/users/change-password", async (req, res) => {
-  const { oldPassword, newPassword , email} = req.body;
+  const { oldPassword, newPassword , email , otpVerified} = req.body;
   if (!newPassword || !email) {
     return res.status(400).json({ message: "Missing required fields" });
   }
@@ -2352,12 +2329,12 @@ app.post("/users/change-password", async (req, res) => {
           return res.status(200).json({ message: "Password created successfully for OAuth user." });
       }
 
-      if (!oldPassword){
+      if (!oldPassword && !otpVerified){
           return res.status(400).json({ message: "Old password is required for non-OAuth users." });
       }
       // Check if old password matches
       const isMatch = await bcrypt.compare(oldPassword, user.password);
-      if (!isMatch) {
+      if (!isMatch && !otpVerified) {
           return res.status(400).json({ message: "Old password is incorrect." });
       }
 

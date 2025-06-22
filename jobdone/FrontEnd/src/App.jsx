@@ -63,10 +63,10 @@ function App() {
   const validatePassword = (password) => {
     if (!password) return { valid: false, message: "Password is required" };
     if (password.length < 8) return { valid: false, message: "Password must be at least 8 characters long" };
-    if (!/[A-Z]/.test(password)) return { valid: false, message: "Include at least one uppercase letter" };
-    if (!/[a-z]/.test(password)) return { valid: false, message: "Include at least one lowercase letter" };
-    if (!/[0-9]/.test(password)) return { valid: false, message: "Include at least one number" };
-    if (!/[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]/.test(password)) return { valid: false, message: "Include at least one special character" };
+    if (!/[A-Z]/.test(password)) return { valid: false, message: "Include at least one uppercase letter in Password" };
+    if (!/[a-z]/.test(password)) return { valid: false, message: "Include at least one lowercase letter in Password" };
+    if (!/[0-9]/.test(password)) return { valid: false, message: "Include at least one number in Password" };
+    if (!/[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]/.test(password)) return { valid: false, message: "Include at least one special character in Password" };
     return { valid: true, message: "" };
   };
 
@@ -190,7 +190,7 @@ function App() {
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/users/change-password`,
-        { email, newPassword },
+        { email, newPassword , otpVerified: true },
         { withCredentials: true }
       );
       return response.data;

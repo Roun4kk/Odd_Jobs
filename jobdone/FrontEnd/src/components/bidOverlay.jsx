@@ -85,7 +85,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
         postId: post._id,
         BidText: BidText || "",
         BidAmount,
-        username,
+        userId: userId
       });
 
       const newBid = {
