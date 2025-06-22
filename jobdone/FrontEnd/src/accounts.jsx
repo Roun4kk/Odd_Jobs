@@ -87,9 +87,6 @@ function SettingsComp({ setUserLog, user }) { // Add updateUser prop
       className="absolute bottom-24 z-50 left-40 bg-gray-200 text-black w-max shadow-lg shadow-white rounded-xl"
     >
       <div className="flex flex-col p-4">
-        <button className="text-left hover:bg-gray-100 p-2 rounded-md cursor-pointer">
-          Add an existing account
-        </button>
         <button
           onClick={handleLogout}
           className="text-left hover:bg-gray-100 p-2 rounded-md text-black cursor-pointer"

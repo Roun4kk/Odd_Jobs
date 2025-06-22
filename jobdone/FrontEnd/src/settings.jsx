@@ -34,6 +34,58 @@ function Settings() {
     
     const isAuth = user.isOAuth;
 
+    const handleLogout = async () => {
+        try {
+        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/logout`, {}, { 
+            withCredentials: true 
+        });
+        // STEP 2: Clear frontend storage
+        localStorage.clear();
+        sessionStorage.clear();
+
+        // STEP 3: Clear auth context/state
+        if (updateUser) {
+            updateUser(null);
+        }
+
+        // STEP 4: Clear any frontend cookies as backup
+        const cookies = document.cookie.split(";");
+        cookies.forEach((cookie) => {
+            const eqPos = cookie.indexOf("=");
+            const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+            
+            if (name) {
+            // Clear with different combinations
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost`;
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.localhost`;
+            }
+        });
+        
+        // STEP 5: Force redirect (use replace to prevent back navigation)
+        navigate("/");
+        
+        } catch (error) {
+        
+        // Fallback: Clear everything and redirect anyway
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        if (updateUser) {
+            updateUser(null);
+        }
+        
+        // Try to clear cookies anyway
+        document.cookie.split(";").forEach((cookie) => {
+            const eqPos = cookie.indexOf("=");
+            const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+            if (name) {
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+            }
+        });
+        }
+    };
+
     // --- VALIDATION FUNCTIONS ---
     const validateEmail = (email) => {
         if (!email) return { valid: false, message: "Email is required." };
@@ -233,6 +285,9 @@ function Settings() {
                             <button onClick={() => setActiveSection("report")} className={buttonClass("report")}>
                                 <span className="font-medium">Report a Problem</span>
                                 <p className="text-xs text-gray-500">Report issues or concerns.</p>
+                            </button>
+                            <button onClick={handleLogout} className="w-full py-3 px-4 text-left hover:bg-gray-100 rounded-md text-red-600">
+                                <span className="font-medium">Logout</span>
                             </button>
                         </div>
                     </>
