@@ -794,8 +794,8 @@ function Messages() {
             )}
 
             {/* Message Input */}
-            <div className="flex items-center p-3 bg-teal-50 border-t border-gray-200">
-              <label className="mr-2 cursor-pointer">
+            <div className="px-3 py-2 bg-teal-50 sticky bottom-0 z-10 flex items-end gap-2">
+              <label className="cursor-pointer">
                 <Paperclip className="w-5 h-5 text-teal-600 hover:text-teal-800" />
                 <input
                   ref={fileInputRef}
@@ -807,24 +807,29 @@ function Messages() {
                   disabled={uploading}
                 />
               </label>
-              <input
-                type="text"
-                placeholder="Type a message..."
-                className="flex-1 border border-teal-200 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-teal-900 text-sm"
+              <textarea
+                placeholder="Message..."
+                rows={1}
                 value={newMessage}
                 onChange={(e) => {
                   setNewMessage(e.target.value);
                   debouncedSetTyping(e.target.value);
                 }}
-                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                className="flex-1 resize-none border border-teal-200 rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-teal-900 text-sm max-h-[8rem] overflow-auto"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
                 disabled={uploading || socketError}
               />
               <button
-                className="ml-2 bg-teal-500 text-white px-4 py-2 rounded-full cursor-pointer hover:bg-teal-600 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                onClick={() => sendMessage()}
+                onClick={sendMessage}
                 disabled={uploading || socketError}
+                className="bg-teal-500 text-white px-4 py-2 rounded-full hover:bg-teal-600 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
-                {uploading ? "Uploading..." : "Send"}
+                {uploading ? "..." : "Send"}
               </button>
             </div>
           </>
