@@ -17,7 +17,7 @@ function BottomNavbar({ onPostClick }) {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-teal-500 z-50">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-teal-500 ">
       <div className="flex items-center justify-around py-2">
         <button
           onClick={() => navigate("/landing")}

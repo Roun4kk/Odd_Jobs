@@ -63,7 +63,7 @@ function Profile() {
 
   if (isMobile) {
     return (
-      <div className="fixed inset-0 z-50 bg-white flex flex-col h-full">
+      <div className="min-h-screen">
         {/* Mobile Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-teal-50">
           <button onClick={() => navigate("/landing")} className="p-2 rounded-full hover:bg-teal-100">
@@ -206,8 +206,15 @@ function Profile() {
           </div>
 
           {/* Mobile UserJobs */}
-          <div className="mt-4">
-            <UserJobs job={job} hasToken={hasToken} />
+          <div 
+            className="w-full overflow-y-auto" // Removed padding and flex properties
+            style={{ 
+              height: 'calc(100dvh - 7rem)',
+            }}
+          > 
+            <div className="w-full max-w-md mx-auto px-4">
+              <UserJobs job={job} hasToken={hasToken} />
+            </div>
           </div>
         </div>
         {/* Mobile Bottom Navbar */}

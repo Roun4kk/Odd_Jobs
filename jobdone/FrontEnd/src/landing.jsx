@@ -40,9 +40,9 @@ function Landing() {
   // Mobile layout
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen">
         {/* Mobile Header */}
-        <div className="sticky top-0 z-50 bg-white shadow-sm">
+        <div className="sticky top-0 bg-white shadow-sm">
           <div className="flex items-center justify-center h-12 px-4">
             <div className="w-full items-center mt-4 justify-center max-w-[160px]">
               <img
@@ -76,7 +76,7 @@ function Landing() {
         )}
 
         {/* Bottom Nav - No gap, directly attached */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-md">
+        <div className="fixed bottom-0 left-0 right-0 bg-white shadow-md">
           <BottomNavbar />
         </div>
       </div>
