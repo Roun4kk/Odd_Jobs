@@ -218,31 +218,31 @@ export default function PostPage() {
               <div className="w-6 h-6" /> {/* Spacer for alignment */}
             </>
           ) : (
-            <>
-              <div className="flex items-center justify-start h-12 px-4">
-                  <div className="w-full items-center mt-4 justify-center max-w-[160px]">
-                    <img
-                      src={logo}
-                      alt="JobDone Logo"
-                      className="w-full h-auto object-contain"
-                    />
-                  </div>
+            <div className="flex items-center justify-between h-12 px-4 w-full">
+              <div className="flex items-center justify-start flex-1">
+                <div className="w-full items-center mt-4 justify-center max-w-[160px]">
+                  <img
+                    src={logo}
+                    alt="JobDone Logo"
+                    className="w-full h-auto object-contain"
+                  />
                 </div>
-              <div className="flex gap-2">
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
                 <button 
                   onClick={() => navigate("/")}
-                  className="px-3 py-1 text-[10px] text-teal-600 border whitespace-nowrap border-teal-600 rounded-full hover:bg-teal-50"
+                  className="px-3 py-1 text-sm text-teal-600 border whitespace-nowrap border-teal-600 rounded-full hover:bg-teal"
                 >
                   Sign In
                 </button>
                 <button 
                   onClick={() => navigate("/")}
-                  className="px-3 py-1 text-[10px] bg-teal-600 text-white whitespace-nowrap rounded-full hover:bg-teal-700"
+                  className="px-3 py-1 text-sm bg-teal-600 text-white rounded-full hover:bg-teal-700 whitespace-nowrap"
                 >
                   Sign Up
                 </button>
               </div>
-            </>
+            </div>
           )}
         </div>
 
