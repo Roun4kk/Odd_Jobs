@@ -88,7 +88,7 @@ function OtherProfile() {
                 <div className="flex gap-2">
                   <button 
                     onClick={() => navigate("/")}
-                    className="px-3 py-1 text-[10px] text-teal-600 border whitespace-nowrap border-teal-600 rounded-full hover:bg-teal-50"
+                    className="px-3 py-1 text-[10px] text-teal-600 border whitespace-nowrap border-teal-600 rounded-full hover:bg-teal"
                   >
                     Sign In
                   </button>
@@ -131,41 +131,41 @@ function OtherProfile() {
     return (
       <div className="min-h-screen flex flex-col">
         {/* Mobile Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-teal-50 flex-shrink-0">
+        <div className="flex items-center justify-between border-b z-10 shadow-sm h-16 w-full border-gray-200 bg-teal-50 flex-shrink-0">
           {hasToken ? (
             <>
-              <button onClick={() => navigate("/landing")} className="p-2 rounded-full hover:bg-teal-100">
+              <button onClick={() => navigate("/landing")} className=" p-2 rounded-full hover:bg-teal-100">
                 <ArrowLeft className="w-6 h-6 text-teal-700 hover:text-teal-900" />
               </button>
-              <h1 className="text-lg font-semibold text-teal-800">Profile</h1>
+              <h1 className="text-2xl font-semibold text-teal-800">Profile</h1>
               <div className="w-6 h-6" /> {/* Spacer for alignment */}
             </>
           ) : (
-            <>
-              <div className="flex items-center justify-start h-12 px-4">
+            <div className="flex items-center justify-between h-12 px-4 w-full">
+              <div className="flex items-center justify-start flex-1">
                 <div className="w-full items-center mt-4 justify-center max-w-[160px]">
                   <img
                     src={logo}
                     alt="JobDone Logo"
                     className="w-full h-auto object-contain"
-                    />
+                  />
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-shrink-0">
                 <button 
                   onClick={() => navigate("/")}
-                  className="px-3 py-1 text-sm text-teal-600 border border-teal-600 rounded-full hover:bg-teal-50"
+                  className="px-3 py-1 text-[10px] text-teal-600 border whitespace-nowrap border-teal-600 rounded-full hover:bg-teal"
                 >
                   Sign In
                 </button>
                 <button 
                   onClick={() => navigate("/")}
-                  className="px-3 py-1 text-sm bg-teal-600 text-white rounded-full hover:bg-teal-700"
+                  className="px-3 py-1 text-[10px] bg-teal-600 text-white rounded-full hover:bg-teal-700 whitespace-nowrap"
                 >
                   Sign Up
                 </button>
               </div>
-            </>
+            </div>
           )}
         </div>
 
