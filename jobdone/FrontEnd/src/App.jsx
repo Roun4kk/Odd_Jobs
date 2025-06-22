@@ -526,7 +526,7 @@ function App() {
           />
         </div>
       </div>
-      <div className="w-full max-w-md bg-white p-6 rounded-lg shadow-lg flex flex-col justify-between h-[500px]">
+      <div className="w-full max-w-md bg-white p-6 rounded-lg shadow-lg flex flex-col justify-between h-[400px]">
         <div className="flex flex-col gap-4">
           {wasLoggedOut && (
             <div className="text-center text-green-600 text-sm mb-2">You have been logged out successfully.</div>
