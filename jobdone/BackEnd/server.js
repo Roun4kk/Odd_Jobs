@@ -2978,6 +2978,91 @@ async function cleanupOldNotifications() {
 
 cron.schedule('0 2 * * *', cleanupOldNotifications);
 
+app.delete('/users/delete', verifyToken, async (req, res) => {
+  const userId = req.user.id;
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ message: "Invalid user ID" });
+  }
+
+  try {
+    // 1. Delete all posts by user
+    await Post.deleteMany({ user: userId });
+
+    // 2. Remove user's bids from all posts
+    await Post.updateMany(
+      {},
+      { $pull: { bids: { user: userId } } }
+    );
+
+    // 3. Remove user's comments and replies
+    await Post.updateMany(
+      {},
+      { $pull: { comments: { user: userId } } }
+    );
+    await Post.updateMany(
+      { "comments.replies.user": userId },
+      { $pull: { "comments.$[].replies": { user: userId } } }
+    );
+
+    // 4. Remove user from saved posts
+    await Post.updateMany(
+      { savedBy: userId },
+      { $pull: { savedBy: userId } }
+    );
+
+    // 5. Remove ratings given by the user from all other users
+    await User.updateMany(
+      {},
+      { $pull: { ratings: { from: userId } } }
+    );
+
+    // 6. Remove notifications involving user
+    await User.updateMany(
+      {},
+      {
+        $pull: {
+          notifications: {
+            $or: [{ sender: userId }, { to: userId }]
+          }
+        }
+      }
+    );
+
+    // 7. Remove user from blockedUsers of others
+    await User.updateMany(
+      { blockedUsers: userId },
+      { $pull: { blockedUsers: userId } }
+    );
+
+    // 8. Remove user from connections of others
+    await User.updateMany(
+      { "connections.user": userId },
+      { $pull: { connections: { user: userId } } }
+    );
+
+    // 9. Delete all messages sent or received
+    await Message.deleteMany({
+      $or: [{ sender: userId }, { receiver: userId }]
+    });
+
+    // 10. Finally delete the user
+    await User.findByIdAndDelete(userId);
+
+    // 11. Clear cookies (if using refresh tokens, also blacklist them)
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "None"
+    });
+
+    return res.status(200).json({ message: "Account deleted and user logged out successfully." });
+
+  } catch (error) {
+    console.error("Error during logout/account deletion:", error);
+    return res.status(500).json({ message: "Internal server error during logout." });
+  }
+});
 
 mongoose.connect(MONGODB_URI)
   .then(() => {
