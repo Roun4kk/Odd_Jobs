@@ -5,7 +5,7 @@ import { ArrowLeftIcon, BadgeCheck } from "lucide-react";
 import axios from "axios";
 import ReportForm from "./reportComp";
 import NotificationToggle from "./components/notificationToggle";
-import useIsMobile from "./hooks/useIsMobile";
+import useIsMobile from "./hooks/useIsMobile.js";
 import BottomNavbar from "./bottomNavBar";
 
 function Settings() {
