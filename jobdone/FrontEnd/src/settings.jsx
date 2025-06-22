@@ -288,9 +288,9 @@ function Settings() {
     // --- RENDER LOGIC ---
     if (isMobile) {
         return (
-            <div className="min-h-screen bg-white pb-20 pt-4 px-4">
+            <div className="min-h-screen bg-white pb-20 px-4">
                 {activeSection === "yourAccount" && (
-                    <div className="flex items-center bg-teal-50 mb-6">
+                    <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
                         <h1 className="text-2xl text-teal-800 font-bold ml-2">Settings</h1>
                     </div>
                 )}
@@ -354,7 +354,7 @@ function Settings() {
 
                 {activeSection === "notifications" && (
                     <>
-                        <div className="flex items-center mb-6 bg-teal-50">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
                             {backButton("yourAccount")}
                             <h1 className="text-2xl font-bold ml-2 text-teal-800">
                                 Notifications
@@ -377,7 +377,7 @@ function Settings() {
 
                 {activeSection === "report" && (
                     <>
-                        <div className="flex items-center mb-6 bg-teal-50">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
                             {backButton("yourAccount")}
                             <h1 className="text-2xl font-bold ml-2 text-teal-800">
                                 Report a Problem
@@ -391,7 +391,7 @@ function Settings() {
 
                 {activeSection === "passwordVerification" && (
                     <>
-                        <div className="flex items-center mb-6 bg-teal-50">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
                             {backButton("yourAccount")}
                             <h1 className="text-2xl font-bold ml-2 text-teal-800">
                                 Account Information
@@ -436,7 +436,7 @@ function Settings() {
 
                 {activeSection === "accountInformation" && (
                     <>
-                        <div className="flex items-center mb-6 bg-teal-50">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
                             {backButton("yourAccount")}
                             <h1 className="text-2xl font-bold ml-2 text-teal-800">
                                 Account Information
@@ -486,7 +486,7 @@ function Settings() {
 
                 {activeSection === "changeUsername" && (
                     <>
-                        <div className="flex items-center mb-6 bg-teal-50">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
                             {backButton("accountInformation")}
                             <h1 className="text-2xl font-bold ml-2 text-teal-800">
                                 Change Username
@@ -517,7 +517,7 @@ function Settings() {
 
                 {["changePhone", "changeEmail"].includes(activeSection) && (
                     <>
-                        <div className="flex items-center mb-6 bg-teal-50">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
                             {backButton("accountInformation")}
                             <h1 className="text-2xl font-bold ml-2 text-teal-800">
                                 {activeSection === "changePhone"
@@ -566,7 +566,7 @@ function Settings() {
 
                 {["verifyPhoneOTP", "verifyEmailOTP"].includes(activeSection) && (
                     <>
-                        <div className="flex items-center mb-6 bg-teal-50">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
                             {backButton(
                                 activeSection === "verifyPhoneOTP"
                                     ? "changePhone"
@@ -612,7 +612,7 @@ function Settings() {
 
                 {activeSection === "changePassword" && (
                     <>
-                        <div className="flex items-center mb-6 bg-teal-50">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
                             {backButton("yourAccount")}
                             <h1 className="text-2xl font-bold ml-2 text-teal-800">
                                 Change Password
@@ -665,7 +665,7 @@ function Settings() {
 
                 {activeSection === "forgotPasswordSend" && (
                     <>
-                        <div className="flex items-center mb-6 bg-teal-50">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
                             {backButton(previousSection)}
                             <h1 className="text-2xl font-bold ml-2 text-teal-800">
                                 Forgot Password
@@ -693,7 +693,7 @@ function Settings() {
 
                 {activeSection === "forgotPasswordOTP" && (
                     <>
-                        <div className="flex items-center mb-6 bg-teal-50">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
                             {backButton("forgotPasswordSend")}
                             <h1 className="text-2xl font-bold ml-2 text-teal-800">
                                 Enter Code
@@ -729,7 +729,7 @@ function Settings() {
 
                 {activeSection === "resetPassword" && (
                     <>
-                        <div className="flex items-center mb-6 bg-teal-50">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
                             {backButton("forgotPasswordOTP")}
                             <h1 className="text-2xl font-bold ml-2 text-teal-800">
                                 Reset Your Password
