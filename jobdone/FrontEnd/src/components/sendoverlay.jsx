@@ -83,7 +83,10 @@ function SendOverlay({ post, onClose }) {
 
   if (isMobile) {
     return (
-      <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center">
+      <div
+          className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center"
+          style={{ height: 'calc(100dvh - 4rem)' }}
+        >
         <div className="bg-white w-full max-w-sm p-4 rounded-2xl shadow-2xl relative flex flex-col h-[80vh]">
           {/* Header */}
           <div className="flex justify-between items-center border-b border-gray-100 pb-2">
