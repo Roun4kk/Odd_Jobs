@@ -125,7 +125,13 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
         </div>
 
         {/* Scrollable Content Area */}
-        <div className="flex-1 min-h-0 overflow-y-auto" style={{ paddingBottom: `${keyboardOffset + 16}px` }}>
+        <div
+          className="flex-1 min-h-0 overflow-y-auto"
+          style={{
+            height: `calc(100vh - ${80 + keyboardOffset}px)`,
+            paddingBottom: "16px",
+          }}
+        >
           <div className="p-4 border-b border-gray-100">
             <p className="text-gray-800 leading-relaxed text-base" aria-label="Post description">
               {post.postDescription}
@@ -149,8 +155,8 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
         {/* Input Bar: Fixed at bottom */}
         {post?.status === "open" && (
           <div
-            className="bg-white border-t border-gray-200 p-3 flex-shrink-0"
-            style={{ transform: `translateY(-${keyboardOffset}px)`, transition: "transform 0.2s ease-in-out" }}
+            className="bg-white border-t border-gray-200 p-3 flex-shrink-0 fixed bottom-0 left-0 right-0"
+            style={{ paddingBottom: `${keyboardOffset}px`, transition: "padding 0.2s ease-in-out" }}
           >
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
