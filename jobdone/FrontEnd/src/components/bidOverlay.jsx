@@ -114,7 +114,10 @@ if (isMobile) {
     // No JavaScript for keyboard detection is needed.
     return (
       <div className="fixed inset-0 z-60 bg-white">
-        <div className="flex flex-col h-full">
+        <div 
+          className="flex flex-col h-full"
+          style={{ paddingBottom: `${keyboardOffset}px` }}
+        >
 
           {/* 1. Header: Stays fixed at the top */}
           <div className="flex items-center gap-3 p-4 border-b border-gray-200 flex-shrink-0">
@@ -162,15 +165,9 @@ if (isMobile) {
             </div>
           </div>
 
-          {/* 3. Input Bar: Stays fixed at the bottom and moves up with keyboard */}
+          {/* 3. Input Bar: Stays fixed at the bottom */}
           {post?.status === "open" && (
-            <div 
-              className="border-t border-gray-200 bg-white p-4 flex-shrink-0"
-              style={{ 
-                transform: `translateY(-${keyboardOffset}px)`,
-                transition: 'transform 0.2s ease-out'
-              }}
-            >
+            <div className="border-t border-gray-200 bg-white p-4 flex-shrink-0">
               <div className="flex flex-col gap-3">
                 <input
                   type="number"
