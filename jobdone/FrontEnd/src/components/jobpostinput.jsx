@@ -141,7 +141,7 @@ function JobPostInput({ refresh, user }) {
           value={postText}
           onChange={(e) => setPostText(e.target.value)}
           placeholder="Post a job..."
-          className={`w-full p-4 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-teal-400 transition duration-200 min-h-[60px] max-h-[120px] overflow-y-auto ${isDisabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+          className={`w-full p-4 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-teal-400 transition duration-200 min-h-[60px] max-h-[120px] overflow-y-auto z-0 pointer-events-auto ${isDisabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
           disabled={isDisabled}
           aria-label="Job post description"
         />

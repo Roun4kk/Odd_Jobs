@@ -65,6 +65,7 @@ function BottomNavbar({ onPostClick }) {
           <User size={24} />
         </button>
         <button
+          onClick={() => navigate("/settings")}
           className="flex flex-col items-center py-2 px-3 rounded text-white hover:bg-teal-600 transition"
         >
           <Settings size={24} />

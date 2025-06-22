@@ -5,9 +5,12 @@ import { ArrowLeftIcon, BadgeCheck } from "lucide-react";
 import axios from "axios";
 import ReportForm from "./reportComp";
 import NotificationToggle from "./components/notificationToggle";
+import useIsMobile from "./hooks/useIsMobile";
+import BottomNavbar from "./bottomNavBar";
 
 function Settings() {
     const { user, updateUser } = useAuth();
+    const isMobile = useIsMobile();
     const [activeSection, setActiveSection] = useState("yourAccount");
     const [previousSection, setPreviousSection] = useState("yourAccount");
 
@@ -197,12 +200,229 @@ function Settings() {
         setPasswordErrorMessage("");
     }, [activeSection]);
 
-    const buttonClass = (section) => `w-full py-2 px-5 text-left hover:bg-gray-100 p-2 rounded-md ${activeSection === section ? "bg-gray-200 font-medium" : ""}`;
+    const buttonClass = (section) => `w-full py-3 px-4 text-left hover:bg-gray-100 rounded-md ${activeSection === section ? "bg-gray-200 font-medium" : ""}`;
     const backButton = (targetSection) => (
-        <button onClick={() => setActiveSection(targetSection)} className="p-2 rounded-full hover:bg-gray-200"><ArrowLeftIcon className="h-6 w-6" /></button>
+        <button onClick={() => setActiveSection(targetSection)} className="p-2 rounded-full hover:bg-gray-200 text-teal-800"><ArrowLeftIcon className="h-6 w-6" /></button>
     );
 
     // --- RENDER LOGIC ---
+    if (isMobile) {
+        return (
+            <div className="min-h-screen bg-white pb-20 pt-4 px-4">
+                {activeSection === "yourAccount" && (<div className="flex items-center bg-teal-50 mb-6">
+                    <h1 className="text-2xl text-teal-800 font-bold ml-2">Settings</h1>
+                </div>)}
+
+                {activeSection === "yourAccount" && (
+                    <>
+                        <div className="space-y-4">
+                            <button onClick={() => setActiveSection(isAuth || passwordVerification ? "accountInformation" : "passwordVerification")} className={buttonClass("accountInformation")}>
+                                <span className="font-medium">Account Information</span>
+                                <p className="text-xs text-gray-500">See your account info like phone and email.</p>
+                            </button>
+                            {!isAuth && (
+                                <button onClick={() => setActiveSection("changePassword")} className={buttonClass("changePassword")}>
+                                    <span className="font-medium">Change Password</span>
+                                    <p className="text-xs text-gray-500">Change your account password.</p>
+                                </button>
+                            )}
+                            <button onClick={() => setActiveSection("notifications")} className={buttonClass("notifications")}>
+                                <span className="font-medium">Notifications</span>
+                                <p className="text-xs text-gray-500">Manage your notification settings.</p>
+                            </button>
+                            <button onClick={() => setActiveSection("report")} className={buttonClass("report")}>
+                                <span className="font-medium">Report a Problem</span>
+                                <p className="text-xs text-gray-500">Report issues or concerns.</p>
+                            </button>
+                        </div>
+                    </>
+                )}
+
+                {activeSection === "notifications" && (
+                    <>
+                        <div className="flex items-center mb-6 bg-teal-50">
+                            {backButton("yourAccount")}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800">Notifications</h1>
+                        </div>
+                        <div className="space-y-6">
+                            <NotificationToggle label="Comment Notifications" type="comments" checked={user.allowNotifications?.comments} />
+                            <NotificationToggle label="Bid Notifications" type="bids" checked={user.allowNotifications?.bids} />
+                        </div>
+                    </>
+                )}
+
+                {activeSection === "report" && (
+                    <>
+                        <div className="flex items-center mb-6 bg-teal-50">
+                            {backButton("yourAccount")}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800">Report a Problem</h1>
+                        </div>
+                        <div className="py-4">
+                            <ReportForm reportedUserId={user._id} />
+                        </div>
+                    </>
+                )}
+
+                {activeSection === "passwordVerification" && (
+                    <>
+                        <div className="flex items-center mb-6 bg-teal-50">
+                            {backButton("yourAccount")}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800">Account Information</h1>
+                        </div>
+                        <div className="space-y-4">
+                            <h2 className="text-lg font-semibold">Verify it's you</h2>
+                            <p className="text-sm text-gray-500">Enter your password to continue.</p>
+                            <div className="relative">
+                                <input type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-4 border border-gray-300 rounded-lg text-base" />
+                            </div>
+                            {errorMessage && <p className="text-red-500 text-sm text-center">{errorMessage}</p>}
+                            <div className="flex flex-col space-y-4 mt-4">
+                                <button onClick={navigateToForgotPasswordFlow} className="text-md text-teal-600 hover:underline text-center">Forgot Password?</button>
+                                <button onClick={handleVerify} className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full">Verify</button>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {activeSection === "accountInformation" && (
+                    <>
+                        <div className="flex items-center mb-6 bg-teal-50">
+                            {backButton("yourAccount")}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800">Account Information</h1>
+                        </div>
+                        <div className="space-y-4">
+                            <button onClick={() => setActiveSection("changeUsername")} className={buttonClass("changeUsername")}>
+                                <span className="font-medium">Username</span>
+                                <p className="text-xs text-gray-500">@{user.username}</p>
+                            </button>
+                            <button onClick={() => setActiveSection("changePhone")} className={buttonClass("changePhone")}>
+                                <span className="font-medium">Phone Number</span>
+                                {user.verified?.phoneNumber && <BadgeCheck className="inline h-4 w-4 text-teal-400" />}
+                                <p className="text-xs text-gray-500">{user.phoneNumber || "Add a phone number"}</p>
+                            </button>
+                            <button onClick={() => setActiveSection("changeEmail")} className={buttonClass("changeEmail")}>
+                                <span className="font-medium">Email</span>
+                                {user.verified?.email && <BadgeCheck className="inline h-4 w-4 text-teal-400" />}
+                                <p className="text-xs text-gray-500">{user.email}</p>
+                            </button>
+                        </div>
+                    </>
+                )}
+
+                {activeSection === "changeUsername" && (
+                    <>
+                        <div className="flex items-center mb-6 bg-teal-50">
+                            {backButton("accountInformation")}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800">Change Username</h1>
+                        </div>
+                        <div className="space-y-4">
+                            <input type="text" placeholder={user.username} value={newUsername} onChange={(e) => setNewUsername(e.target.value)} className="w-full p-4 border border-gray-300 rounded-lg text-base" />
+                            {errorMessage && <p className="text-red-500 text-sm text-center">{errorMessage}</p>}
+                            <button onClick={handleChangeUsername} className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full">Save</button>
+                        </div>
+                    </>
+                )}
+
+                {["changePhone", "changeEmail"].includes(activeSection) && (
+                    <>
+                        <div className="flex items-center mb-6 bg-teal-50">
+                            {backButton("accountInformation")}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800">{activeSection === "changePhone" ? "Change Phone Number" : "Change Email"}</h1>
+                        </div>
+                        <div className="space-y-4">
+                            <input 
+                                type={activeSection === 'changePhone' ? 'tel' : 'email'} 
+                                value={activeSection === 'changePhone' ? newPhoneNumber : newEmail} 
+                                onChange={(e) => activeSection === 'changePhone' ? setNewPhoneNumber(e.target.value) : setNewEmail(e.target.value)}
+                                className="w-full p-4 border border-gray-300 rounded-lg text-base"
+                            />
+                            {errorMessage && <p className="text-red-500 text-sm text-center">{errorMessage}</p>}
+                            <button onClick={() => handleSendOTP(activeSection === 'changePhone' ? 'phone' : 'email', activeSection === 'changePhone' ? newPhoneNumber : newEmail)} className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full">Send OTP</button>
+                        </div>
+                    </>
+                )}
+
+                {["verifyPhoneOTP", "verifyEmailOTP"].includes(activeSection) && (
+                    <>
+                        <div className="flex items-center mb-6 bg-teal-50">
+                            {backButton(activeSection === 'verifyPhoneOTP' ? 'changePhone' : 'changeEmail')}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800">Verify Code</h1>
+                        </div>
+                        <div className="space-y-4">
+                            <input type="text" placeholder="6-digit code" value={otp} onChange={(e) => setOtp(e.target.value)} className="w-full p-4 border border-gray-300 rounded-lg text-center text-base tracking-widest" maxLength={6} />
+                            {errorMessage && <p className="text-red-500 text-sm text-center">{errorMessage}</p>}
+                            <button onClick={() => handleVerifyOTP(activeSection === 'verifyPhoneOTP' ? 'phone' : 'email', activeSection === 'verifyPhoneOTP' ? newPhoneNumber : newEmail, otp)} className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full">Verify</button>
+                        </div>
+                    </>
+                )}
+
+                {activeSection === "changePassword" && (
+                    <>
+                        <div className="flex items-center mb-6 bg-teal-50">
+                            {backButton("yourAccount")}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800">Change Password</h1>
+                        </div>
+                        <div className="space-y-4">
+                            <input type="password" placeholder="Current Password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} className="w-full p-4 border border-gray-300 rounded-lg text-base" />
+                            <input type={showNewPassword ? "text" : "password"} placeholder="New Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full p-4 border border-gray-300 rounded-lg text-base" />
+                            <input type={showConfirmPassword ? "text" : "password"} placeholder="Confirm New Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full p-4 border border-gray-300 rounded-lg text-base" />
+                            {passwordErrorMessage && <p className="text-red-500 text-sm text-center">{passwordErrorMessage}</p>}
+                            <div className="flex flex-col space-y-4 mt-4">
+                                <button onClick={navigateToForgotPasswordFlow} className="text-md text-teal-600 hover:underline text-center">Forgot Password?</button>
+                                <button onClick={handleChangePassword} className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full">Save Changes</button>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {activeSection === "forgotPasswordSend" && (
+                    <>
+                        <div className="flex items-center mb-6 bg-teal-50">
+                            {backButton(previousSection)}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800">Forgot Password</h1>
+                        </div>
+                        <div className="space-y-4">
+                            <p className="text-sm text-gray-500 text-center">We'll send a code to your email: <strong>{user.email}</strong></p>
+                            {errorMessage && <p className="text-red-500 text-sm text-center">{errorMessage}</p>}
+                            <button onClick={handleForgotPassword} className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full">Send Code</button>
+                        </div>
+                    </>
+                )}
+
+                {activeSection === "forgotPasswordOTP" && (
+                    <>
+                        <div className="flex items-center mb-6 bg-teal-50">
+                            {backButton("forgotPasswordSend")}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800">Enter Code</h1>
+                        </div>
+                        <div className="space-y-4">
+                            <p className="text-sm text-gray-500 text-center">Enter the 6-digit code sent to <strong>{user.email}</strong>.</p>
+                            <input type="text" placeholder="6-digit code" value={otp} onChange={(e) => setOtp(e.target.value)} className="w-full p-4 border border-gray-300 rounded-lg text-center text-base tracking-widest" maxLength={6} />
+                            {errorMessage && <p className="text-red-500 text-sm text-center">{errorMessage}</p>}
+                            <button onClick={handleVerifyForgotPasswordOTP} className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full">Verify</button>
+                        </div>
+                    </>
+                )}
+
+                {activeSection === "resetPassword" && (
+                    <>
+                        <div className="flex items-center mb-6 bg-teal-50">
+                            {backButton("forgotPasswordOTP")}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800">Reset Your Password</h1>
+                        </div>
+                        <div className="space-y-4">
+                            <input type={showNewPassword ? "text" : "password"} placeholder="New Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full p-4 border border-gray-300 rounded-lg text-base" />
+                            <input type={showConfirmPassword ? "text" : "password"} placeholder="Confirm New Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full p-4 border border-gray-300 rounded-lg text-base" />
+                            {passwordErrorMessage && <p className="text-red-500 text-sm text-center">{passwordErrorMessage}</p>}
+                            <button onClick={handleResetPassword} className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full">Save New Password</button>
+                        </div>
+                    </>
+                )}
+                <BottomNavbar/> 
+            </div>
+        );
+    }
+
     return (
         <div className="flex h-screen overflow-hidden">
             <Sidebar user={user} />

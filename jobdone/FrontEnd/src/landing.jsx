@@ -46,9 +46,7 @@ function Landing() {
           <div className="flex-1 overflow-hidden">
             <div 
               className="h-full overflow-y-auto"
-              style={{ 
-                paddingBottom: '80px' // Account for bottom navbar height
-              }}
+              style={{ paddingBottom: '80px', pointerEvents: 'auto' }}
             > 
               {/* JobPostInput is now a direct child and will control its own width */}
               <JobPostInput
