@@ -162,9 +162,15 @@ if (isMobile) {
             </div>
           </div>
 
-          {/* 3. Input Bar: Stays fixed at the bottom */}
+          {/* 3. Input Bar: Stays fixed at the bottom and moves up with keyboard */}
           {post?.status === "open" && (
-            <div className="border-t border-gray-200 bg-white p-4 flex-shrink-0">
+            <div 
+              className="border-t border-gray-200 bg-white p-4 flex-shrink-0"
+              style={{ 
+                transform: `translateY(-${keyboardOffset}px)`,
+                transition: 'transform 0.2s ease-out'
+              }}
+            >
               <div className="flex flex-col gap-3">
                 <input
                   type="number"
