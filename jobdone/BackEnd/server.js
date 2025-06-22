@@ -1543,8 +1543,6 @@ app.get("/posts/topbid", async (req, res) => {
         if (amountDiff !== 0) return amountDiff;
       }
 
-      if (amountDiff !== 0) return amountDiff;
-
       // verified‐user tiebreaker
       const aVer = a.user.verified?.email && a.user.verified?.phoneNumber;
       const bVer = b.user.verified?.email && b.user.verified?.phoneNumber;
