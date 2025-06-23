@@ -38,6 +38,7 @@ function Settings() {
     
     const isAuth = user.isOAuth;
 
+
     useEffect(() => {
         if (!loading) {
         if (!user) {
@@ -219,9 +220,10 @@ function Settings() {
     const handleChangePassword = async () => {
         setPasswordErrorMessage("");
         if (!oldPassword) return setPasswordErrorMessage("Please enter your current password.");
-        const validation = validatePassword(newPassword);
-        if (!validation.valid) return setPasswordErrorMessage(validation.message);
+        if(!newPassword || !confirmPassword) return setPasswordErrorMessage("Please enter your new password and confirm it.");
         if (newPassword !== confirmPassword) return setPasswordErrorMessage("New passwords do not match.");
+        const validation = validatePassword(confirmPassword);
+        if (!validation.valid) return setPasswordErrorMessage(validation.message);
 
         try {
             await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/change-password`, { oldPassword, newPassword, email: user.email }, { withCredentials: true });
