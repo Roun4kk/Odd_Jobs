@@ -231,7 +231,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
           )} */}
       {bidComp && (
         <div className="fixed inset-0 z-[100] bg-black/50 flex justify-center items-center">
-          <div className="bg-white w-full max-w-md h-full md:h-auto p-6 rounded-lg shadow-lg flex flex-col gap-4">
+          <div className="bg-white w-full max-w-md md:h-auto p-6 rounded-lg shadow-lg flex flex-col gap-4">
     
             <button onClick={() => {setOpenReport(true) , setBidComp(false)}} className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-red-500 text-red-600 hover:bg-red-50 transition cursor-pointer">
               Report
@@ -255,7 +255,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
             <div className="bg-white w-full max-w-sm p-5 rounded-xl shadow-xl relative">
               <div className="flex justify-between items-center mb-3">
                 <h2 className="text-lg font-semibold">Report Post</h2>
-                <button onClick={() => {setOpenReport(false) , onClose()}}>
+                <button onClick={() => {setOpenReport(false) }}>
                   <X className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer" />
                 </button>
               </div>
