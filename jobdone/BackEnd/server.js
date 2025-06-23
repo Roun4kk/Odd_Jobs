@@ -27,6 +27,7 @@ const cron = require('node-cron');
 const sendEmailOtp = require('./sendEmailOtp');
 const API_KEY = process.env.TWO_FACTOR_API_KEY; 
 const OTP_TEMPLATE = 'OTP1';
+const DeletedUser = require('../models/deletedUser.js');
 
 
 const upload = require("./multer");
@@ -2570,7 +2571,7 @@ app.get("/conversations", verifyToken, async (req, res) => {
     const result = conversations.map(c => {
       const u = users.find(user => user._id.toString() === c._id.toString());
       return { user: u, lastMessageTime: c.lastMessageTime };
-    });
+    }).filter(c => c !== null);;
 
     res.status(200).json(result);
   } catch (error) {
@@ -2607,12 +2608,16 @@ app.get('/api/user/connections', verifyToken, async (req, res) => {
       });
     }
 
-    // Process connections with enhanced data
     const enhancedConnections = await Promise.all(
       user.connections.map(async (connection) => {
-        const otherUserId = connection.user._id;
-        
-        // Get the most recent message between these users
+        const connectedUser = connection.user;
+
+        // If the connected user was deleted
+        const isDeleted = !connectedUser || !connectedUser._id;
+
+        const otherUserId = isDeleted ? connection.user?._id || connection.user : connectedUser._id;
+
+        // Get the most recent message between users
         const lastMessage = await Message.findOne({
           $or: [
             { sender: userId, receiver: otherUserId },
@@ -2623,7 +2628,7 @@ app.get('/api/user/connections', verifyToken, async (req, res) => {
         .sort({ createdAt: -1 })
         .select('text type createdAt sender receiver data seenBy');
 
-        // Get unseen message count for this connection
+        // Count unseen messages
         const unseenCount = await Message.countDocuments({
           sender: otherUserId,
           receiver: userId,
@@ -2633,17 +2638,27 @@ app.get('/api/user/connections', verifyToken, async (req, res) => {
 
         return {
           _id: connection._id,
-          user: connection.user,
+          user: isDeleted
+            ? {
+                _id: otherUserId,
+                username: "Deleted User",
+                userImage: null,
+                userBio: null,
+                verified: false,
+                averageRating: 0,
+                totalRating: 0
+              }
+            : connectedUser,
           request: connection.request,
-          lastMessage: lastMessage,
-          unseenCount: unseenCount,
+          lastMessage,
+          unseenCount,
           createdAt: connection.createdAt,
           updatedAt: connection.updatedAt || connection.createdAt
         };
       })
     );
 
-    // Sort connections by most recent activity
+    // Sort by activity
     enhancedConnections.sort((a, b) => {
       const aTime = a.lastMessage?.createdAt || a.createdAt;
       const bTime = b.lastMessage?.createdAt || b.createdAt;
@@ -2975,78 +2990,70 @@ app.delete('/users/delete', verifyToken, async (req, res) => {
   }
 
   try {
-    // 1. Delete all posts by user
+    // 🧠 1. Fetch full user data
+    const userToDelete = await User.findById(userId).lean();
+    if (!userToDelete) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 🧠 2. Backup full data in DeletedUser
+    await DeletedUser.create({
+      ...userToDelete,
+      originalUserId: userToDelete._id
+    });
+
+    // 3. Proceed with rest of the deletion steps (posts, bids, comments, etc.)
+
+    // 🔁 Same logic for preserving winning bids
+    const postsWithUserBids = await Post.find({ "bids.user": userId });
+
+    for (const post of postsWithUserBids) {
+      const updatedBids = post.bids.filter(bid => {
+        if (bid.user.toString() !== userId.toString()) return true;
+        if (post.winningBidId && bid._id.toString() === post.winningBidId.toString()) return true;
+        return false;
+      });
+
+      post.bids = updatedBids;
+      await post.save();
+    }
+      // 1. Delete all posts by user
     await Post.deleteMany({ user: userId });
-
-    // 2. Remove user's bids from all posts
-    await Post.updateMany(
-      {},
-      { $pull: { bids: { user: userId } } }
-    );
-
-    // 3. Remove user's comments and replies
-    await Post.updateMany(
-      {},
-      { $pull: { comments: { user: userId } } }
-    );
+    // Delete user comments and replies
+    await Post.updateMany({}, { $pull: { comments: { user: userId } } });
     await Post.updateMany(
       { "comments.replies.user": userId },
       { $pull: { "comments.$[].replies": { user: userId } } }
     );
 
-    // 4. Remove user from saved posts
-    await Post.updateMany(
-      { savedBy: userId },
-      { $pull: { savedBy: userId } }
-    );
-
-    // 5. Remove ratings given by the user from all other users
-    await User.updateMany(
-      {},
-      { $pull: { ratings: { from: userId } } }
-    );
-
-    // 6. Remove notifications involving user
-    await User.updateMany(
-      {},
-      {
-        $pull: {
-          notifications: {
-            $or: [{ sender: userId }, { to: userId }]
-          }
-        }
+    // Remove user from notifications and blocked lists
+    await User.updateMany({}, {
+      $pull: {
+        notifications: {
+          $or: [{ sender: userId }, { to: userId }]
+        },
+        blockedUsers: userId
       }
-    );
+    });
 
-    // 7. Remove user from blockedUsers of others
-    await User.updateMany(
-      { blockedUsers: userId },
-      { $pull: { blockedUsers: userId } }
-    );
-
-    // 8. Remove user from connections of others
-    await User.updateMany(
-      { "connections.user": userId },
-      { $pull: { connections: { user: userId } } }
-    );
-
-    // 10. Finally delete the user
+    // Delete the user
     await User.findByIdAndDelete(userId);
 
-    // 11. Clear cookies (if using refresh tokens, also blacklist them)
+    // Clear the cookie
     res.clearCookie("accessToken", {
       httpOnly: true,
       secure: true,
       sameSite: "None"
     });
 
-    return res.status(200).json({ message: "Account deleted and user logged out successfully." });
+    return res.status(200).json({ message: "Account deleted and backed up successfully." });
 
   } catch (error) {
-    console.error("Error during logout/account deletion:", error);
-    return res.status(500).json({ message: "Internal server error during logout." });
+    console.error("Error during deletion:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 mongoose.connect(MONGODB_URI)
   .then(() => {
