@@ -48,7 +48,7 @@ function PostOptionsOverlay({ post, onClose, setPosts }) {
 
   const handleSendReport = async (userId) => {
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/report/${userId}`, {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/report/${userId}`, {
         text: reportText,
         postId: post._id,
       }, { withCredentials: true });
