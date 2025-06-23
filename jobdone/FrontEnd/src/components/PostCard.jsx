@@ -8,6 +8,7 @@ import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
 import ReviewAndRatingForm from "./reviewAndRatingForm.jsx";
 import axios from "axios";
 import useAuth from "../hooks/useAuth.jsx";
+import { formatDistanceToNow } from "date-fns";
 
 const PostCard = ({
   userProfile,
@@ -126,20 +127,32 @@ const PostCard = ({
   return (
     <div className="bg-white p-4 rounded-md shadow-md flex flex-col gap-2">
       <div className="flex gap-2 items-center mb-2">
-        <img
-          src={localPost.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
-          alt="User"
-          className="w-12 h-12 rounded-full border-2 border-white object-cover"
-        />
-        <button disabled={!hasToken} onClick={() => {
-          if (user._id === localPost.user._id) navigate(`/profile`);
-          else navigate(`/profile/${localPost.user._id}`);
-        }} className="flex items-center text-lg font-semibold cursor-pointer">
-          {localPost.user.username}
-        </button>
-        {localPost.user.verified.email && localPost.user.verified.phoneNumber && (
-          <BadgeCheck className="h-6 w-6 text-teal-400" />
-        )}
+          <div className="flex items-center gap-2">
+            <img
+              src={localPost.user.userImage || "..."}
+              alt="User"
+              className="w-12 h-12 rounded-full border-2 border-white object-cover"
+            />
+            <div>
+              <button
+                disabled={!hasToken}
+                onClick={() =>
+                  user._id === localPost.user._id
+                    ? navigate(`/profile`)
+                    : navigate(`/profile/${localPost.user._id}`)
+                }
+                className="flex items-center text-lg font-semibold cursor-pointer"
+              >
+                {localPost.user.username}
+                {localPost.user.verified.email && localPost.user.verified.phoneNumber && (
+                  <BadgeCheck className="h-5 w-5 text-teal-400 ml-1" />
+                )}
+              </button>
+              <p className="text-sm text-gray-500">
+                {formatDistanceToNow(new Date(localPost.createdAt), { addSuffix: true })}
+              </p>
+            </div>
+          </div>
         <div className="flex items-center ml-auto">
           <button disabled={!hasToken} onClick={() => toggleSavePost(localPost._id)} className="mr-4 cursor-pointer">
             {user?.savedPosts?.includes(localPost._id) ? (
