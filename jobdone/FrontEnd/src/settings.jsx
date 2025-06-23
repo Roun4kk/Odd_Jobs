@@ -264,10 +264,10 @@ function Settings() {
         if (newPassword !== confirmPassword) return setPasswordErrorMessage("New passwords do not match.");
         
         try {
-            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/change-password`, { newPassword, email: user.email }, { withCredentials: true });
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/change-password`, { newPassword, email: user.email , otpVerified:true}, { withCredentials: true });
             toast.success("Password has been reset successfully. For security, you will be logged out.");
             // Add your logout logic here, then navigate to login page.
-            window.location.href = '/logout'; // Example logout redirect
+            handleLogout(); // Example logout redirect
         } catch (error) {
             setPasswordErrorMessage(error.response?.data?.message || "Failed to reset password.");
         }

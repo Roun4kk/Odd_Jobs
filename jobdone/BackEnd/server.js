@@ -73,7 +73,7 @@ const PHONE_COOLDOWN_SECONDS = 60;
 const EMAIL_OTP_EXPIRY_SECONDS = 900; // 1 hour
 const EMAIL_OTP_LIMIT = 5;
 const EMAIL_COOLDOWN_SECONDS = 120; // 2 minutes between requests for same email (longer than phone)
-
+console.log("Email OTP Limit:", EMAIL_OTP_LIMIT);
 const allowedOrigins = [
   "http://localhost:5173",
   "https://jobdone-ecru.vercel.app",
