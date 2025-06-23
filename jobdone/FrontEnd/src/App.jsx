@@ -291,7 +291,7 @@ function App() {
 
   const sendEmailOtp = async (email) => {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/email/send-otp`, { email: email? email.toLowerCase() : forgotPasswordEmail.toLowerCase() , isSignUP : !isSignIn }, { withCredentials: true });
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/email/send-otp`, { email: email? email.toLowerCase() : forgotPasswordEmail.toLowerCase() , isSignUp : !isSignIn }, { withCredentials: true });
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : { message: "Failed to send OTP" };
