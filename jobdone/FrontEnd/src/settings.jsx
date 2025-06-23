@@ -226,7 +226,7 @@ function Settings() {
         if (!validation.valid) return setPasswordErrorMessage(validation.message);
 
         try {
-            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/change-password`, { oldPassword, newPassword, email: user.email }, { withCredentials: true });
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/change-password`, { oldPassword, newPassword, email: user.email  , otpVerified: oldPassword? false : true  }, { withCredentials: true });
             toast.success("Password changed successfully!");
             setActiveSection("yourAccount");
             resetPasswordStates();
@@ -1104,7 +1104,7 @@ function Settings() {
                                 <h1 className="ml-4">Change Password</h1>
                             </div>
                             <div className="space-y-4 mt-4 px-2">
-                                <div className="w-full">
+                                {user.isOAuth && (<div className="w-full">
                                     <input
                                         type="password"
                                         placeholder="Current Password"
@@ -1112,7 +1112,7 @@ function Settings() {
                                         onChange={(e) => setOldPassword(e.target.value)}
                                         className="w-full p-3 border border-gray-300 rounded-md"
                                     />
-                                </div>
+                                </div>)}
                                 <div className="w-full">
                                     <input
                                         type={showNewPassword ? "text" : "password"}
