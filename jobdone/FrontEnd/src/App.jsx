@@ -331,16 +331,16 @@ function App() {
         return;
       }
     }
-    validationResult = validateEmail(email);
+    validationResult = validateEmail(email.toLocaleLowerCase());
     if (!validationResult.valid) {
       setErrorMessage(validationResult.message);
       return;
     }
-    validationResult = validatePassword(password);
+    if(!isSignIn){validationResult = validatePassword(password);
     if (!validationResult.valid) {
       setErrorMessage(validationResult.message);
       return;
-    }
+    }}
 
     try {
       setIsLoading(true);
