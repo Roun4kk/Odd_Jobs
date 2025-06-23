@@ -633,7 +633,7 @@ function Settings() {
                             </h1>
                         </div>
                         <div className="space-y-4">
-                            {isAuth && (<input
+                            {!isAuth && (<input
                                 type="password"
                                 placeholder="Current Password"
                                 value={oldPassword}
@@ -1100,7 +1100,7 @@ function Settings() {
                                 <h1 className="ml-4">Change Password</h1>
                             </div>
                             <div className="space-y-4 mt-4 px-2">
-                                {isAuth && (<div className="w-full">
+                                {!isAuth && (<div className="w-full">
                                     <input
                                         type="password"
                                         placeholder="Current Password"
