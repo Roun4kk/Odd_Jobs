@@ -3018,11 +3018,6 @@ app.delete('/users/delete', verifyToken, async (req, res) => {
       { $pull: { connections: { user: userId } } }
     );
 
-    // 9. Delete all messages sent or received
-    await Message.deleteMany({
-      $or: [{ sender: userId }, { receiver: userId }]
-    });
-
     // 10. Finally delete the user
     await User.findByIdAndDelete(userId);
 
