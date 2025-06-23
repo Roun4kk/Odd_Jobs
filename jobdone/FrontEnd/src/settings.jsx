@@ -329,17 +329,15 @@ function Settings() {
                                     See your account info like phone and email.
                                 </p>
                             </button>
-                            {!isAuth && (
-                                <button
-                                    onClick={() => setActiveSection("changePassword")}
-                                    className={buttonClass("changePassword")}
-                                >
-                                    <span className="font-medium">Change Password</span>
-                                    <p className="text-xs text-gray-500">
-                                        Change your account password.
-                                    </p>
-                                </button>
-                            )}
+                            <button
+                                onClick={() => setActiveSection("changePassword")}
+                                className={buttonClass("changePassword")}
+                            >
+                                <span className="font-medium">Change Password</span>
+                                <p className="text-xs text-gray-500">
+                                    Change your account password.
+                                </p>
+                            </button>
                             <button
                                 onClick={() => setActiveSection("notifications")}
                                 className={buttonClass("notifications")}
@@ -635,13 +633,13 @@ function Settings() {
                             </h1>
                         </div>
                         <div className="space-y-4">
-                            <input
+                            {isAuth && (<input
                                 type="password"
                                 placeholder="Current Password"
                                 value={oldPassword}
                                 onChange={(e) => setOldPassword(e.target.value)}
                                 className="w-full p-4 border border-gray-300 rounded-lg text-base"
-                            />
+                            />)}
                             <input
                                 type={showNewPassword ? "text" : "password"}
                                 placeholder="New Password"
@@ -832,17 +830,15 @@ function Settings() {
                                     See your account information like phone number and email address.
                                 </p>
                             </button>
-                            {!isAuth && (
-                                <button
-                                    onClick={() => setActiveSection("changePassword")}
-                                    className="py-2 text-left hover:bg-gray-100 p-2 rounded-md cursor-pointer"
-                                >
-                                    <span className="font-medium">Change password</span>
-                                    <p className="text-xs text-gray-500">
-                                        Change your account password at any time.
-                                    </p>
-                                </button>
-                            )}
+                            <button
+                                onClick={() => setActiveSection("changePassword")}
+                                className="py-2 text-left hover:bg-gray-100 p-2 rounded-md cursor-pointer"
+                            >
+                                <span className="font-medium">Change password</span>
+                                <p className="text-xs text-gray-500">
+                                    Change your account password at any time.
+                                </p>
+                            </button>
                         </>
                     )}
 
@@ -1104,7 +1100,7 @@ function Settings() {
                                 <h1 className="ml-4">Change Password</h1>
                             </div>
                             <div className="space-y-4 mt-4 px-2">
-                                {user.isOAuth && (<div className="w-full">
+                                {isAuth && (<div className="w-full">
                                     <input
                                         type="password"
                                         placeholder="Current Password"
