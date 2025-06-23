@@ -17,7 +17,7 @@ function OtherProfile() {
   const [verified, setVerified] = useState(false);
   const [hasToken, setHasToken] = useState(false);
   const [job, setJob] = useState("posts");
-  const { user } = useAuth();
+  const { user,loading } = useAuth();
   const [comp, setComp] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();

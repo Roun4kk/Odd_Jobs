@@ -50,7 +50,7 @@ function Messages() {
   const [conversations, setConversations] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser , loading } = useAuth();
   const [loadingConversation, setLoadingConversation] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -68,6 +68,19 @@ function Messages() {
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const isMobile = useIsMobile();
+  const [hasToken, setHasToken] = useState(false);
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        console.log("No user found, redirecting to login");
+        navigate("/");
+      } else {
+        console.log("User found, setting hasToken to true");
+        setHasToken(true);
+      }
+    }
+  }, [user, loading, navigate]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

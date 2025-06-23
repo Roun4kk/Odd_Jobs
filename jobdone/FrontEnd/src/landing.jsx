@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState , useEffect } from "react";
 import useAuth from "./hooks/useAuth.jsx";
 import JobPostInput from "./components/jobpostinput.jsx";
 import JobFeed from "./components/jobfeed.jsx";
@@ -8,6 +8,7 @@ import loadingLogo from "./assets/logo/logo-transparent-jobdone.svg";
 import SearchSkills from "./components/searchSkills.jsx";
 import BottomNavbar from "./bottomNavBar.jsx";
 import useIsMobile from "./hooks/useIsMobile";
+import { useNavigate } from "react-router-dom";
 
 function Landing() {
   const { user, loading } = useAuth();
@@ -15,6 +16,20 @@ function Landing() {
   const [refreshFlag, setRefreshFlag] = useState(false);
   const [showJobPost, setShowJobPost] = useState(false);
   const [showSkillsSearch, setShowSkillsSearch] = useState(false);
+  const [hasToken, setHasToken] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        console.log("No user found, redirecting to login");
+        navigate("/");
+      } else {
+        console.log("User found, setting hasToken to true");
+        setHasToken(true);
+      }
+    }
+  }, [user, loading, navigate]);
 
   if (loading) {
     return (

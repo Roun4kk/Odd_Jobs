@@ -10,7 +10,7 @@ import logo from "./assets/logo/logo-transparent-jobdone.svg";
 import toast from "react-hot-toast";
 
 function EditProfile() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser , loading } = useAuth();
   const [bio, setBio] = useState("");
   const [skills, setSkills] = useState([]);
   const [newSkill, setNewSkill] = useState("");
@@ -21,6 +21,18 @@ function EditProfile() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        console.log("No user found, redirecting to login");
+        navigate("/");
+      } else {
+        console.log("User found, setting hasToken to true");
+        setHasToken(true);
+      }
+    }
+  }, [user, loading, navigate]);
+  
   useEffect(() => {
     if (user) {
       setBio(user.userBio || "");

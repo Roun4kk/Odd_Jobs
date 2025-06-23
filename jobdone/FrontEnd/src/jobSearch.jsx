@@ -33,7 +33,20 @@ function JobSearch() {
   const [searchError, setSearchError] = useState(null);
   const [activeTab, setActiveTab] = useState("jobs");
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const [hasToken, setHasToken] = useState(false);
 
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        console.log("No user found, redirecting to login");
+        navigate("/");
+      } else {
+        console.log("User found, setting hasToken to true");
+        setHasToken(true);
+      }
+    }
+  }, [user, loading, navigate]);
+  
   const performSearch = useCallback(async (query) => {
     if (!query.trim()) {
       setFilteredPosts([]);

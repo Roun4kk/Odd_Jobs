@@ -11,7 +11,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 function Settings() {
-    const { user, updateUser } = useAuth();
+    const { user, updateUser , loading} = useAuth();
     const isMobile = useIsMobile();
     const [activeSection, setActiveSection] = useState("yourAccount");
     const [previousSection, setPreviousSection] = useState("yourAccount");
@@ -34,9 +34,22 @@ function Settings() {
     const [errorMessage, setErrorMessage] = useState("");
     const [passwordErrorMessage, setPasswordErrorMessage] = useState("");
     const [passwordVerification, setPasswordVerification] = useState(false);
+    const [hasToken, setHasToken] = useState(false);
     
     const isAuth = user.isOAuth;
 
+    useEffect(() => {
+        if (!loading) {
+        if (!user) {
+            console.log("No user found, redirecting to login");
+            navigate("/");
+        } else {
+            console.log("User found, setting hasToken to true");
+            setHasToken(true);
+        }
+        }
+    }, [user, loading, navigate]);
+    
     const handleLogout = async () => {
         try {
         const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/logout`, {}, { 

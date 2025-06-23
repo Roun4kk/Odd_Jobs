@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect , useState } from "react";
 import useAuth from "./hooks/useAuth.jsx";
 import Sidebar from "./Sidebar";
 import logo from "./assets/logo/logo-transparent.png";
@@ -12,6 +12,7 @@ function Notifications() {
   const { user, loading, refreshUser } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [hasToken, setHasToken] = useState(false);
 
   const truncateDescription = (description, maxLength = 60) => {
     if (!description) return "";
@@ -37,6 +38,18 @@ function Notifications() {
       markNotificationsAsSeen();
     }
   }, [user?._id]);
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        console.log("No user found, redirecting to login");
+        navigate("/");
+      } else {
+        console.log("User found, setting hasToken to true");
+        setHasToken(true);
+      }
+    }
+  }, [user, loading, navigate]);
 
   if (loading) {
     return (

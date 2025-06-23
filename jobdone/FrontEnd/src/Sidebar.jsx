@@ -21,7 +21,7 @@ function Sidebar({ user }) {
   const isValidObjectId = (id) => {
     return /^[0-9a-fA-F]{24}$/.test(id);
   };
-  useSocketRoomJoin(user._id)
+  useSocketRoomJoin(user?._id)
   // Fetch unseen notifications count
   useEffect(() => {
     if (!user?._id || !isValidObjectId(user._id)) {

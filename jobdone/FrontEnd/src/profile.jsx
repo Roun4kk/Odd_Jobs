@@ -10,7 +10,7 @@ import BottomNavbar from "./bottomNavBar.jsx";
 import toast from 'react-hot-toast';
 
 function Profile() {
-  const { user, updateUser, loading } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [job, setJob] = useState("posts");
   const [verified, setVerified] = useState(false);
