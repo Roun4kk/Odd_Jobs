@@ -27,7 +27,7 @@ const cron = require('node-cron');
 const sendEmailOtp = require('./sendEmailOtp');
 const API_KEY = process.env.TWO_FACTOR_API_KEY; 
 const OTP_TEMPLATE = 'OTP1';
-const DeletedUser = require('../models/deletedUser.js');
+const DeletedUser = require('./models/deletedUser.js');
 
 
 const upload = require("./multer");
