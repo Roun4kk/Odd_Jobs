@@ -219,7 +219,7 @@ function Settings() {
     
     const handleChangePassword = async () => {
         setPasswordErrorMessage("");
-        if (!oldPassword) return setPasswordErrorMessage("Please enter your current password.");
+        if (!oldPassword && !isAuth) return setPasswordErrorMessage("Please enter your current password.");
         if(!newPassword || !confirmPassword) return setPasswordErrorMessage("Please enter your new password and confirm it.");
         if (newPassword !== confirmPassword) return setPasswordErrorMessage("New passwords do not match.");
         const validation = validatePassword(confirmPassword);
