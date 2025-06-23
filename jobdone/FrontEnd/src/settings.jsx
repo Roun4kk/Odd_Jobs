@@ -227,9 +227,8 @@ function Settings() {
 
         try {
             await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/change-password`, { oldPassword, newPassword, email: user.email  , otpVerified: oldPassword? false : true  }, { withCredentials: true });
-            toast.success("Password changed successfully!");
-            setActiveSection("yourAccount");
-            resetPasswordStates();
+            toast.success("Password has been reset successfully. For security, you will be logged out.");
+            handleLogout(); 
         } catch (error) {
             setPasswordErrorMessage(error.response?.data?.message || "Failed to change password.");
         }
