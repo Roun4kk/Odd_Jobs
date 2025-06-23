@@ -3,7 +3,7 @@ import useAuth from "./hooks/useAuth.jsx";
 import JobPostInput from "./components/jobpostinput.jsx";
 import JobFeed from "./components/jobfeed.jsx";
 import Sidebar from "./Sidebar";
-import logo from "./assets/logo/logo-jobddone.svg";
+import logo from "./assets/logo/logo-jobddone-cropped.svg";
 import loadingLogo from "./assets/logo/logo-transparent-jobdone.svg";
 import SearchSkills from "./components/searchSkills.jsx";
 import BottomNavbar from "./bottomNavBar.jsx";
@@ -46,7 +46,7 @@ function Landing() {
         {/* Mobile Header */}
         <div className="sticky top-0 bg-teal-50 w-full h-16 z-10 shadow-sm flex-shrink-0">
           <div className="flex items-center justify-center h-12 px-4">
-            <div className="w-full items-center mt-8 justify-center max-w-[160px]">
+            <div className="w-full items-center justify-center max-w-[250px] mt-3">
               <img
                 src={logo}
                 alt="JobDone Logo"
