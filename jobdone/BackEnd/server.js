@@ -2333,9 +2333,11 @@ app.post("/users/change-password", async (req, res) => {
           return res.status(400).json({ message: "Old password is required for non-OAuth users." });
       }
       // Check if old password matches
-      const isMatch = await bcrypt.compare(oldPassword, user.password);
-      if (!isMatch && !otpVerified) {
-          return res.status(400).json({ message: "Old password is incorrect." });
+      if (!otpVerified) {
+          const isMatch = await bcrypt.compare(oldPassword, user.password);
+          if (!isMatch) {
+              return res.status(400).json({ message: "Old password is incorrect." });
+          }
       }
 
       // Hash new password and update it
