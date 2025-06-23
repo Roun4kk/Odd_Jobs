@@ -291,7 +291,7 @@ function App() {
 
   const sendEmailOtp = async (email) => {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/email/send-otp`, { email });
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/email/send-otp`, { email: email? email.toLowerCase() : forgotPasswordEmail.toLowerCase() , isSignUP : !isSignIn }, { withCredentials: true });
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : { message: "Failed to send OTP" };
@@ -526,8 +526,8 @@ function App() {
           />
         </div>
       </div>
-      <div className="w-full max-w-md bg-white p-6 rounded-lg shadow-lg flex flex-col justify-between h-[400px]">
-        <div className="flex flex-col gap-4">
+      <div className="w-full max-w-md bg-white p-6 rounded-lg shadow-lg flex flex-col justify-between h-[450px]">
+        <div className="flex flex-col gap-2">
           {wasLoggedOut && (
             <div className="text-center text-green-600 text-sm mb-2">You have been logged out successfully.</div>
           )}

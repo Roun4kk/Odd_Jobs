@@ -2155,12 +2155,22 @@ function validateEmail(email) {
 
 // Enhanced endpoint with better error handling and responses
 app.post("/users/email/send-otp", async (req, res) => {
-  let { email } = req.body;
+  let { email , isSignUp = false} = req.body;
 
+  const checkEmailExists = async (email) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    return await User.findOne({ email: normalizedEmail });
+  }
+  if( isSignUp && await checkEmailExists(email)) {
+    return res.status(400).json({ message: 'Email already exists', code: 'EMAIL_EXISTS' });
+  }
+  if(!isSignUp && !(await checkEmailExists(email))) {
+    return res.status(404).json({ message: 'Email not found', code: 'EMAIL_NOT_FOUND' });
+  }
   if (!email) {
     return res.status(400).json({ message: 'Email required', code: 'EMAIL_REQUIRED' });
   }
-
+  
   email = email.trim().toLowerCase();
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
 
