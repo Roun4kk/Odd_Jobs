@@ -660,12 +660,12 @@ function Settings() {
                                 </p>
                             )}
                             <div className="flex flex-col space-y-4 mt-4">
-                                <button
+                                {!isAuth && (<button
                                     onClick={navigateToForgotPasswordFlow}
                                     className="text-md text-teal-600 hover:underline text-center cursor-pointer"
                                 >
                                     Forgot Password?
-                                </button>
+                                </button>)}
                                 <button
                                     onClick={handleChangePassword}
                                     className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
@@ -1133,12 +1133,12 @@ function Settings() {
                                     </p>
                                 )}
                                 <div className="flex justify-between items-center mt-2">
-                                    <button
+                                    {!isAuth && (<button
                                         onClick={navigateToForgotPasswordFlow}
                                         className="text-md text-teal-600 hover:underline cursor-pointer"
                                     >
                                         Forgot Password?
-                                    </button>
+                                    </button>)}
                                     <button
                                         onClick={handleChangePassword}
                                         className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 cursor-pointer"
