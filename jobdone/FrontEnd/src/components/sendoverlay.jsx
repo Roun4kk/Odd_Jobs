@@ -17,6 +17,7 @@ function SendOverlay({ post, onClose }) {
   const [socketError, setSocketError] = useState(null);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [conversationLoading, setConversationLoading] = useState(false);
 
   useSocketRoomJoin(user?._id, setSocketError);
 
@@ -28,6 +29,7 @@ function SendOverlay({ post, onClose }) {
   }, []);
 
   const fetchConversations = useCallback(async () => {
+    setConversationLoading(true);
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/conversations`, { withCredentials: true });
       const usersFromConversations = res.data
@@ -36,6 +38,8 @@ function SendOverlay({ post, onClose }) {
       setConversationUsers(usersFromConversations);
     } catch (err) {
       console.error("Failed to fetch conversations:", err);
+    } finally {
+      setConversationLoading(false);
     }
   }, [user]);
 
@@ -105,7 +109,11 @@ function SendOverlay({ post, onClose }) {
             onChange={(e) => setSearch(e.target.value)}
             className="mt-3 px-4 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
           />
-
+          {conversationLoading && (
+                <div className="flex items-center justify-center h-screen bg-white">
+                  <div className="w-12 h-12 border-4 border-teal-500 border-dashed rounded-full animate-spin"></div>
+                </div>
+          )}
           {/* Scrollable User List */}
           <div className="flex-1 overflow-y-auto mt-2">
             {filteredUsers.map((u) => {

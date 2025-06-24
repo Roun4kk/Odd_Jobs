@@ -111,7 +111,7 @@ function UserJobs({ job, userProfile, hasToken }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-white">
+      <div className="flex items-center justify-center h-60vh bg-white ">
         <div className="w-12 h-12 border-4 border-teal-500 border-dashed rounded-full animate-spin"></div>
       </div>
     );
