@@ -2568,10 +2568,13 @@ app.get("/conversations", verifyToken, async (req, res) => {
       "_id username userImage verified"
     );
 
-    const result = conversations.map(c => {
+    const result = conversations.reduce((acc, c) => {
       const u = users.find(user => user._id.toString() === c._id.toString());
-      return { user: u, lastMessageTime: c.lastMessageTime };
-    }).filter(c => c !== null);;
+      if (u) {
+        acc.push({ user: u, lastMessageTime: c.lastMessageTime });
+      }
+      return acc;
+    }, []);
 
     res.status(200).json(result);
   } catch (error) {

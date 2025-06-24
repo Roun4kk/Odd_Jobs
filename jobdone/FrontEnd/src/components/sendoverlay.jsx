@@ -32,7 +32,7 @@ function SendOverlay({ post, onClose }) {
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/conversations`, { withCredentials: true });
       const usersFromConversations = res.data
         .map((c) => c.user)
-        .filter((u) => u._id !== user?._id);
+        .filter((u) => u?._id !== user?._id);
       setConversationUsers(usersFromConversations);
     } catch (err) {
       console.error("Failed to fetch conversations:", err);
