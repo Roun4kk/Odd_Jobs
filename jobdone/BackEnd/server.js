@@ -186,8 +186,6 @@ io.on("connection", (socket) => {
 
   socket.on("sendMessage", async ({ receiverId, type, text, data }) => {
     console.log("📨 Received message from:", socket.user.username);
-
-
     try {
       if (!receiverId || !type) throw new Error("Invalid message format");
 

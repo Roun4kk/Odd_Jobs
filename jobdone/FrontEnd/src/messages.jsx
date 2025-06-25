@@ -301,24 +301,33 @@ function Messages() {
   useEffect(() => {
     const handleReceiveMessage = (message) => {
       if (message.receiver.toString() === user._id && !message.deletedFor.includes(user._id)) {
-        setMessages((prev) => {
-          const isDuplicate = prev.some(
-            (msg) =>
-              msg._id === message._id ||
-              (msg.text === message.text &&
-                msg.sender.toString() === message.sender.toString() &&
-                msg.receiver.toString() === message.receiver.toString() &&
-                msg.data?.url === message.data?.url &&
-                Math.abs(new Date(msg.createdAt) - new Date(message.createdAt)) < 1000)
-          );
+        // Only add message to current chat if it's from the currently selected user
+        if (selectedUser && message.sender.toString() === selectedUser._id) {
+          setMessages((prev) => {
+            const isDuplicate = prev.some(
+              (msg) =>
+                msg._id === message._id ||
+                (msg.text === message.text &&
+                  msg.sender.toString() === message.sender.toString() &&
+                  msg.receiver.toString() === message.receiver.toString() &&
+                  msg.data?.url === message.data?.url &&
+                  Math.abs(new Date(msg.createdAt) - new Date(message.createdAt)) < 1000)
+            );
 
-          if (isDuplicate) return prev;
-          return [...prev, message];
-        });
+            if (isDuplicate) return prev;
+            return [...prev, message];
+          });
 
+          // Mark messages as seen if this chat is currently open
+          markMessagesAsSeen(message.sender);
+          setIsTyping(false);
+        }
+
+        // Always update conversation list and handle requests
         updateConversationTime(message);
         refreshUserConnections();
 
+        // Handle new message requests
         setRequests((prev) => {
           const senderId = message.sender?._id?.toString?.() || message.sender?.toString?.();
           const alreadyInRequests = prev.some(r => r.user._id?.toString() === senderId);
@@ -344,9 +353,12 @@ function Messages() {
           return prev;
         });
 
-        if (selectedUser && message.sender.toString() === selectedUser._id) {
-          markMessagesAsSeen(message.sender);
-          setIsTyping(false);
+        // Update unseen message count for the sender (only if not currently viewing their chat)
+        if (!selectedUser || message.sender.toString() !== selectedUser._id) {
+          setUnseenMessages((prev) => ({
+            ...prev,
+            [message.sender.toString()]: (prev[message.sender.toString()] || 0) + 1,
+          }));
         }
       }
     };
