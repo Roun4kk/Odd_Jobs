@@ -1389,7 +1389,7 @@ app.post("/posts/comments/replies", async (req, res) => {
 });
 
 app.get("/posts/bids", async (req, res) => {
-  const { postId, currentUserId, sortBy } = req.query;
+  const { postId, sortBy } = req.query;
 
   if (!postId) {
     return res.status(400).json({ message: "postId is missing" });
@@ -1486,11 +1486,17 @@ app.post("/posts/bids", async (req, res) => {
     const post = await Post.findById(postId);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    
     const newBid = {
       user: userId,
       BidAmount,
       BidText
     };
+
+    user.bidIds.push(postId);
+    await user.save();
 
     post.bids.push(newBid);
     await post.save();

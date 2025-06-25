@@ -85,6 +85,7 @@ function UserJobs({ job, userProfile, hasToken }) {
           response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/user/bids`, {
             params: { userId: userProfileReplacer.id || userProfileReplacer._id },
           });
+          console.log("bids ",response.data );
         }else {
           response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/user/reviews`, {
             params: { userId: userProfileReplacer.id || userProfileReplacer._id },
