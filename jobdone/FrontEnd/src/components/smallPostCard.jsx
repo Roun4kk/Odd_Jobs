@@ -128,7 +128,9 @@ const SmallPostCard = ({ postId }) => {
         <p className="text-xs text-gray-700 mt-2">
           <span className="font-semibold">Top Bid: </span>
           {topBid.BidAmount}₹ by{" "}
-          {userId === topBid.user._id ? "you" : `@${topBid.user.username}`}
+          <span className={`${(topBid?.user._id === userId || post.user._id === userId) ? "blur-sm filter" : ""}`}>
+            {userId === topBid.user._id ? "you" : post.user._id === userId ? '@' + topBid.user.username : "@anonymous"}
+          </span>
         </p>
       ) : (
         <p className="text-xs text-gray-500 mt-2">No bids yet</p>
