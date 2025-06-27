@@ -85,7 +85,7 @@ function SearchSkills() {
         <span className="text-xs text-gray-600 ml-1">
           {average > 0 ? `(${average.toFixed(1)})` : "No ratings yet"}
         </span>
-        {user?.ratings?.length && (<span className="text-sm text-gray-600 ml-1">
+        {user?.ratings?.length>0 && (<span className="text-sm text-gray-600 ml-1">
           ({user?.ratings?.length} {user?.ratings.length>1 ? "reviews" : "review"})
         </span>)}
       </div>
