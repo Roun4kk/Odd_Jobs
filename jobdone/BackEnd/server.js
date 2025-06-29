@@ -800,7 +800,7 @@ app.post('/posts', async (req, res) => {
   }
 });
 
-app.get('/posts', async (req, res) => {
+app.get('/posts', verifyToken , async (req, res) => {
   try {
     const posts = await Post.find({ status: "open" })
       .sort({ createdAt: -1 })
@@ -825,7 +825,36 @@ app.get('/posts', async (req, res) => {
         select: 'username userImage verified _id '
       });
 
-    res.status(200).json(posts);
+    const userId = req.user.id;
+
+    const modifiedPosts = posts.map(post => {
+      const isOwner = post.user._id.toString() === userId;
+
+      // Modify each bid
+      const updatedBids = post.bids.map(bid => {
+        const isBidder = bid.user._id.toString() === userId;
+
+        if (!isOwner && !isBidder) {
+          return {
+            ...bid.toObject(),
+            user: {
+              ...bid.user.toObject(),
+              username: 'Anonymous',
+              userImage: null
+            }
+          };
+        }
+
+        return bid;
+      });
+
+      return {
+        ...post.toObject(),
+        bids: updatedBids
+      };
+    });
+
+    res.status(200).json(modifiedPosts);
   } catch (err) {
     console.error("Error fetching posts:", err);
     res.status(500).json({ message: "Something went wrong" });

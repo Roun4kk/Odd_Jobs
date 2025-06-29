@@ -71,7 +71,9 @@ function JobFeed({ refreshFlag  }) {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts`);
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts`, {
+          withCredentials: true
+        });
         const newSortByMap = Object.fromEntries(response.data.map(post => [post._id, "1"]));
         setSortByMap(newSortByMap);
         setPosts(response.data);
