@@ -800,6 +800,35 @@ app.post('/posts', async (req, res) => {
   }
 });
 
+const anonymizeBidders = (posts, currentUserId) => {
+  return posts.map(post => {
+    const isPostOwner = post.user._id.toString() === currentUserId;
+
+    const updatedBids = post.bids.map(bid => {
+      const isBidder = bid.user._id.toString() === currentUserId;
+
+      if (!isPostOwner && !isBidder) {
+        return {
+          ...bid.toObject(),
+          user: {
+            ...bid.user.toObject(),
+            username: "Anonymous",
+            userImage: null, // or a default anonymous avatar
+            _id: undefined
+          }
+        };
+      }
+
+      return bid;
+    });
+
+    return {
+      ...post.toObject(),
+      bids: updatedBids
+    };
+  });
+};
+
 app.get('/posts', verifyToken , async (req, res) => {
   try {
     const posts = await Post.find({ status: "open" })
@@ -827,32 +856,7 @@ app.get('/posts', verifyToken , async (req, res) => {
 
     const userId = req.user.id;
 
-    const modifiedPosts = posts.map(post => {
-      const isOwner = post.user._id.toString() === userId;
-
-      // Modify each bid
-      const updatedBids = post.bids.map(bid => {
-        const isBidder = bid.user._id.toString() === userId;
-
-        if (!isOwner && !isBidder) {
-          return {
-            ...bid.toObject(),
-            user: {
-              ...bid.user.toObject(),
-              username: 'Anonymous',
-              userImage: null
-            }
-          };
-        }
-
-        return bid;
-      });
-
-      return {
-        ...post.toObject(),
-        bids: updatedBids
-      };
-    });
+    const modifiedPosts = anonymizeBidders(posts, req.user.id);
 
     res.status(200).json(modifiedPosts);
   } catch (err) {
@@ -1415,7 +1419,7 @@ app.post("/posts/comments/replies", async (req, res) => {
   }
 });
 
-app.get("/posts/bids", async (req, res) => {
+app.get("/posts/bids", verifyToken, async (req, res) => {
   const { postId, sortBy } = req.query;
 
   if (!postId) {
@@ -1431,6 +1435,9 @@ app.get("/posts/bids", async (req, res) => {
       return res.status(404).json({ message: "Post not found" });
     }
 
+    const currentUserId = req.user.id;
+    const isPostOwner = post.user._id.toString() === currentUserId;
+
     let bids = post.bids || [];
 
     // Sort logic
@@ -1445,26 +1452,41 @@ app.get("/posts/bids", async (req, res) => {
         if (amountDiff !== 0) return amountDiff;
       }
 
-      // Tie-breaker: verified
       const aVer = a.user.verified?.email && a.user.verified?.phoneNumber;
       const bVer = b.user.verified?.email && b.user.verified?.phoneNumber;
       if (aVer !== bVer) return aVer ? -1 : 1;
 
-      // Tie-breaker: earlier bid
       const timeDiff = new Date(a.createdAt) - new Date(b.createdAt);
       if (timeDiff !== 0) return timeDiff;
 
-      // Final fallback
       return a._id.toString().localeCompare(b._id.toString());
     });
 
-    res.status(200).json(bids);
+    // Anonymize non-authorized bid users
+    const anonymizedBids = bids.map(bid => {
+      const isBidder = bid.user._id.toString() === currentUserId;
+
+      if (!isPostOwner && !isBidder) {
+        return {
+          ...bid.toObject(),
+          user: {
+            ...bid.user.toObject(),
+            username: "Anonymous",
+            userImage: null,
+            _id:undefined
+          }
+        };
+      }
+
+      return bid;
+    });
+
+    res.status(200).json(anonymizedBids);
   } catch (error) {
     console.error("❌ Error while loading bids:", error);
     res.status(500).json({ message: error.message });
   }
 });
-
 
 app.delete("/posts/bids", async (req, res) => {
   const { postId, userId, BidAmount } = req.body;
@@ -1535,18 +1557,22 @@ app.post("/posts/bids", async (req, res) => {
   }
 });
 
-app.get("/posts/topbid", async (req, res) => {
+app.get("/posts/topbid", verifyToken, async (req, res) => {
   const { postId, sortBy } = req.query;
   if (!postId) return res.status(400).json({ message: "postId is missing" });
 
   try {
-    const post = await Post.findById(postId).populate('bids.user' , 'username , userImage , _id , verified');
+    const post = await Post.findById(postId)
+      .populate('user', '_id')
+      .populate('bids.user', 'username userImage _id verified averageRating totalRating');
+
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
     let bids = post.bids || [];
 
     bids.sort((a, b) => {
       if (sortBy === "rating") {
-        const ratingDiff = (b.user.averageRating || 0) - (a.user.averageRating || 0);
-        if (ratingDiff !== 0) return ratingDiff;
+        return (b.user.averageRating || 0) - (a.user.averageRating || 0);
       } else {
         const amountDiff = sortBy === '1'
           ? a.BidAmount - b.BidAmount
@@ -1554,19 +1580,27 @@ app.get("/posts/topbid", async (req, res) => {
         if (amountDiff !== 0) return amountDiff;
       }
 
-      // verified‐user tiebreaker
       const aVer = a.user.verified?.email && a.user.verified?.phoneNumber;
       const bVer = b.user.verified?.email && b.user.verified?.phoneNumber;
       if (aVer !== bVer) return aVer ? -1 : 1;
 
-      // earliest bid tiebreaker
-      const timeDiff = new Date(a.createdAt) - new Date(b.createdAt);
-      if (timeDiff !== 0) return timeDiff;
-
-      // final fallback: lexicographic ObjectId compare
-      return a._id.toString().localeCompare(b._id.toString());
+      return new Date(a.createdAt) - new Date(b.createdAt)
+        || a._id.toString().localeCompare(b._id.toString());
     });
+
     const topBid = bids[0] || null;
+
+    if (topBid) {
+      const isBidder = topBid.user._id?.toString() === req.user.id;
+      const isPoster = post.user?._id?.toString() === req.user.id;
+
+      if (!isBidder && !isPoster) {
+        topBid.user.username = "Anonymous";
+        topBid.user.userImage = null;
+        topBid.user._id = undefined;
+      }
+    }
+
     res.json(topBid);
   } catch (error) {
     console.error("Top bid fetch error:", error);
@@ -1574,7 +1608,8 @@ app.get("/posts/topbid", async (req, res) => {
   }
 });
 
-app.get("/user/posts", async (req, res) => {
+
+app.get("/user/posts",verifyToken, async (req, res) => {
   const { userId } = req.query;
 
   if (!userId) {
@@ -1607,16 +1642,15 @@ app.get("/user/posts", async (req, res) => {
         path: 'comments.replies.user',
         select: 'username userImage verified _id '
       });
-
-    res.status(200).json(posts);
+    const modifiedPosts = anonymizeBidders(posts, req.user.id);
+    res.status(200).json(modifiedPosts);
   } catch (error) {
     console.error("❌ Error while loading user posts:", error);
     res.status(500).json({ message: error.message });
   }
 });
 
-
-app.get("/user/bids", async (req, res) => {
+app.get("/user/bids",verifyToken, async (req, res) => {
   const { userId } = req.query;
 
   if (!userId) {
@@ -1649,15 +1683,15 @@ app.get("/user/bids", async (req, res) => {
         path: 'comments.replies.user',
         select: 'username userImage verified _id'
       });
-
-    res.status(200).json(posts);
+    const modifiedPosts = anonymizeBidders(posts, req.user.id);
+    res.status(200).json(modifiedPosts);
   } catch (error) {
     console.error("❌ Error while loading posts user has bid on:", error);
     res.status(500).json({ message: error.message });
   }
 });
 
-app.get("/user/reviews", async (req, res) => {
+app.get("/user/reviews",verifyToken, async (req, res) => {
   const { userId } = req.query;
 
   if (!userId) {
@@ -1694,8 +1728,8 @@ app.get("/user/reviews", async (req, res) => {
         path: 'comments.replies.user',
         select: 'username userImage verified _id'
       });
-
-    res.status(200).json(posts);
+    const modifiedPosts = anonymizeBidders(posts, req.user.id);
+    res.status(200).json(modifiedPosts);
   } catch (error) {
     console.error("❌ Error while loading reviewed posts:", error);
     res.status(500).json({ message: error.message });
@@ -2716,7 +2750,7 @@ app.get('/api/user/connections', verifyToken, async (req, res) => {
   }
 });
 
-app.get("/users/saved", async (req, res) => {
+app.get("/users/saved",verifyToken , async (req, res) => {
   const { userId } = req.query;
 
   if (!userId) {
@@ -2749,8 +2783,8 @@ app.get("/users/saved", async (req, res) => {
         path: 'comments.replies.user',
         select: 'username userImage verified _id '
       });
-    
-    res.status(200).json(posts);
+    const modifiedPosts = anonymizeBidders(posts, req.user.id);
+    res.status(200).json(modifiedPosts);
   } catch (error) {
     console.error("❌ Error while loading posts user has saved:", error);
     res.status(500).json({ message: error.message });
@@ -2805,20 +2839,50 @@ app.get("/users/:id", async (req, res) => {
   }
 });
 
-app.get("/api/post/:postId", async (req, res) => {
-  const { postId} = req.params;
+app.get("/api/post/:postId", verifyToken, async (req, res) => {
+  const { postId } = req.params;
   console.log("Post ID:", postId);
+
   try {
     const post = await Post.findById(postId)
-      .populate('user', 'username userImage verified blockedUsers')
-      .populate('bids.user', 'username userImage verified')
-      .populate('comments.user', 'username userImage verified')
-      .populate('comments.replies.user', 'username userImage verified');
+      .populate('user', 'username userImage verified blockedUsers _id')
+      .populate('bids.user', 'username userImage verified _id')
+      .populate('comments.user', 'username userImage verified _id')
+      .populate('comments.replies.user', 'username userImage verified _id');
 
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
-    res.status(200).json(post);
+
+    const currentUserId = req.user.id;
+    const isPostOwner = post.user._id.toString() === currentUserId;
+
+    // Process bids for anonymization
+    const updatedBids = post.bids.map(bid => {
+      const isBidder = bid.user._id.toString() === currentUserId;
+
+      if (!isPostOwner && !isBidder) {
+        return {
+          ...bid.toObject(),
+          user: {
+            ...bid.user.toObject(),
+            username: "Anonymous",
+            userImage: null,
+            _id: undefined
+          }
+        };
+      }
+
+      return bid;
+    });
+
+    // Return full post with updated bids
+    const updatedPost = {
+      ...post.toObject(),
+      bids: updatedBids
+    };
+
+    res.status(200).json(updatedPost);
   } catch (error) {
     console.error("❌ Error while loading post:", error);
     res.status(500).json({ message: error.message });

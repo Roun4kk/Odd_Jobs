@@ -28,6 +28,7 @@ function UserJobs({ job, userProfile, hasToken }) {
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts/topbid`, {
           params: { postId: post._id, sortBy: sortByMap[post._id] || "1" },
+          withCredentials:true,
         });
         newTopBids[post._id] = res.data;
       } catch (err) {
@@ -76,19 +77,23 @@ function UserJobs({ job, userProfile, hasToken }) {
         if (job === "posts") {
           response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/user/posts`, {
             params: { userId: userProfileReplacer.id || userProfileReplacer._id },
+            withCredentials:true,
           });
         } else if (job === "saved") {
           response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/saved`, {
             params: { userId: userProfileReplacer.id || userProfileReplacer._id },
+            withCredentials:true,
           });
         } else if(job === "bids"){
           response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/user/bids`, {
             params: { userId: userProfileReplacer.id || userProfileReplacer._id },
+            withCredentials:true,
           });
           console.log("bids ",response.data );
         }else {
           response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/user/reviews`, {
             params: { userId: userProfileReplacer.id || userProfileReplacer._id },
+            withCredentials:true,
           });
         }
         

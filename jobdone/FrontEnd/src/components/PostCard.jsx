@@ -37,6 +37,8 @@ const PostCard = ({
   console.log("userprofile " , userProfile);
   const rating = userProfile?.ratings?.find(r => r.post === post?._id) ;
   const winningBid = post?.bids?.find(bid => bid._id === post?.winningBidId);
+  console.log("user" , user);
+  const shouldBlurWinner = !(winningBid?.user?._id === user?._id || post?.user?._id === user?._id ); 
 
   console.log("winningBid" , winningBid);
   // Sync localPost if props change
@@ -240,7 +242,7 @@ const PostCard = ({
       </div>
 
       {/* Top Bid & Completion UI */}
-      {localPost.status === "open" && (
+      {localPost.status !== "winnerSelected" && localPost.status !== "completed"  && (
         <div className="mt-2 text-sm text-gray-600">
           {topBid ? (
             <div className="mb-1">
@@ -269,16 +271,16 @@ const PostCard = ({
             <span className="font-medium text-black">{winningBid.BidAmount}₹ bid by</span>
 
             <button
-              disabled={shouldBlur || !hasToken}
+              disabled={shouldBlurWinner || !hasToken}
               onClick={() => {
                 const isSelf = user._id === winningBid.user._id;
                 navigate(isSelf ? `/profile` : `/profile/${winningBid.user._id}`);
               }}
               className={`font-semibold text-black transition duration-150 ${
-                shouldBlur ? "blur-sm cursor-not-allowed" : "hover:underline cursor-pointer"
+                shouldBlurWinner ? "blur-sm cursor-not-allowed" : "hover:underline cursor-pointer"
               }`}
             >
-              {shouldBlur ? "anonymous" : `@${winningBid.user.username}`}
+              {shouldBlurWinner ? "anonymous" : `@${winningBid.user.username}`}
             </button>
 
             {winningBid.user.verified?.email && winningBid.user.verified?.phoneNumber && (

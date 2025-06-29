@@ -82,7 +82,7 @@ export default function PostPage() {
       console.log("Fetching post with ID:", postId);
       try {
         setLoading(true);
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${postId}`);
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${postId}` ,{withCredentials:true});
         const fetchedPost = res.data;
         setPost(fetchedPost);
 

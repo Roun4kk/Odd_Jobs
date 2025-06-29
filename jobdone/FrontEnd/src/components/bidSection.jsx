@@ -26,7 +26,13 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
     const fetchPost = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts/bids`, { params: { postId, sortBy} });
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/posts/bids`,
+          {
+            params: { postId, sortBy },
+            withCredentials: true
+          }
+        );
         setBids(response.data || []);
       } catch (error) {
         console.error("Error fetching post:", error);

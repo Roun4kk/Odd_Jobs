@@ -25,13 +25,13 @@ function JobFeed({ refreshFlag  }) {
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts/topbid`, {
           params: { postId: post._id, sortBy: sortByMap[post._id] || "1" },
+          withCredentials:true,
         });
         return [post._id, res.data];
       } catch {
         return [post._id, null];
       }
     }));
-
     setTopBids(Object.fromEntries(bids));
   };
 
@@ -104,8 +104,8 @@ function JobFeed({ refreshFlag  }) {
           .map((post, index) => {
           const shouldBlur =
             !(
-              user._id === post.user._id ||
-              (topBids[post._id] && user._id === topBids[post._id].user._id)
+              user?._id === post?.user?._id ||
+              (topBids[post._id] && user?._id === topBids[post._id]?.user?._id)
             );
           return (
             <PostCard
