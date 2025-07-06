@@ -67,12 +67,8 @@ function Profile() {
     return (
       <div className="min-h-screen flex flex-col">
         {/* Mobile Header */}
-        <div className="flex z-10 items-center justify-between w-full h-16 shadow-sm border-b border-gray-200 bg-teal-50 flex-shrink-0">
-          <button onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/landing")} className="p-2 rounded-full hover:bg-teal-100">
-            <ArrowLeft className="w-6 h-6 text-teal-700 hover:text-teal-900" />
-          </button>
+        <div className="flex z-10 items-center justify-center w-full h-16 shadow-sm border-b border-gray-200 bg-teal-50 flex-shrink-0">
           <h1 className="text-2xl font-semibold text-teal-800">Profile</h1>
-          <div className="w-6 h-6" /> {/* Spacer for alignment */}
         </div>
 
         {/* Mobile Profile Content - Constrained container */}

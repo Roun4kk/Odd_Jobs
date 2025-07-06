@@ -305,7 +305,7 @@ function Settings() {
         return (
             <div className="min-h-screen bg-white pb-20 px-4">
                 {activeSection === "yourAccount" && (
-                    <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                    <div className="flex items-center justify-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
                         <h1 className="text-2xl text-teal-800 font-bold ml-2">Settings</h1>
                     </div>
                 )}

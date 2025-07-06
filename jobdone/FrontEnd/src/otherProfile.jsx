@@ -62,17 +62,10 @@ function OtherProfile() {
       <div className={`${isMobile ? 'min-h-screen flex flex-col' : 'flex h-screen'}`}>
         {/* Mobile Header */}
         {isMobile && (
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-teal-50 flex-shrink-0">
+          <div className="flex items-center justify-center p-4 border-b border-gray-200 bg-teal-50 flex-shrink-0">
             {hasToken ? (
               <>
-                <button 
-                  onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/landing")} 
-                  className="p-2 rounded-full hover:bg-teal-100"
-                >
-                  <ArrowLeft className="w-6 h-6 text-teal-700 hover:text-teal-900" />
-                </button>
-                <h1 className="text-lg font-semibold text-teal-800">Post</h1>
-                <div className="w-6 h-6" /> {/* Spacer for alignment */}
+                <h1 className="text-2xl font-semibold text-teal-800">Profile</h1>
               </>
             ) : (
               <>
@@ -131,14 +124,10 @@ function OtherProfile() {
     return (
       <div className="min-h-screen flex flex-col">
         {/* Mobile Header */}
-        <div className="flex items-center justify-between border-b z-10 shadow-sm h-16 w-full border-gray-200 bg-teal-50 flex-shrink-0">
+        <div className="flex items-center justify-center border-b z-10 shadow-sm h-16 w-full border-gray-200 bg-teal-50 flex-shrink-0">
           {hasToken ? (
             <>
-              <button onClick={() => navigate("/landing")} className=" p-2 rounded-full hover:bg-teal-100">
-                <ArrowLeft className="w-6 h-6 text-teal-700 hover:text-teal-900" />
-              </button>
               <h1 className="text-2xl font-semibold text-teal-800">Profile</h1>
-              <div className="w-6 h-6" /> {/* Spacer for alignment */}
             </>
           ) : (
             <div className="flex items-center justify-between h-12 px-4 w-full">

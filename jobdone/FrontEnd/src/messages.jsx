@@ -602,17 +602,17 @@ function Messages() {
         {!selectedUser ? (
           <>
             {/* Conversations Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-teal-50">
-              <button onClick={() => navigate("/landing")} className="p-2 rounded-full hover:bg-teal-100">
+            <div className="flex items-center justify-center p-4 border-b border-gray-200 bg-teal-50">
+              {showRequests && (<button onClick={() => setShowRequests(false)} className="p-2 rounded-full hover:bg-teal-100">
                 <ArrowLeft className="w-6 h-6 text-teal-700 hover:text-teal-900" />
-              </button>
-              <h1 className="text-lg font-semibold text-teal-800">
+              </button>)}
+              <h1 className="text-2xl font-semibold text-teal-800">
                 {showRequests ? "Message Requests" : "Messages"}
               </h1>
               {!showRequests && requestCount > 0 && (
                 <button
                   onClick={() => setShowRequests(true)}
-                  className="text-teal-600 px-3 py-1 rounded-full text-sm hover:bg-teal-100 transition"
+                  className="text-teal-600 px-3 py-1 ml-auto rounded-full text-sm hover:bg-teal-100 transition"
                 >
                   Requests ({requestCount})
                 </button>
