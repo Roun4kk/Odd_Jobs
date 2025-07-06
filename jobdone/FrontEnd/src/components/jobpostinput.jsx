@@ -137,7 +137,7 @@ function JobPostInput({ refresh, user }) {
             onChange={(e) => setPostText(e.target.value)}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder="Post a job..."
+            placeholder="Give description of the job post..."
             className={`w-full text-lg placeholder-gray-500 border-none resize-none focus:outline-none bg-transparent min-h-[60px] max-h-[80px] overflow-y-auto leading-relaxed ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
             disabled={isDisabled}
             aria-label="Job post description"
@@ -229,7 +229,7 @@ function JobPostInput({ refresh, user }) {
                     <span>Uploading...</span>
                   </div>
                 ) : (
-                  "Post Job"
+                  "Post"
                 )}
               </button>
             </div>
