@@ -88,7 +88,8 @@ function Landing() {
       <div className="w-[70%] h-full fixed right-0 top-0 overflow-y-scroll">
         <div className="flex min-h-screen">
           {/* Center */}
-          <div className="w-[57%] flex flex-col items-center gap-6">
+          <div className="w-[57%] flex flex-col items-center ">
+            <h4 className="text-2xl text-white font-semibold mb-4">Welcome, {user?.username}</h4>
             <JobPostInput
               refresh={() => setRefreshFlag((prev) => !prev)}
               user={user}
