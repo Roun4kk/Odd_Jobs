@@ -17,7 +17,6 @@ import { MessageProvider } from "./messageContext.jsx";
 import JobSearch from "./jobSearch.jsx";
 
 createRoot(document.getElementById("root")).render(
-  <StrictMode>
     <AuthProvider>
       <MessageProvider>
         <Router>
@@ -63,5 +62,4 @@ createRoot(document.getElementById("root")).render(
         />
       </MessageProvider>
     </AuthProvider>
-  </StrictMode>
 );
