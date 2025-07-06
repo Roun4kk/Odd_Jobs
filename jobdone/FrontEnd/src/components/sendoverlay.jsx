@@ -64,7 +64,7 @@ function SendOverlay({ post, onClose }) {
     if (selectedUsers.length === 0) {
       return toast.error("Select at least one user to share with.");
     }
-
+    setMessage("");
     selectedUsers.forEach((recipient, index) => {
       console.log(`Sending message ${index + 1}...`);
       socket.emit("sendMessage", {
@@ -77,7 +77,6 @@ function SendOverlay({ post, onClose }) {
     });
     navigate("/messages", { state: { newChatWith: selectedUsers[0] } });
     toast.success(`Post shared with ${selectedUsers.map((u) => u.username).join(", ")}`);
-    setMessage("");
     setSelectedUsers([]);
     onClose();
   };
@@ -89,7 +88,7 @@ function SendOverlay({ post, onClose }) {
   if (isMobile) {
     return (
       <div
-          className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center"
+          className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center px-4"
           style={{ height: 'calc(100dvh - 4rem)' }}
         >
         <div className="bg-white w-full max-w-sm p-4 rounded-2xl shadow-2xl relative flex flex-col h-[80vh]">

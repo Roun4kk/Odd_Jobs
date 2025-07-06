@@ -59,6 +59,8 @@ function JobPostInput({ refresh, user }) {
 
     setError("");
     setIsPosting(true);
+    setPostText("");
+    setMedia([]);
     try {
       const mediaUrls = await postUpload();
       console.log("Media URLs:", mediaUrls);
@@ -72,8 +74,6 @@ function JobPostInput({ refresh, user }) {
       });
 
       console.log("Post response:", response.data);
-      setPostText("");
-      setMedia([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
       refresh();
       toast.success("Post created successfully!");
@@ -134,7 +134,7 @@ function JobPostInput({ refresh, user }) {
   };
 
   return (
-    <div className="w-full bg-white p-4 flex flex-col gap-4 lg:w-3/4 lg:mx-auto lg:p-6 lg:rounded-xl lg:shadow-lg lg:my-4">
+    <div className="bg-white p-4 mx-4 mt-4 mb-6 border border-gray-200 rounded-lg shadow-sm flex flex-col gap-4 sm:mx-6 md:mx-12 lg:w-3/4 lg:mx-auto lg:p-6 lg:rounded-xl lg:shadow-lg lg:border-none">
       {/* Textarea */}
       <div className="w-full">
         <textarea

@@ -71,6 +71,8 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
       toast.error(`Bid out of bid range : ${post.minimumBid} to ${post.maximumBid}`);
       return;
     }
+    setBidText("");
+    setBidAmount("");
     try {
       const message = `${user.username} placed a new bid of ${BidAmount} on your job post:`;
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/notify`, {
@@ -103,8 +105,6 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
 
       socket.emit("newBid", newBid);
       setRefresh(prev => !prev);
-      setBidText("");
-      setBidAmount("");
     } catch (error) {
       console.error("Error posting comment:", error);
     }

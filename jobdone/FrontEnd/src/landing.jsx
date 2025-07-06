@@ -56,9 +56,7 @@ function Landing() {
           </div>
         </div>
 
-        {/* Feed - Properly constrained container to prevent navbar overlap */}
-        {!showJobPost && !showSkillsSearch && (
-          <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden">
             <div 
               className="h-full overflow-y-auto"
               style={{ paddingBottom: '80px', pointerEvents: 'auto' }}
@@ -74,7 +72,6 @@ function Landing() {
               </div>
             </div>
           </div>
-        )}
 
         {/* Bottom Nav - Fixed at bottom */}
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">

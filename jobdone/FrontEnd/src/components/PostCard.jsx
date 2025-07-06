@@ -34,6 +34,7 @@ const PostCard = ({
   const [localPost, setLocalPost] = useState(post);
   const [bids, setBids] = useState(post.bids || []);
   const [socketError, setSocketError] = useState(null);
+  const [showFullDescription, setShowFullDescription] = useState(false);
   console.log("userprofile " , userProfile);
   const rating = userProfile?.ratings?.find(r => r.post === post?._id) ;
   const winningBid = post?.bids?.find(bid => bid._id === post?.winningBidId);
@@ -169,7 +170,24 @@ const PostCard = ({
         </div>
       </div>
 
-      <p>{localPost.postDescription}</p>
+      <div className="relative">
+        <p
+          className={`text-gray-800 whitespace-pre-wrap ${
+            showFullDescription ? "" : "line-clamp-3"
+          }`}
+        >
+          {localPost.postDescription}
+        </p>
+
+        {localPost.postDescription.split(" ").length > 25 && (
+          <button
+            onClick={() => setShowFullDescription(prev => !prev)}
+            className="text-sm mt-1 text-teal-600 hover:underline cursor-pointer"
+          >
+            {showFullDescription ? "Show less" : "Read more"}
+          </button>
+        )}
+      </div>
       {localPost.mediaUrls?.length > 0 && <ImageSlider mediaUrls={localPost.mediaUrls} />}
 
       {/* Buttons */}

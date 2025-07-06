@@ -1,5 +1,5 @@
 import { Home, Search, MessageCircle, User, Settings, Bell , Briefcase } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect , useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import SettingsComp from "./accounts";
 import logo from "./assets/logo/logo-jobddone.svg";
@@ -16,6 +16,7 @@ function Sidebar({ user }) {
   const [unseenNotifications, setUnseenNotifications] = useState(0);
   const { unseenConversations, unseenMessages } = useMessageContext();
   const location = useLocation();
+  const profileBtnRef = useRef(null);
   const isActive = (path) => location.pathname === path;
 
   const isValidObjectId = (id) => {
@@ -131,28 +132,31 @@ function Sidebar({ user }) {
       >
         <Settings className="h-6 w-6" /> Settings
       </button>
-      <button
-        onClick={() => setUserLog(prev => !prev)}
-        className="ml-8 flex items-start px-6 py-2 justify-center rounded-md hover:bg-gray-200 transition cursor-pointer group"
-      >
-        <img
-          src={
-            user?.userImage ||
-            "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"
-          }
-          alt="User"
-          className="w-12 h-12 rounded-full border-2 border-white object-cover"
-        />
-        <div className="ml-2 flex flex-col items-start justify-center">
-          <p className="text-white group-hover:text-black">
-            {user?.username ? user.username : "User not found"}
-          </p>
-          <p className="text-white group-hover:text-black">
-            {user?.email ? user.email : "User not found"}
-          </p>
-        </div>
-      </button>
-      {userLog && <SettingsComp setUserLog={setUserLog} user={user} />}
+      <div className="ml-8 relative">
+        <button
+          ref={profileBtnRef}
+          onClick={() => setUserLog(prev => !prev)}
+          className="flex items-start px-6 py-2 justify-center rounded-md hover:bg-gray-200 transition cursor-pointer group"
+        >
+          <img
+            src={
+              user?.userImage ||
+              "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"
+            }
+            alt="User"
+            className="w-12 h-12 rounded-full border-2 border-white object-cover"
+          />
+          <div className="ml-2 flex flex-col items-start justify-center">
+            <p className="text-white group-hover:text-black">
+              {user?.username || "User not found"}
+            </p>
+            <p className="text-white group-hover:text-black">
+              {user?.email || "User not found"}
+            </p>
+          </div>
+        </button>
+        {userLog && <SettingsComp setUserLog={setUserLog} user={user} triggerRef={profileBtnRef}/>}
+      </div>
     </div>
   );
 }

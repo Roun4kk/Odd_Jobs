@@ -11,8 +11,6 @@ function SearchSkills() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const {user} = useAuth();
-  console.log("result" ,results);
-  console.log("user" , user);
   const searchUsers = useCallback(async (searchQuery) => {
     if (!searchQuery.trim()) {
       setResults([]);

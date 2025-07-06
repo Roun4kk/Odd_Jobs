@@ -3,36 +3,32 @@ import axios from "axios";
 import useAuth from "./hooks/useAuth.jsx";
 import { useNavigate } from "react-router-dom";
 
-function SettingsComp({ setUserLog, user }) { // Add updateUser prop
+function SettingsComp({ setUserLog, user, triggerRef }) {
   const popoverRef = useRef(null);
   const { updateUser } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (popoverRef.current && !popoverRef.current.contains(event.target)) {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(event.target) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(event.target)
+      ) {
         setUserLog(false);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [setUserLog]);
+  }, [setUserLog, triggerRef]);
 
   const handleLogout = async () => {
     try {
-      // STEP 1: Call backend logout endpoint
-      console.log("=== LOGOUT DEBUG INFO ===");
-      console.log("Current URL:", window.location.href);
-      console.log("Cookies before logout:", document.cookie);
-      console.log("Backend URL:", import.meta.env.VITE_API_BASE_URL);
-      console.log("Calling backend logout...");
       const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/logout`, {}, { 
         withCredentials: true 
       });
       
-      console.log("Backend logout response:", response.data);
-
-      // STEP 2: Clear frontend storage
       localStorage.clear();
       sessionStorage.clear();
 
@@ -84,7 +80,8 @@ function SettingsComp({ setUserLog, user }) { // Add updateUser prop
 
   return (
     <div
-      className="absolute bottom-24 z-50 left-40 bg-gray-200 text-black w-max shadow-lg shadow-white rounded-xl"
+      ref={popoverRef}
+      className="absolute bottom-[100%] mb-2 z-50 left-1/2 -translate-x-1/2 bg-gray-200 text-black w-max shadow-lg shadow-white rounded-xl"
     >
       <div className="flex flex-col p-4">
         <button
@@ -94,7 +91,6 @@ function SettingsComp({ setUserLog, user }) { // Add updateUser prop
           Log out @{user?.username || "user not found"}
         </button>
       </div>
-      <div className="absolute -bottom-2 left-1/2 w-4 h-4 bg-gray-200 rotate-45"></div>
     </div>
   );
 }

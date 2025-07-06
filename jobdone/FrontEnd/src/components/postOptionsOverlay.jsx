@@ -114,8 +114,8 @@ function PostOptionsOverlay({ post, onClose, setPosts }) {
 
   // Modal UI for both Desktop and Mobile
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center">
-      <div className="bg-white w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
+    <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center px-4">
+      <div className="bg-white w-full max-w-sm p-6 rounded-2xl shadow-2xl relative ">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-800">Post Options</h2>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 transition">

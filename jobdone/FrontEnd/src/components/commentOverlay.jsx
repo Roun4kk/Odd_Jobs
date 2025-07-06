@@ -77,7 +77,7 @@ function CommentOverlay({ post, onClose }) {
 
   const handlePostSubmit = async () => {
     if (!commentText.trim()) return;
-
+    setCommentText("");
     try {
       if (replyTo) {
         if (user._id !== post.user._id) {
@@ -142,7 +142,6 @@ function CommentOverlay({ post, onClose }) {
       setReplyingTo(null);
       setReplyTo(null);
       setRefresh((prev) => !prev);
-      setCommentText("");
     } catch (error) {
       console.error("Error posting comment:", error);
     }
