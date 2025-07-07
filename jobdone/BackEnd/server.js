@@ -97,17 +97,17 @@ app.use(cors({
   exposedHeaders: ['Set-Cookie'],
 }));
 
-app.enable('trust proxy'); // If behind a proxy
+// app.enable('trust proxy'); // If behind a proxy
 
-if (process.env.NODE_ENV === 'production') {
-  app.use((req, res, next) => {
-    if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
-      next();
-    } else {
-      return res.redirect('https://' + req.headers.host + req.url);
-    }
-  });
-}
+// if (process.env.NODE_ENV === 'production') {
+//   app.use((req, res, next) => {
+//     if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
+//       next();
+//     } else {
+//       return res.redirect('https://' + req.headers.host + req.url);
+//     }
+//   });
+// }
 
 app.options("*", cors()); // Preflight requests
 
