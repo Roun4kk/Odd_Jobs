@@ -128,7 +128,7 @@ const PostCard = ({
   ) return null;
 
   return (
-    <div className="bg-white p-4 rounded-md shadow-md flex flex-col gap-2">
+    <div className="bg-white p-4 rounded-md shadow-md flex flex-col gap-2 min-h-[200px]">
       <div className="flex gap-2 items-center mb-2">
           <div className="flex items-center gap-2">
             <img

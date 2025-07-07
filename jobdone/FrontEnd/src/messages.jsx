@@ -987,7 +987,7 @@ function Messages() {
 
         <div className="w-px h-full bg-gray-200" />
 
-        <div className="py-3 w-3/5 h-full flex flex-col">
+        <div className=" w-3/5 h-full flex flex-col">
           {/* {socketError && (
             <div className="p-4 text-red-500 bg-red-50 rounded-lg mx-4">
               Connection error: {socketError}. Please try refreshing the page or logging in again.

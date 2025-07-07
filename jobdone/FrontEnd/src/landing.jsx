@@ -85,16 +85,17 @@ function Landing() {
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar user={user} />
-      <div className="w-[70%] h-full fixed right-0 top-0 overflow-y-scroll">
+      <div className="w-[70%] h-full overflow-y-scroll overflow-x-hidden">
         <div className="flex min-h-screen">
           {/* Center */}
-          <div className="w-[57%] flex flex-col items-center ">
-            <h4 className="text-2xl text-white font-semibold mb-4">Welcome, {user?.username}</h4>
-            <JobPostInput
-              refresh={() => setRefreshFlag((prev) => !prev)}
-              user={user}
-            />
-            <JobFeed refreshFlag={refreshFlag} />
+          <div className="w-[57%] p-4 transform-gpu">
+            <div className="flex flex-col items-center ">
+              <JobPostInput
+                refresh={() => setRefreshFlag((prev) => !prev)}
+                user={user}
+              />
+              <JobFeed refreshFlag={refreshFlag} />
+            </div>
           </div>
           {/* Right */}
           <div className="w-[43%] bg-white sticky top-0 h-screen border-l border-gray-200">

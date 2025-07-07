@@ -114,7 +114,7 @@ function JobPostInput({ refresh, user }) {
   };
 
   return (
-    <div className="px-4 pt-2 sm:px-6 lg:px-0 lg:w-3/4 lg:mx-auto">
+    <div className="px-4 pt-2 sm:px-6 lg:px-0 lg:w-3/4 lg:mx-auto min-h-[200px]">
       {error && (
         <div className="mb-4">
           <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg border border-red-200">
@@ -123,22 +123,18 @@ function JobPostInput({ refresh, user }) {
           </div>
         </div>
       )}
-      
-      <div 
-        className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-text ${
-          isFocused ? 'border-3 border-teal-500' : 'border-2 border-gray-200'
-        }`}
-        onClick={handleContainerClick}
-      >
+
+      {/* ✅ This gives exact same ring behavior and style as the Search input */}
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-teal-500 transition-all duration-200">
         <div className="p-4 sm:p-5">
           <textarea
             ref={textareaRef}
             value={postText}
             onChange={(e) => setPostText(e.target.value)}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
             placeholder="Give description of the job post..."
-            className={`w-full text-lg placeholder-gray-500 border-none resize-none focus:outline-none bg-transparent min-h-[60px] max-h-[80px] overflow-y-auto leading-relaxed ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+            className={`w-full text-lg placeholder-gray-500 border-none resize-none focus:outline-none bg-transparent min-h-[60px] max-h-[80px] overflow-y-auto leading-relaxed ${
+              isDisabled ? "opacity-50 cursor-not-allowed" : ""
+            }`}
             disabled={isDisabled}
             aria-label="Job post description"
           />

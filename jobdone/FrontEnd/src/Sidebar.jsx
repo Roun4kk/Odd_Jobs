@@ -1,10 +1,10 @@
-import { Home, Search, MessageCircle, User, Settings, Bell , Briefcase } from "lucide-react";
-import { useState, useEffect , useRef } from "react";
+import { Home, Search, MessageCircle, User, Settings, Bell } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import SettingsComp from "./accounts";
 import logo from "./assets/logo/logo-jobddone.svg";
 import axios from "axios";
-import socket from "./socket.js"; 
+import socket from "./socket.js";
 import { useMessageContext } from "./hooks/useMessageContext.js";
 import useSocketRoomJoin from "./hooks/socketRoomJoin.js";
 import { useLocation } from "react-router-dom";
@@ -66,7 +66,7 @@ function Sidebar({ user }) {
   }, []);
 
   return (
-    <div className="w-[30%] flex flex-col items-start justify-center gap-6 bg-teal-400 border-r border-gray-300 h-full fixed left-0 top-0">
+    <div className="w-[30%] flex flex-col items-start justify-center gap-6 bg-teal-400 border-r border-gray-300 h-screen ">
       <div className="ml-6 mt-6 mb-2 w-full max-w-60 h-20 overflow-hidden">
         <img
           src={logo}
@@ -77,24 +77,21 @@ function Sidebar({ user }) {
 
       <button
         onClick={() => navigate("/landing")}
-        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer ${
-          isActive("/landing") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
-        }`}
+        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer ${isActive("/landing") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
+          }`}
       >
         <Home className="h-6 w-6" /> Home
       </button>
       <button onClick={() => navigate("/jobSearch")}
-        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer ${
-          isActive("/jobSearch") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
-        }`}
+        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer ${isActive("/jobSearch") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
+          }`}
       >
         <Search className="h-6 w-6" /> Job Search
       </button>
       <button
         onClick={() => navigate("/messages")}
-        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer relative ${
-          isActive("/messages") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
-        }`}
+        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer relative ${isActive("/messages") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
+          }`}
       >
         <MessageCircle className="h-6 w-6" /> Messages
         {unseenConversations > 0 && (
@@ -105,9 +102,8 @@ function Sidebar({ user }) {
       </button>
       <button
         onClick={() => navigate("/notifications")}
-        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer ${
-          isActive("/notifications") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
-        }`}
+        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer ${isActive("/notifications") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
+          }`}
       >
         <Bell className="h-6 w-6" /> Notifications
         {unseenNotifications > 0 && (
@@ -118,17 +114,15 @@ function Sidebar({ user }) {
       </button>
       <button
         onClick={() => navigate("/profile")}
-        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer ${
-          isActive("/profile") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
-        }`}
+        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer ${isActive("/profile") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
+          }`}
       >
         <User className="h-6 w-6" /> Profile
       </button>
       <button
         onClick={() => navigate("/settings")}
-        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer ${
-          isActive("/settings") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
-        }`}
+        className={`ml-8 flex items-center gap-2 px-6 py-2 rounded-md transition cursor-pointer ${isActive("/settings") ? "bg-gray-200 text-black" : "text-white hover:bg-gray-200 hover:text-black"
+          }`}
       >
         <Settings className="h-6 w-6" /> Settings
       </button>
@@ -155,7 +149,7 @@ function Sidebar({ user }) {
             </p>
           </div>
         </button>
-        {userLog && <SettingsComp setUserLog={setUserLog} user={user} triggerRef={profileBtnRef}/>}
+        {userLog && <SettingsComp setUserLog={setUserLog} user={user} triggerRef={profileBtnRef} />}
       </div>
     </div>
   );
