@@ -114,125 +114,142 @@ function JobPostInput({ refresh, user }) {
   };
 
   return (
-    <div className="px-4 pt-2 sm:px-6 lg:px-0 lg:w-3/4 lg:mx-auto min-h-[200px]">
-      {error && (
-        <div className="mb-4">
-          <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg border border-red-200">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{error}</span>
+<div className="px-4 pt-2 sm:px-6 lg:px-0 lg:w-3/4 lg:mx-auto min-h-[200px]">
+  {error && (
+    <div className="mb-4">
+      <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg border border-red-200">
+        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <span>{error}</span>
+      </div>
+    </div>
+  )}
+
+  {/* Wrapper that focuses textarea on click */}
+  <div
+    className="bg-white border border-gray-200 rounded-xl shadow-sm focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-teal-500 transition-all duration-200 cursor-text"
+    onClick={() => textareaRef.current?.focus()}
+  >
+    <div className="p-4 sm:p-5">
+      <textarea
+        ref={textareaRef}
+        value={postText}
+        onChange={(e) => setPostText(e.target.value)}
+        placeholder="Give description of the job post..."
+        className={`w-full text-lg placeholder-gray-500 border-none resize-none focus:outline-none bg-transparent min-h-[60px] max-h-[80px] overflow-y-auto leading-relaxed ${
+          isDisabled ? "opacity-50 cursor-not-allowed" : ""
+        }`}
+        disabled={isDisabled}
+        aria-label="Job post description"
+      />
+
+      {/* Media preview stays same */}
+      {media.length > 0 && (
+        <div className="mt-3 space-y-2">
+          <div className="grid grid-cols-3 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            {media.map((file, index) => (
+              <div
+                key={index}
+                className="relative bg-gray-50 border border-gray-200 rounded-lg overflow-hidden"
+              >
+                {file.type.startsWith("image/") ? (
+                  <img
+                    src={getThumbnail(file)}
+                    alt={file.name}
+                    className="w-full h-20 sm:h-32 object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-20 sm:h-32 bg-gray-100 flex flex-col items-center justify-center text-gray-600">
+                    <svg className="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-xs font-medium">{file.name}</span>
+                  </div>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // prevent bubbling
+                    removeFile(index);
+                  }}
+                  className={`absolute top-1 right-1 bg-gray-900 bg-opacity-50 text-white rounded-full p-1.5 transition-colors duration-200 hover:bg-opacity-70 ${
+                    isDisabled ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                  disabled={isDisabled}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* ✅ This gives exact same ring behavior and style as the Search input */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-teal-500 transition-all duration-200">
-        <div className="p-4 sm:p-5">
-          <textarea
-            ref={textareaRef}
-            value={postText}
-            onChange={(e) => setPostText(e.target.value)}
-            placeholder="Give description of the job post..."
-            className={`w-full text-lg placeholder-gray-500 border-none resize-none focus:outline-none bg-transparent min-h-[60px] max-h-[80px] overflow-y-auto leading-relaxed ${
-              isDisabled ? "opacity-50 cursor-not-allowed" : ""
+      {/* Action buttons area */}
+      <div className="flex items-center justify-between mt-3">
+        <div className="flex items-center gap-2">
+          <label
+            htmlFor="mediaUpload"
+            onClick={(e) => e.stopPropagation()}
+            className={`flex items-center justify-center w-12 h-12 rounded-full transition-colors duration-200 ${
+              isDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-teal-50"
             }`}
+          >
+            <ImagePlus className="w-6 h-6 text-teal-500" />
+          </label>
+          <input
+            type="file"
+            id="mediaUpload"
+            accept="image/*,video/*"
+            className="hidden"
+            multiple
+            onChange={handleFileSelect}
             disabled={isDisabled}
-            aria-label="Job post description"
+            ref={fileInputRef}
           />
-          
+        </div>
+
+        <div className="flex items-center gap-3">
           {media.length > 0 && (
-            <div className="mt-3 space-y-2">
-              <div className="grid grid-cols-3 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                {media.map((file, index) => (
-                  <div
-                    key={index}
-                    className="relative bg-gray-50 border border-gray-200 rounded-lg overflow-hidden"
-                  >
-                    {file.type.startsWith("image/") ? (
-                      <img
-                        src={getThumbnail(file)}
-                        alt={file.name}
-                        className="w-full h-20 sm:h-32 object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-20 sm:h-32 bg-gray-100 flex flex-col items-center justify-center text-gray-600">
-                        <svg className="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        <span className="text-xs font-medium">{file.name}</span>
-                      </div>
-                    )}
-                    <button
-                      onClick={() => removeFile(index)}
-                      className={`absolute top-1 right-1 bg-gray-900 bg-opacity-50 text-white rounded-full p-1.5 transition-colors duration-200 hover:bg-opacity-70 ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                      disabled={isDisabled}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <span className="text-sm text-gray-500 font-medium">
+              {media.length} file{media.length !== 1 ? "s" : ""}
+            </span>
           )}
-          
-          <div className="flex items-center justify-between mt-3">
-            <div className="flex items-center gap-2">
-              <label
-                htmlFor="mediaUpload"
-                className={`flex items-center justify-center w-12 h-12 rounded-full transition-colors duration-200 ${isDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-teal-50"}`}
-              >
-                <ImagePlus className="w-6 h-6 text-teal-500" />
-              </label>
-              <input
-                type="file"
-                id="mediaUpload"
-                accept="image/*,video/*"
-                className="hidden"
-                multiple
-                onChange={handleFileSelect}
-                disabled={isDisabled}
-                ref={fileInputRef}
-              />
-            </div>
-            
-            <div className="flex items-center gap-3">
-              {media.length > 0 && (
-                <span className="text-sm text-gray-500 font-medium">
-                  {media.length} file{media.length !== 1 ? "s" : ""}
-                </span>
-              )}
-              
-              <button
-                onClick={handlePostSubmit}
-                className={`px-5 py-2 rounded-full font-semibold text-sm transition-all duration-200 ${
-                  isDisabled || (!postText.trim() && media.length === 0)
-                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    : "bg-teal-500 text-white hover:bg-teal-600 focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 shadow-sm hover:shadow-md"
-                }`}
-                disabled={isDisabled || (!postText.trim() && media.length === 0)}
-              >
-                {isPosting ? (
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
-                    </svg>
-                    <span>Posting...</span>
-                  </div>
-                ) : isUploading ? (
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    <span>Uploading...</span>
-                  </div>
-                ) : (
-                  "Post"
-                )}
-              </button>
-            </div>
-          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePostSubmit();
+            }}
+            className={`px-5 py-2 rounded-full font-semibold text-sm transition-all duration-200 ${
+              isDisabled || (!postText.trim() && media.length === 0)
+                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                : "bg-teal-500 text-white hover:bg-teal-600 focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 shadow-sm hover:shadow-md"
+            }`}
+            disabled={isDisabled || (!postText.trim() && media.length === 0)}
+          >
+            {isPosting ? (
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
+                </svg>
+                <span>Posting...</span>
+              </div>
+            ) : isUploading ? (
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <span>Uploading...</span>
+              </div>
+            ) : (
+              "Post"
+            )}
+          </button>
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+
   );
 }
 
