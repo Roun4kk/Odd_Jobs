@@ -144,7 +144,9 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
         </div>
 
         <div className="flex flex-col flex-1 overflow-hidden">
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto"
+            style={{ paddingBottom: `${keyboardOffset + 80}px` }} 
+          >
             <div className="p-4 border-b border-gray-100">
               <div className="relative">
                 <p
