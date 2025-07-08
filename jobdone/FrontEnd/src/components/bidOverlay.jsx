@@ -99,7 +99,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
 
   const overlayContent = isMobile ? (
     // ✅ Mobile Layout
-    <div className="fixed inset-0 z-60 bg-white h-[100dvh] overflow-hidden">
+    <div className="fixed inset-0 z-60 bg-white h-full overflow-hidden">
       <div className="flex flex-col h-full">
         <div className="flex items-center gap-3 p-4 border-b border-gray-200 flex-shrink-0">
           <img
