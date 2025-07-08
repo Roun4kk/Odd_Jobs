@@ -15,7 +15,7 @@ function BidOverlayPage() {
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/posts/${postId}`, {
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${postId}`, {
           withCredentials: true,
         });
         setPost(res.data);
