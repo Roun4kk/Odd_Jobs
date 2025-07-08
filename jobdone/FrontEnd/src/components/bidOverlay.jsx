@@ -122,7 +122,9 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
 
         <div className="flex flex-col flex-1 overflow-hidden transform-gpu">
           <div className="flex-1 overflow-y-auto transform-gpu" 
-            style={{ paddingBottom: `${keyboardOffset + 120}px` }}
+            style={{
+              paddingBottom: keyboardOffset > 0 ? `${keyboardOffset + 16}px` : '80px'  // 80 = base height of input bar
+            }}
           >
             <div className="p-4 border-b border-gray-100">
               <div className="relative">
