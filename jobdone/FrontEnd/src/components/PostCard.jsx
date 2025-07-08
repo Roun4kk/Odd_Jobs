@@ -2,7 +2,7 @@
 import { BadgeCheck, Bookmark, Gavel, MessageCircle, Send, MoreVertical ,Star } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import socket from "../socket.js";
-import { useNavigate } from "react-router-dom";
+import { useNavigate , useLocation} from "react-router-dom";
 import ImageSlider from "./ImageSlider";
 import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
 import ReviewAndRatingForm from "./reviewAndRatingForm.jsx";
@@ -30,6 +30,7 @@ const PostCard = ({
   reviews
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isTruncated, setIsTruncated] = useState(false);
   const textRef = useRef(null);
   const { user } = useAuth();
@@ -202,7 +203,7 @@ const PostCard = ({
 
       {/* Buttons */}
       <div className="flex items-center">
-        <button disabled={!hasToken} className="mr-4 cursor-pointer" onClick={() => setActiveBidPost(localPost)}>
+        <button disabled={!hasToken} className="mr-4 cursor-pointer" onClick={() => navigate(`/bid/${post._id}`, {state: { backgroundLocation: { pathname: location.pathname } }})}>
           <Gavel size={24} />
         </button>
         <button disabled={!hasToken} className="mr-4 cursor-pointer" onClick={() => setActiveCommentPost(localPost)}>

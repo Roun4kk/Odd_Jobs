@@ -126,7 +126,7 @@ function JobFeed({ refreshFlag  }) {
               topBid={topBids[post._id]}
               toggleSavePost={toggleSavePost}
               setActiveCommentPost={setActiveCommentPost}
-              setActiveBidPost={() => navigate(`/bid/${post._id}`)}
+              // setActiveBidPost={() =>navigate(`/bid/${post._id}`, { state: { backgroundLocation: location } })}
               setActiveSendPost={setActiveSendPost}
               setActiveOptionsPost={setActiveOptionsPost}
               shouldBlur={shouldBlur}
