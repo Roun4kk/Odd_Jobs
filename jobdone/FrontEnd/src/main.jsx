@@ -15,6 +15,7 @@ import { AuthProvider } from "./hooks/useAuth.jsx";
 import Settings from "./settings.jsx";
 import { MessageProvider } from "./messageContext.jsx";
 import JobSearch from "./jobSearch.jsx";
+import BidOverlayPage from "./BidOverlayPage.jsx";
 
 createRoot(document.getElementById("root")).render(
     <AuthProvider>
@@ -31,6 +32,7 @@ createRoot(document.getElementById("root")).render(
             <Route path="/profile" element={<Profile />} />
             <Route path="/editProfile" element={<EditProfile />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/bid/:postId" element={<BidOverlayPage />} />
           </Routes>
         </Router>
         <Toaster

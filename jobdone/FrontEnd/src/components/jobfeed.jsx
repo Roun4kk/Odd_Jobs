@@ -6,8 +6,10 @@ import BidOverlay from "./bidOverlay";
 import SendOverlay from "./sendoverlay.jsx";
 import useAuth from "../hooks/useAuth.jsx";
 import PostOptionsOverlay from "./postOptionsOverlay.jsx";
+import { useNavigate, useLocation } from "react-router-dom";
 
 function JobFeed({ refreshFlag  }) {
+  const navigate = useNavigate();
   const [topBids, setTopBids] = useState({});
   const [dropdownPostId, setDropdownPostId] = useState(null);
   const [activeCommentPost, setActiveCommentPost] = useState(null);
@@ -87,6 +89,16 @@ function JobFeed({ refreshFlag  }) {
     fetchData();
   }, [refreshFlag]);
 
+  useEffect(() => {
+    const updatePostHandler = (e) => {
+      const updatedPost = e.detail;
+      setPosts(prev => prev.map(p => (p._id === updatedPost._id ? updatedPost : p)));
+    };
+
+    window.addEventListener("jobdone-post-updated", updatePostHandler);
+    return () => window.removeEventListener("jobdone-post-updated", updatePostHandler);
+  }, [setPosts]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center mt-40 sm:mt-10 lg:mt-30 bg-white">
@@ -114,7 +126,7 @@ function JobFeed({ refreshFlag  }) {
               topBid={topBids[post._id]}
               toggleSavePost={toggleSavePost}
               setActiveCommentPost={setActiveCommentPost}
-              setActiveBidPost={setActiveBidPost}
+              setActiveBidPost={() => navigate(`/bid/${post._id}`)}
               setActiveSendPost={setActiveSendPost}
               setActiveOptionsPost={setActiveOptionsPost}
               shouldBlur={shouldBlur}
@@ -131,9 +143,9 @@ function JobFeed({ refreshFlag  }) {
       {activeCommentPost && (
         <CommentOverlay post={activeCommentPost} onClose={() => setActiveCommentPost(null)} />
       )}
-      {activeBidPost && (
+      {/* {activeBidPost && (
         <BidOverlay post={activeBidPost} onClose={() => setActiveBidPost(null)} sortBy={sortByMap[activeBidPost._id] || "1" } setPosts={setPosts} setActiveBidPost={setActiveBidPost}/>
-      )}
+      )} */}
       {activeSendPost && (
         <SendOverlay post={activeSendPost} onClose={() => setActiveSendPost(null)} />
       )}

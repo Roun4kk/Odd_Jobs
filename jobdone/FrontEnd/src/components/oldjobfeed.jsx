@@ -87,7 +87,7 @@ user._id === post.user._id ||
 
       return (
         <div key={index} className="bg-white p-4 rounded-md shadow-md flex flex-col gap-2">
-          <div className="flex gap-2 flex items-center mb-2">
+          <div className="flex gap-2 items-center mb-2">
             <img
               src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
               alt="User"

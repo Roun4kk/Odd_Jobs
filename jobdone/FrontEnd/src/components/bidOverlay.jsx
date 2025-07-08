@@ -167,7 +167,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
           </div>
           
           {post?.status === "open" && (
-            <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0">
+            <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0 mb-4">
               <div className="flex flex-col gap-3">
                 <input
                   type="number"
