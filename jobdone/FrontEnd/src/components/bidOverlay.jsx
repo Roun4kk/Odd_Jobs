@@ -121,14 +121,13 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
           </button>
         </div>
 
-        <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex flex-col flex-1 overflow-hidden min-h-0">
           <div 
             ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto overscroll-contain"
+            className="flex-1 overflow-y-auto"
             style={{
-              maxHeight: keyboardOffset > 0 
-                ? `calc(100vh - 160px - ${keyboardOffset}px)` // 160px = header + input bar heights
-                : 'calc(100vh - 160px)'
+              paddingBottom: keyboardOffset > 0 ? `${keyboardOffset + 100}px` : '100px',
+              height: keyboardOffset > 0 ? `calc(100vh - 140px - ${keyboardOffset}px)` : 'calc(100vh - 140px)'
             }}
           >
             <div className="p-4 border-b border-gray-100">
@@ -152,7 +151,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
                 )}
               </div>
             </div>
-            <div className="p-4 pb-6">
+            <div className="p-4">
               <BidSection
                 postId={post._id}
                 sortBy={sortBy}
@@ -168,16 +167,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
           </div>
           
           {post?.status === "open" && (
-            <div 
-              className="bg-white border-t border-gray-200 p-4 flex-shrink-0"
-              style={{
-                position: 'fixed',
-                bottom: keyboardOffset > 0 ? `${keyboardOffset}px` : '0',
-                left: '0',
-                right: '0',
-                zIndex: 70
-              }}
-            >
+            <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0">
               <div className="flex flex-col gap-3">
                 <input
                   type="number"
