@@ -96,9 +96,9 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
 
   const overlayContent = isMobile ? (
     // ✅ Mobile Layout
-    <div className="fixed inset-0 z-60 bg-white h-full overflow-hidden">
+    <div className="fixed inset-0 z-60 bg-white h-full overflow-hidden transform-gpu">
       <div className="flex flex-col h-full transform-gpu overflow-hidden ">
-        <div className="flex items-center gap-3 p-4 border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center gap-3 p-4 border-b border-gray-200 flex-shrink-0 transform-gpu">
           <img
             src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
             alt="User"
@@ -120,7 +120,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
           </button>
         </div>
 
-        <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex flex-col flex-1 overflow-hidden transform-gpu">
           <div className="flex-1 overflow-y-auto transform-gpu" 
             style={{ paddingBottom: `${keyboardOffset + 120}px` }}
           >
