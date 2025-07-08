@@ -18,11 +18,30 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   const { user, username, userId } = useAuth();
   const navigate = useNavigate();
   const [socketError, setSocketError] = useState(null);
+  useSocketRoomJoin(user?._id, setSocketError);
   const isMobile = useIsMobile();
-  const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [isTruncated, setIsTruncated] = useState(false);
   const descriptionRef = useRef(null);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const [initialHeight, setInitialHeight] = useState(window.innerHeight);
+
+  useEffect(() => {
+    if (window.visualViewport) {
+      setInitialHeight(window.visualViewport.height);
+    }
+
+    const handleResize = () => {
+      const currentHeight = window.visualViewport?.height || window.innerHeight;
+      const offset = initialHeight - currentHeight;
+      setKeyboardOffset(offset > 0 ? offset : 0);
+    };
+
+    window.visualViewport?.addEventListener("resize", handleResize);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     const el = descriptionRef.current;
@@ -30,48 +49,6 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
       setIsTruncated(true);
     }
   }, [post.postDescription, showFullDescription]);
-
-
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-
-    const debounce = (func, delay) => {
-      let timeoutId;
-      return (...args) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          func.apply(this, args);
-        }, delay);
-      };
-    };
-
-    const handleResize = () => {
-      if (window.visualViewport) {
-        const viewportHeight = window.visualViewport.height;
-        const windowHeight = window.innerHeight;
-        const offset = windowHeight - viewportHeight;
-        setKeyboardOffset(offset > 0 ? offset : 0);
-      }
-    };
-
-    const debouncedHandler = debounce(handleResize, 50);
-
-    const initialCheckTimeout = setTimeout(() => {
-      handleResize();
-    }, 100);
-
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", debouncedHandler);
-    }
-
-    return () => {
-      document.body.style.overflow = "auto";
-      clearTimeout(initialCheckTimeout);
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener("resize", debouncedHandler);
-      }
-    };
-  }, []);
 
   const handlePostSubmit = async () => {
     if (BidAmount < post.minimumBid || (post.maximumBid && BidAmount > post.maximumBid)) {
@@ -144,8 +121,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
         </div>
 
         <div className="flex flex-col flex-1 overflow-hidden">
-          <div className="flex-1 overflow-y-auto"
-            style={{ paddingBottom: `${keyboardOffset + 80}px` }} 
+          <div className="flex-1 overflow-y-auto" 
           >
             <div className="p-4 border-b border-gray-100">
               <div className="relative">
