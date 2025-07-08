@@ -182,8 +182,12 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
           </div>
           {post?.status === "open" && (
             <div
-              className="border-t border-gray-200 bg-white p-4 w-full fixed bottom-0 left-0 right-0 z-50"
-              style={{ transform: `translateY(-${keyboardOffset}px)` }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-white p-4 transform-gpu"
+              style={{
+                transform: `translateY(-${keyboardOffset}px)`,
+                willChange: 'transform',
+                backfaceVisibility: 'hidden'
+              }}
             >
               <div className="flex flex-col gap-3">
                 <input
