@@ -195,7 +195,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
                   />
                   <button
                     onClick={handlePostSubmit}
-                    className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 text-sm font-medium"
+                    className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 text-sm font-medium mb-2"
                   >
                     Place
                   </button>
