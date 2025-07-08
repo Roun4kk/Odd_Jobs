@@ -125,10 +125,10 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
           <div 
             ref={scrollContainerRef}
             className="flex-1 overflow-y-auto"
-            // style={{
-            //   paddingBottom: keyboardOffset > 0 ? `${keyboardOffset + 100}px` : '100px',
-            //   height: keyboardOffset > 0 ? `calc(100vh - 140px - ${keyboardOffset}px)` : 'calc(100vh - 140px)'
-            // }}
+            style={{
+              paddingBottom: keyboardOffset > 0 ? `${keyboardOffset + 100}px` : '100px',
+              height: keyboardOffset > 0 ? `calc(100vh - 140px - ${keyboardOffset}px)` : 'calc(100vh - 140px)'
+            }}
           >
             <div className="p-4 border-b border-gray-100">
               <div className="relative">
@@ -167,7 +167,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
           </div>
           
           {post?.status === "open" && (
-            <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0 mb-4">
+            <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0">
               <div className="flex flex-col gap-3">
                 <input
                   type="number"
