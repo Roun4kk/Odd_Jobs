@@ -122,6 +122,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
 
         <div className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto" 
+            style={{ paddingBottom: `${keyboardOffset + 120}px` }}
           >
             <div className="p-4 border-b border-gray-100">
               <div className="relative">
@@ -159,14 +160,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </div>
           </div>
           {post?.status === "open" && (
-            <div
-              className="fixed bottom-0 left-0 right-0 z-50 bg-white p-4 transform-gpu"
-              style={{
-                transform: `translateY(-${keyboardOffset}px)`,
-                willChange: 'transform',
-                backfaceVisibility: 'hidden'
-              }}
-            >
+            <div className="bg-white border-t border-gray-200 p-4">
               <div className="flex flex-col gap-3">
                 <input
                   type="number"
