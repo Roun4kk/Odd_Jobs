@@ -26,8 +26,6 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [initialHeight, setInitialHeight] = useState(window.innerHeight);
   const scrollContainerRef = useRef(null);
-  console.log("window.innerHeight:", window.innerHeight);
-  console.log("visualViewport.height:", window.visualViewport?.height);
 
   useEffect(() => {
     if (window.visualViewport) {
@@ -319,9 +317,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
       </div>
     </div>
   );
-  if (isMobile) {
-    return overlayContent; // render directly inside the tree
-  }
+
   // ✅ Create portal rendering for modal
   return createPortal(overlayContent, document.body);
 }
