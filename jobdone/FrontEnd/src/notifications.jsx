@@ -63,7 +63,7 @@ function Notifications() {
     return (
       <>
         {/* Full-width header outside constrained container */}
-        <div className="w-full fixed top-0 left-0 z-40 h-16 bg-teal-50 border-b border-gray-200 py-4 z-10 shadow-sm">
+        <div className="w-full fixed top-0 left-0 z-40 h-16 bg-teal-50 border-b border-gray-200 py-4 shadow-sm">
           <h2 className="text-2xl font-semibold text-center text-teal-800">Notifications</h2>
         </div>
 

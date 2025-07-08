@@ -232,7 +232,7 @@ function CommentOverlay({ post, onClose }) {
         )}
       </div>
       <div className="bg-white w-full max-w-md h-full md:h-5/6 p-4 flex flex-col shadow-lg overflow-hidden">
-        <div className="flex gap-2 mb-2 flex items-center">
+        <div className="gap-2 mb-2 flex items-center">
           <img
             src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
             alt="User"

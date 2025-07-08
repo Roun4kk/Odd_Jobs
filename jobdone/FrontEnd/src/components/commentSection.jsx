@@ -86,7 +86,7 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
     <div className="flex-1 overflow-y-auto space-y-2 mb-4">
       {comments.map((comment, index) => (
         <div key={index} className="bg-gray-100 p-2 rounded-lg">
-          <div className="flex gap-2 mb-2 flex items-center">
+          <div className="flex gap-2 mb-2 items-center">
             <button
               onClick={() => {
                 if (user._id === comment.user._id) {
@@ -139,7 +139,7 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
                 <div className="ml-4 mt-2 space-y-1">
                   {comment.replies.map((reply, idx) => (
                     <div key={idx} className="bg-white p-2 rounded shadow-sm">
-                      <div className="flex gap-2 mb-2 flex items-center">
+                      <div className="flex gap-2 mb-2 items-center">
                         <button
                           onClick={() => {
                             if (user._id === reply.user._id) {

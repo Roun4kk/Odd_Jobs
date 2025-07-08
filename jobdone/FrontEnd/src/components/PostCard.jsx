@@ -1,6 +1,6 @@
 // Imports remain the same
 import { BadgeCheck, Bookmark, Gavel, MessageCircle, Send, MoreVertical ,Star } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import socket from "../socket.js";
 import { useNavigate } from "react-router-dom";
 import ImageSlider from "./ImageSlider";
@@ -30,6 +30,8 @@ const PostCard = ({
   reviews
 }) => {
   const navigate = useNavigate();
+  const [isTruncated, setIsTruncated] = useState(false);
+  const textRef = useRef(null);
   const { user } = useAuth();
   const [localPost, setLocalPost] = useState(post);
   const [bids, setBids] = useState(post.bids || []);
@@ -40,6 +42,13 @@ const PostCard = ({
   const winningBid = post?.bids?.find(bid => bid._id === post?.winningBidId);
   console.log("user" , user);
   const shouldBlurWinner = !(winningBid?.user?._id === user?._id || post?.user?._id === user?._id ); 
+
+  useEffect(() => {
+    const el = textRef.current;
+    if (el && el.scrollHeight > el.clientHeight) {
+      setIsTruncated(true);
+    }
+  }, [localPost.postDescription, showFullDescription]);
 
   console.log("winningBid" , winningBid);
   // Sync localPost if props change
@@ -172,14 +181,15 @@ const PostCard = ({
 
       <div className="relative">
         <p
-          className={`text-gray-800 whitespace-pre-wrap ${
+          ref={textRef}
+          className={`text-gray-800 whitespace-pre-wrap transition-all duration-300 ${
             showFullDescription ? "" : "line-clamp-3"
           }`}
         >
           {localPost.postDescription}
         </p>
 
-        {localPost.postDescription.split(" ").length > 25 && (
+        {isTruncated && (
           <button
             onClick={() => setShowFullDescription(prev => !prev)}
             className="text-sm mt-1 text-teal-600 hover:underline cursor-pointer"

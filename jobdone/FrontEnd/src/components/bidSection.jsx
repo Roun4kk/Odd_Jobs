@@ -6,6 +6,7 @@ import useAuth from "../hooks/useAuth.jsx";
 import socket from "../socket.js";
 import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
 import toast from "react-hot-toast";
+import { createPortal } from "react-dom";
 
 function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post , setPosts , setRefresh , setActiveBidPost}) {
   const [bids, setBids] = useState([]);
@@ -97,6 +98,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
           bid.BidAmount !== selectedBid.BidAmount
       )
     );
+    toast.success("Bid deleted!!");
     setBidComp(false);
     } catch (error) {
       console.error("Failed to send report:", err);
@@ -173,7 +175,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
     );
   }
   return (
-    <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+    <div className="flex-1 overflow-y-auto space-y-2 mb-4 w-full ">
       {bids.map((bid, index) => {
         const shouldBlur = !(
           currentUserId === jobPosterId || 
@@ -235,15 +237,15 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
               Connection error: {socketError}. Please try refreshing the page or logging in again.
             </div>
           )} */}
-      {bidComp && (
-        <div className="fixed inset-0 z-[100] bg-black/50 flex justify-center items-center">
-          <div className="bg-white w-full max-w-md md:h-auto p-6 rounded-lg shadow-lg flex flex-col gap-4">
+      {bidComp && createPortal(
+        <div className="fixed inset-0 z-[100] bg-black/50 flex justify-center items-center p-4">
+          <div className="bg-white w-full max-w-sm p-5 rounded-xl shadow-xl relative">
     
-            <button onClick={() => {setOpenReport(true) , setBidComp(false)}} className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-red-500 text-red-600 hover:bg-red-50 transition cursor-pointer">
+            <button onClick={() => {setOpenReport(true) , setBidComp(false)}} className="w-full mb-2 flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-red-500 text-red-600 hover:bg-red-50 transition cursor-pointer">
               Report
             </button>
 
-            {jobPosterId===user._id && selectedBid?._id?.toString() !== post?.winningBidId?.toString() && (<button onClick = {() => handleDelete()}className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-red-500 text-red-600 hover:bg-gray-100 transition cursor-pointer">
+            {(jobPosterId===user._id || selectedBid?.user?._id === user._id) && selectedBid?._id?.toString() !== post?.winningBidId?.toString() && (<button onClick = {() => handleDelete()}className="w-full mb-2 flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-red-500 text-red-600 hover:bg-gray-100 transition cursor-pointer">
               Delete
             </button>)}
 
@@ -254,9 +256,10 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
               Close
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-      {openReport && (
+      {openReport && createPortal(
           <div className="fixed inset-0 z-100 bg-black/50 flex justify-center items-center">
             <div className="bg-white w-full max-w-sm p-5 rounded-xl shadow-xl relative">
               <div className="flex justify-between items-center mb-3">
@@ -278,7 +281,8 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
                 Send Report
               </button>
             </div>
-          </div>
+          </div>,
+          document.body
         )
       }
     {confirmWinner && (
