@@ -160,10 +160,18 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
             </div>
           </div>
           {post?.status === "open" && (
-            <div className="bg-white border-t border-gray-200 p-4">
+            <div className="bg-white border-t border-gray-200 p-4 mb-2">
               <div className="flex flex-col gap-3">
                 <input
                   type="number"
+                  onFocus={() => {
+                    const el = document.activeElement;
+                    if (el) {
+                      setTimeout(() => {
+                        el.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }, 100);
+                    }
+                  }}
                   placeholder="Enter your bid amount"
                   className="w-full border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
                   onChange={(e) => setBidAmount(Number(e.target.value))}
@@ -173,6 +181,14 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
                   <input
                     type="text"
                     placeholder="Add comment..."
+                    onFocus={() => {
+                      const el = document.activeElement;
+                      if (el) {
+                        setTimeout(() => {
+                          el.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }, 100);
+                      }
+                    }}
                     className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
                     onChange={(e) => setBidText(e.target.value)}
                     value={BidText}
