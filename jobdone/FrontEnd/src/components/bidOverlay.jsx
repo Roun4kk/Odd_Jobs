@@ -11,7 +11,6 @@ import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
 import useIsMobile from "../hooks/useIsMobile.js";
 import toast from "react-hot-toast";
 
-// Renamed setPost to onPostUpdate for clarity, but using setPost as passed from parent
 function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
   const [refresh, setRefresh] = useState(false);
   const [BidText, setBidText] = useState("");
@@ -25,29 +24,11 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
   const [isTruncated, setIsTruncated] = useState(false);
   const descriptionRef = useRef(null);
   const scrollContainerRef = useRef(null);
-  const inputContainerRef = useRef(null);
-
-  // Instagram-like keyboard handling
-  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
-  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
-
-  useEffect(() => {
-    const handleViewportChange = () => {
-      const currentHeight = window.visualViewport?.height || window.innerHeight;
-      const threshold = 150; // Keyboard detection threshold
-      
-      setViewportHeight(currentHeight);
-      setIsKeyboardOpen(window.innerHeight - currentHeight > threshold);
-    };
-
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleViewportChange);
-      return () => window.visualViewport.removeEventListener('resize', handleViewportChange);
-    } else {
-      window.addEventListener('resize', handleViewportChange);
-      return () => window.removeEventListener('resize', handleViewportChange);
-    }
-  }, []);
+  
+  // This is no longer needed for the layout but can be kept for other purposes if needed.
+  // We don't need to track the keyboard state for layout anymore.
+  // const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  // const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
 
   useEffect(() => {
     const el = descriptionRef.current;
@@ -55,6 +36,14 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
       setIsTruncated(true);
     }
   }, [post.postDescription, showFullDescription]);
+
+  // This effect is still useful to scroll to the bottom when new bids come in.
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
+  }, [post.bids, refresh]);
+
 
   const handlePostSubmit = async () => {
     if (BidAmount < post.minimumBid || (post.maximumBid && BidAmount > post.maximumBid)) {
@@ -81,7 +70,6 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
         userId: userId
       });
 
-      // Emit the full new bid object from the server response
       socket.emit("newBid", res.data);
       setRefresh(prev => !prev);
     } catch (error) {
@@ -90,9 +78,9 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
   };
 
   const overlayContent = isMobile ? (
-    // ✅ CLEAN FLEXBOX LAYOUT
+    // ✅ FINAL, ROBUST FLEXBOX LAYOUT
     <div className="fixed inset-0 z-50 bg-white flex flex-col h-full">
-      {/* Header */}
+      {/* Header (flex-shrink-0 is crucial) */}
       <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white flex-shrink-0">
         <img
           src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
@@ -115,83 +103,81 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
         </button>
       </div>
 
-      {/* Scrollable Content Area */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
-        {/* Post Description */}
-        <div className="p-4 border-b border-gray-100">
-          <div className="relative">
-            <p
-              ref={descriptionRef}
-              className={`text-gray-800 leading-relaxed whitespace-pre-wrap ${
-                showFullDescription ? "" : "line-clamp-4"
-              }`}
-            >
-              {post.postDescription}
-            </p>
-            {isTruncated && (
-              <button
-                onClick={() => setShowFullDescription(prev => !prev)}
-                className="text-sm mt-1 text-teal-600 hover:underline cursor-pointer"
+      {/* Main content area that fills remaining space */}
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Scrollable Content Area (takes up all available space) */}
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
+          {/* Post Description */}
+          <div className="p-4 border-b border-gray-100">
+            <div className="relative">
+              <p
+                ref={descriptionRef}
+                className={`text-gray-800 leading-relaxed whitespace-pre-wrap ${
+                  showFullDescription ? "" : "line-clamp-4"
+                }`}
               >
-                {showFullDescription ? "Show less" : "Read more"}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Bid Section */}
-        <div className="p-4">
-          <BidSection
-            postId={post._id}
-            sortBy={sortBy}
-            refresh={refresh}
-            currentUserId={userId}
-            jobPosterId={post.user._id}
-            post={post}
-            setPost={setPost} // Pass the state setter down
-            setRefresh={setRefresh}
-            setActiveBidPost={setActiveBidPost}
-          />
-        </div>
-      </div>
-      
-      {/* Input Bar */}
-      {post?.status === "open" && (
-        <div 
-          ref={inputContainerRef}
-          className="bg-white border-t border-gray-200 p-4 flex-shrink-0"
-          style={{
-            // The transform logic for the keyboard is perfect as is
-            transform: isKeyboardOpen ? `translateY(-${window.innerHeight - viewportHeight}px)` : 'translateY(0)',
-            transition: 'transform 0.2s ease-out'
-          }}
-        >
-          <div className="flex flex-col gap-3">
-            <input
-              type="number"
-              placeholder="Enter your bid amount"
-              className="w-full border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
-              onChange={(e) => setBidAmount(Number(e.target.value))}
-              value={BidAmount}
-            />
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Add comment..."
-                className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
-                onChange={(e) => setBidText(e.target.value)}
-                value={BidText}
-              />
-              <button
-                onClick={handlePostSubmit}
-                className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 text-sm font-medium"
-              >
-                Place
-              </button>
+                {post.postDescription}
+              </p>
+              {isTruncated && (
+                <button
+                  onClick={() => setShowFullDescription(prev => !prev)}
+                  className="text-sm mt-1 text-teal-600 hover:underline cursor-pointer"
+                >
+                  {showFullDescription ? "Show less" : "Read more"}
+                </button>
+              )}
             </div>
           </div>
+
+          {/* Bid Section */}
+          <div className="p-4">
+            <BidSection
+              postId={post._id}
+              sortBy={sortBy}
+              refresh={refresh}
+              currentUserId={userId}
+              jobPosterId={post.user._id}
+              post={post}
+              setPost={setPost}
+              setRefresh={setRefresh}
+              setActiveBidPost={setActiveBidPost}
+            />
+          </div>
         </div>
-      )}
+        
+        {/* Input Bar (does not shrink) */}
+        {post?.status === "open" && (
+          <div 
+            className="bg-white border-t border-gray-200 p-4 flex-shrink-0"
+            // ✅ REMOVED the problematic transform style
+          >
+            <div className="flex flex-col gap-3">
+              <input
+                type="number"
+                placeholder="Enter your bid amount"
+                className="w-full border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
+                onChange={(e) => setBidAmount(Number(e.target.value))}
+                value={BidAmount}
+              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Add comment..."
+                  className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  onChange={(e) => setBidText(e.target.value)}
+                  value={BidText}
+                />
+                <button
+                  onClick={handlePostSubmit}
+                  className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 text-sm font-medium"
+                >
+                  Place
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   ) : (
     // Desktop layout remains unchanged
