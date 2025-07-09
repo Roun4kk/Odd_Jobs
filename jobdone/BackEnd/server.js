@@ -840,7 +840,7 @@ const anonymizeBidders = (posts, currentUserId) => {
   });
 };
 
-app.get('/posts', verifyToken , async (req, res) => {
+app.get('/posts', verifyToken, async (req, res) => {
   try {
     const posts = await Post.find({ status: "open" })
       .sort({ createdAt: -1 })
@@ -867,7 +867,20 @@ app.get('/posts', verifyToken , async (req, res) => {
 
     const userId = req.user.id;
 
-    const modifiedPosts = anonymizeBidders(posts, req.user.id);
+    // 🔧 Do not call `toObject()` here — keep Mongoose documents
+    // Just filter soft-deleted items in-place
+    const filteredPosts = posts.map(post => {
+      post.bids = (post.bids || []).filter(bid => !bid.isDeleted);
+      post.comments = (post.comments || []).filter(comment => !comment.isDeleted);
+      post.comments = post.comments.map(comment => {
+        comment.replies = (comment.replies || []).filter(reply => !reply.isDeleted);
+        return comment;
+      });
+      return post;
+    });
+
+    // 🧠 Now call anonymizeBidders, which safely calls `.toObject()` inside
+    const modifiedPosts = anonymizeBidders(filteredPosts, userId);
 
     res.status(200).json(modifiedPosts);
   } catch (err) {
@@ -1591,7 +1604,7 @@ app.get("/posts/topbid", verifyToken, async (req, res) => {
 
     if (!post) return res.status(404).json({ message: "Post not found" });
 
-    let bids = (post.bids || []).filter(bid => !bid?.isDeleted );
+    let bids = (post.bids || []).filter(bid => !bid.isDeleted);
 
     bids.sort((a, b) => {
       if (sortBy === "rating") {
