@@ -92,7 +92,6 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
         withCredentials: true,
       });
 
-      // ✅ Re-fetch latest post from backend
       const updatedPostResponse = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${postId}`, {
         withCredentials: true,
       });
@@ -100,7 +99,6 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
 
       setPost(updatedPost);
 
-      // ✅ Also update local bid list
       setBids((prevBids) => prevBids.filter((bid) => bid._id !== selectedBid._id));
 
       toast.success("Bid deleted!");
@@ -172,7 +170,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
     }
   }
 
-  // ✅ CORRECTED Loading State: Removed h-screen and other layout-breaking classes.
+  // ✅ CORRECTED Loading State: Removed layout-breaking classes.
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">

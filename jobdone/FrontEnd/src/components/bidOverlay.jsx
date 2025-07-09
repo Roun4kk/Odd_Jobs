@@ -24,9 +24,8 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
   const [isTruncated, setIsTruncated] = useState(false);
   const descriptionRef = useRef(null);
   const scrollContainerRef = useRef(null);
-  // ✅ Create a ref for the entire input container
   const inputContainerRef = useRef(null);
-  
+
   useEffect(() => {
     const el = descriptionRef.current;
     if (el && el.scrollHeight > el.clientHeight) {
@@ -36,63 +35,67 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
 
   useEffect(() => {
     if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
   }, [post.bids, refresh]);
 
-  // ✅ Updated focus handler to scroll the CONTAINER into view
   const handleInputFocus = () => {
+    // Increased timeout to allow for keyboard animation to complete
     setTimeout(() => {
-      // Check if the ref is attached to an element
       if (inputContainerRef.current) {
         inputContainerRef.current.scrollIntoView({
           behavior: "smooth",
-          block: "end", 
+          block: "end",
         });
       }
-    }, 150);
+    }, 300);
   };
 
   const handlePostSubmit = async () => {
-    if (BidAmount < post.minimumBid || (post.maximumBid && BidAmount > post.maximumBid)) {
+    // ✅ 1. Validate input is a valid number
+    const bidAmountNumber = parseFloat(BidAmount.trim());
+    if (isNaN(bidAmountNumber) || bidAmountNumber <= 0) {
+      toast.error("Please enter a valid bid amount.");
+      return;
+    }
+    
+    // ✅ 2. Validate against bid range
+    if (bidAmountNumber < post.minimumBid || (post.maximumBid && bidAmountNumber > post.maximumBid)) {
       toast.error(`Bid out of bid range : ${post.minimumBid} to ${post.maximumBid}`);
       return;
     }
     
-    const bidAmountValue = BidAmount; // Capture before clearing
+    // ✅ 3. Capture inputs for optimistic UI and potential error recovery
+    const originalBidAmount = BidAmount;
+    const originalBidText = BidText;
     setBidText("");
     setBidAmount("");
 
     try {
-      // 1. Post the new bid
-      // Step 1: Post the new bid
+      // Post the new bid
       const newBidResponse = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/bids`, {
         postId: post._id,
-        BidText: BidText || "",
-        BidAmount: bidAmountValue,
+        BidText: originalBidText || "",
+        BidAmount: bidAmountNumber, // Send the validated number
         userId: userId
       }, { withCredentials: true });
 
       const createdBid = newBidResponse.data.bid;
-      // 2. The server should ideally return the full, updated post object.
-      // If it doesn't, we need to fetch it again. Let's assume we need to fetch it.
+      // Fetch the full, updated post object
       const updatedPostResponse = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${post._id}`, {
         withCredentials: true,
       });
       const updatedPost = updatedPostResponse.data;
 
-      // 3. Update the local state in BidOverlayPage via the setPost prop
+      // Update local and global state
       setPost(updatedPost);
-
-      // 4. Dispatch the global event so JobFeed can hear about the update
       window.dispatchEvent(new CustomEvent("jobdone-post-updated", { detail: updatedPost }));
       
-      // 5. Emit socket event for real-time updates for OTHER users
-      // The newBidResponse.data should contain the newly created bid object with user details
+      // Emit socket event for real-time updates for OTHER users
       socket.emit("newBid", newBidResponse.data);
 
-      // 6. Notify the job poster
-      const message = `${user.username} placed a new bid of ${bidAmountValue} on your job post:`;
+      // Notify the job poster
+      const message = `${user.username} placed a new bid of ${bidAmountNumber} on your job post:`;
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/notify`, {
         userId: post.user._id,
         message,
@@ -100,20 +103,21 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
         postId: post._id,
         type: "bid",
         postDescription: post.postDescription,
-        bidId: createdBid._id, // ✅ send it to store in job poster's notification
+        bidId: createdBid._id,
       }, { withCredentials: true });
-
 
     } catch (error) {
       console.error("Error posting bid:", error);
       toast.error("Failed to place bid.");
-      // Optional: Revert input fields on error
-      setBidAmount(bidAmountValue);
+      // ✅ Revert input fields on error
+      setBidAmount(originalBidAmount);
+      setBidText(originalBidText);
     }
   };
 
   const overlayContent = isMobile ? (
-    <div className="fixed inset-0 z-50 bg-white flex flex-col h-full">
+    // ✅ Use h-dvh for dynamic viewport height to handle keyboard appearance
+    <div className="fixed inset-0 z-50 bg-white flex flex-col h-dvh">
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white flex-shrink-0">
         <img
@@ -181,18 +185,19 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
         
         {/* Input Bar */}
         {post?.status === "open" && (
-          // ✅ Attach the ref to the container div
           <div
             ref={inputContainerRef}
             className="bg-white border-t border-gray-200 p-4 flex-shrink-0"
           >
             <div className="flex flex-col gap-3">
               <input
-                type="number"
+                // ✅ Changed to text type with decimal inputMode for better mobile UX
+                type="text"
+                inputMode="decimal"
                 placeholder="Enter your bid amount"
                 onFocus={handleInputFocus}
                 className="w-full border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
-                onChange={(e) => setBidAmount(Number(e.target.value))}
+                onChange={(e) => setBidAmount(e.target.value)}
                 value={BidAmount}
               />
               <div className="flex gap-2">
@@ -217,7 +222,7 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
       </div>
     </div>
   ) : (
-    // Desktop layout remains unchanged
+    // Desktop layout
     <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center">
       {post.mediaUrls && post.mediaUrls.length > 0 && (
           <div className="bg-white w-full max-w-md h-full md:h-5/6 p-4 flex items-center shadow-lg overflow-hidden">
@@ -293,10 +298,12 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
               <div className="flex flex-col gap-3">
                 <div className="flex gap-2">
                   <input
-                    type="number"
+                    // ✅ Changed to text type
+                    type="text"
+                    inputMode="decimal"
                     placeholder="  Bid"
-                    className="w-1/5 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 no-spinner appearance-none"
-                    onChange={(e) => setBidAmount(Number(e.target.value))}
+                    className="w-1/5 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    onChange={(e) => setBidAmount(e.target.value)}
                     value={BidAmount}
                   />
                   <input
