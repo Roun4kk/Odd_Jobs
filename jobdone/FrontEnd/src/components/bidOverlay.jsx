@@ -103,7 +103,6 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
         bidId: createdBid._id, // ✅ send it to store in job poster's notification
       }, { withCredentials: true });
 
-      setRefresh(prev => !prev); // Keep this for re-rendering bidSection
 
     } catch (error) {
       console.error("Error posting bid:", error);
