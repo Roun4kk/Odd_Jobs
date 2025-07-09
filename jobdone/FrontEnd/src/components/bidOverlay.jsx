@@ -24,6 +24,8 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
   const [isTruncated, setIsTruncated] = useState(false);
   const descriptionRef = useRef(null);
   const scrollContainerRef = useRef(null);
+  // ✅ Create a ref for the entire input container
+  const inputContainerRef = useRef(null);
   
   useEffect(() => {
     const el = descriptionRef.current;
@@ -38,15 +40,16 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
     }
   }, [post.bids, refresh]);
 
-  // ✅ NEW: Explicit focus handler to solve the intermittent scroll issue.
-  const handleInputFocus = (event) => {
-    // A short delay allows the keyboard to start its animation,
-    // making the scroll behavior smoother and more reliable.
+  // ✅ Updated focus handler to scroll the CONTAINER into view
+  const handleInputFocus = () => {
     setTimeout(() => {
-      event.target.scrollIntoView({
-        behavior: "smooth",
-        block: "end", // Aligns the bottom of the element to the bottom of the visible area
-      });
+      // Check if the ref is attached to an element
+      if (inputContainerRef.current) {
+        inputContainerRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "end", 
+        });
+      }
     }, 150);
   };
 
@@ -151,14 +154,15 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
         
         {/* Input Bar */}
         {post?.status === "open" && (
-          <div 
+          // ✅ Attach the ref to the container div
+          <div
+            ref={inputContainerRef}
             className="bg-white border-t border-gray-200 p-4 flex-shrink-0"
           >
             <div className="flex flex-col gap-3">
               <input
                 type="number"
                 placeholder="Enter your bid amount"
-                // ✅ ADDED onFocus handler
                 onFocus={handleInputFocus}
                 className="w-full border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
                 onChange={(e) => setBidAmount(Number(e.target.value))}
@@ -168,7 +172,6 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
                 <input
                   type="text"
                   placeholder="Add comment..."
-                  // ✅ ADDED onFocus handler
                   onFocus={handleInputFocus}
                   className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
                   onChange={(e) => setBidText(e.target.value)}
