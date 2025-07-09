@@ -1449,9 +1449,10 @@ app.get("/posts/bids", verifyToken, async (req, res) => {
     const currentUserId = req.user.id;
     const isPostOwner = post.user._id.toString() === currentUserId;
 
-    let bids = post.bids || [];
+    // ✅ Filter out soft-deleted bids
+    let bids = (post.bids || []).filter(bid => !bid.isDeleted);
 
-    // Sort logic
+    // ✅ Sort logic
     bids.sort((a, b) => {
       if (sortBy === "rating") {
         const ratingDiff = (b.user.averageRating || 0) - (a.user.averageRating || 0);
@@ -1473,7 +1474,7 @@ app.get("/posts/bids", verifyToken, async (req, res) => {
       return a._id.toString().localeCompare(b._id.toString());
     });
 
-    // Anonymize non-authorized bid users
+    // ✅ Anonymize unauthorized viewers
     const anonymizedBids = bids.map(bid => {
       const isBidder = bid.user._id.toString() === currentUserId;
 
@@ -1484,8 +1485,8 @@ app.get("/posts/bids", verifyToken, async (req, res) => {
             ...bid.user.toObject(),
             username: "Anonymous",
             userImage: null,
-            _id:undefined
-          }
+            _id: undefined,
+          },
         };
       }
 
@@ -1513,21 +1514,33 @@ app.delete("/posts/bids", async (req, res) => {
     const bidToDelete = post.bids.find(b => String(b._id) === String(bidId));
     if (!bidToDelete) return res.status(404).json({ message: "Bid not found" });
 
-    const userId = bidToDelete.user;
-
-    post.bids = post.bids.filter(b => String(b._id) !== String(bidId));
+    // ✅ Soft delete the bid
+    bidToDelete.isDeleted = true;
     await post.save();
 
-    await User.updateOne({ _id: userId }, { $pull: { bidIds: postId } });
-
+    // ✅ Remove postId from bidder's bidIds array
     await User.updateOne(
-      { _id: post.user },
-      { $pull: { notifications: { type: "bid", postId, bidId } } }
+      { _id: bidToDelete.user },
+      { $pull: { bidIds: postId } }
     );
 
-    res.status(200).json({ message: "Bid deleted successfully" });
+    // ✅ Remove associated notification from job poster (post.user)
+    await User.updateOne(
+      { _id: post.user },
+      {
+        $pull: {
+          notifications: {
+            type: "bid",
+            postId,
+            bidId,
+          },
+        },
+      }
+    );
+
+    res.status(200).json({ message: "Bid soft-deleted successfully" });
   } catch (error) {
-    console.error("❌ Error while deleting bid:", error);
+    console.error("❌ Error while soft-deleting bid:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -1578,7 +1591,7 @@ app.get("/posts/topbid", verifyToken, async (req, res) => {
 
     if (!post) return res.status(404).json({ message: "Post not found" });
 
-    let bids = post.bids || [];
+    let bids = (post.bids || []).filter(bid => !bid?.isDeleted );
 
     bids.sort((a, b) => {
       if (sortBy === "rating") {
@@ -2867,8 +2880,11 @@ app.get("/api/post/:postId", verifyToken, async (req, res) => {
     const currentUserId = req.user.id;
     const isPostOwner = post.user._id.toString() === currentUserId;
 
-    // Process bids for anonymization
-    const updatedBids = post.bids.map(bid => {
+    // ✅ Filter out soft-deleted bids
+    const visibleBids = post.bids.filter(bid => !bid.isDeleted);
+
+    // ✅ Anonymize bids
+    const updatedBids = visibleBids.map(bid => {
       const isBidder = bid.user._id.toString() === currentUserId;
 
       if (!isPostOwner && !isBidder) {
@@ -2886,10 +2902,19 @@ app.get("/api/post/:postId", verifyToken, async (req, res) => {
       return bid;
     });
 
-    // Return full post with updated bids
+    // ✅ Filter out soft-deleted comments and replies
+    const visibleComments = post.comments
+      .filter(comment => !comment.isDeleted)
+      .map(comment => ({
+        ...comment.toObject(),
+        replies: (comment.replies || []).filter(reply => !reply.isDeleted),
+      }));
+
+    // ✅ Return post with updated, filtered content
     const updatedPost = {
       ...post.toObject(),
-      bids: updatedBids
+      bids: updatedBids,
+      comments: visibleComments
     };
 
     res.status(200).json(updatedPost);

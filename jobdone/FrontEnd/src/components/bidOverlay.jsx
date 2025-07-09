@@ -173,6 +173,7 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
               currentUserId={userId}
               jobPosterId={post.user._id}
               post={post}
+              setPost={setPost}
               setRefresh={setRefresh}
               setActiveBidPost={setActiveBidPost}
             />
@@ -282,7 +283,7 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
                 currentUserId={userId}
                 jobPosterId={post.user._id}
                 post={post}
-                setPosts={setPost}
+                setPost={setPost}
                 setRefresh={setRefresh}
                 setActiveBidPost={setActiveBidPost}
               />

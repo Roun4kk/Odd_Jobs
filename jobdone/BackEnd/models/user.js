@@ -96,6 +96,7 @@ const UserSchema = mongoose.Schema(
           ref: "Post",
           required: true,
         },
+        isDeleted: { type: Boolean, default: false },
         createdAt: {
           type: Date,
           default: Date.now,
@@ -133,6 +134,7 @@ const UserSchema = mongoose.Schema(
           type: String,
           required: [true, 'Description is required'],
         },
+        isDeleted: { type: Boolean, default: false },
         seen: {
           type: Boolean,
           default: false,
@@ -175,6 +177,7 @@ const UserSchema = mongoose.Schema(
         default: [],
       },
     ],
+    isDeleted: { type: Boolean, default: false },
   },
   {
     timestamps: true,

@@ -9,6 +9,7 @@ const PostSchema = mongoose.Schema({
       user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
       BidText: { type: String },
       BidAmount: { type: Number, required: [true, 'Bid Amount is required'] },
+      isDeleted: { type: Boolean, default: false },
       timestamp: { type: Date, default: Date.now },
     }
   ],
@@ -16,10 +17,12 @@ const PostSchema = mongoose.Schema({
     {
       user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
       commentText: { type: String, required: [true, 'Comment is required'] },
+      isDeleted: { type: Boolean, default: false },
       replies: [
         {
           user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
           replyText: String,
+          isDeleted: { type: Boolean, default: false },
           timestamp: { type: Date, default: Date.now },
         }
       ],
@@ -61,6 +64,7 @@ const PostSchema = mongoose.Schema({
     type: Boolean ,
     default : false ,
   },
+  isDeleted: { type: Boolean, default: false },
   status: {
     type: String,
     enum: ['open', 'winnerSelected', 'completed' , 'closed'],
