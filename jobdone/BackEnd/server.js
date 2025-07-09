@@ -1500,9 +1500,9 @@ app.get("/posts/bids", verifyToken, async (req, res) => {
 });
 
 app.delete("/posts/bids", async (req, res) => {
-  const { postId, userId, BidAmount } = req.body;
+  const { postId, bidId } = req.body;
 
-  if (!postId || !userId || !BidAmount) {
+  if (!postId || !bidId) {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
@@ -1510,24 +1510,19 @@ app.delete("/posts/bids", async (req, res) => {
     const post = await Post.findById(postId);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
-    // Find and remove the bid
-    const originalBidCount = post.bids.length;
-    post.bids = post.bids.filter(
-      (bid) =>
-        String(bid.user) !== String(userId) ||
-        bid.BidAmount !== BidAmount
-    );
+    const bidToDelete = post.bids.find(b => String(b._id) === String(bidId));
+    if (!bidToDelete) return res.status(404).json({ message: "Bid not found" });
 
-    if (post.bids.length === originalBidCount) {
-      return res.status(404).json({ message: "Bid not found" });
-    }
+    const userId = bidToDelete.user;
 
+    post.bids = post.bids.filter(b => String(b._id) !== String(bidId));
     await post.save();
 
-    // Remove the postId from user's bidIds array
+    await User.updateOne({ _id: userId }, { $pull: { bidIds: postId } });
+
     await User.updateOne(
-      { _id: userId },
-      { $pull: { bidIds: postId } }
+      { _id: post.user },
+      { $pull: { notifications: { type: "bid", postId, bidId } } }
     );
 
     res.status(200).json({ message: "Bid deleted successfully" });
@@ -1539,9 +1534,11 @@ app.delete("/posts/bids", async (req, res) => {
 
 app.post("/posts/bids", async (req, res) => {
   const { postId, userId, BidAmount , BidText } = req.body;
+
   if (!postId || !userId || !BidAmount) {
     return res.status(400).json({ message: "Missing required fields" });
   }
+
   try {
     const post = await Post.findById(postId);
     if (!post) return res.status(404).json({ message: "Post not found" });
@@ -1552,16 +1549,18 @@ app.post("/posts/bids", async (req, res) => {
     const newBid = {
       user: userId,
       BidAmount,
-      BidText
+      BidText,
     };
-
-    user.bidIds.push(postId);
-    await user.save();
 
     post.bids.push(newBid);
     await post.save();
 
-    res.status(201).json({ message: "Bid created successfully", bid: newBid });
+    const savedBid = post.bids[post.bids.length - 1];
+
+    user.bidIds.push(postId);
+    await user.save();
+
+    res.status(201).json({ message: "Bid created successfully", bid: savedBid });
   } catch (error) {
     console.error("❌ Error while creating bid:", error);
     res.status(500).json({ message: error.message });
@@ -2964,9 +2963,7 @@ app.post('/api/report/:userId', verifyToken, async (req, res) => {
 
 
 app.post('/api/notify', verifyToken, async (req, res) => {
-  const { type, postId, senderId, message, userId, postDescription } = req.body;
-
-  console.log('🔔 Notification request:', { type, userId, message });
+  const { type, postId, senderId, message, userId, postDescription, bidId } = req.body;
 
   if (!type || !senderId) {
     return res.status(400).json({ message: 'Missing required fields: type and sender.' });
@@ -2981,31 +2978,22 @@ app.post('/api/notify', verifyToken, async (req, res) => {
       createdAt: new Date(),
       postDescription,
       seen: false,
+      ...(type === 'bid' && bidId ? { bidId } : {}),
     };
 
     await User.findByIdAndUpdate(userId, {
       $push: { notifications: notification },
     });
-    
+
     const user = await User.findById(userId);
-    console.log('📱 User notification settings:', user?.allowNotifications);
-    
-    // Debug: Check if user is in socket room
-    const socketsInRoom = await io.in(userId).fetchSockets();
-    console.log(`🏠 Sockets in room ${userId}:`, socketsInRoom.length);
 
     const shouldNotify = (
-      (user?.allowNotifications?.bids === true && (type === "bid" || type === "Hired")) ||
-      (user?.allowNotifications?.comments === true && (type === "comment" || type === "Reply"))
+      (user?.allowNotifications?.bids && ['bid', 'Hired'].includes(type)) ||
+      (user?.allowNotifications?.comments && ['comment', 'Reply'].includes(type))
     );
 
-    console.log('🚨 Should notify:', shouldNotify, 'Type:', type);
-
     if (shouldNotify) {
-      console.log(`📡 Emitting notification to room: ${userId}`);
       io.to(userId).emit('receiveNotification', notification);
-    } else {
-      console.log('❌ Not emitting - settings disabled or type not matched');
     }
 
     res.status(201).json({ message: 'Notification sent.' });

@@ -58,10 +58,41 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
       toast.error(`Bid out of bid range : ${post.minimumBid} to ${post.maximumBid}`);
       return;
     }
+    
+    const bidAmountValue = BidAmount; // Capture before clearing
     setBidText("");
     setBidAmount("");
+
     try {
-      const message = `${user.username} placed a new bid of ${BidAmount} on your job post:`;
+      // 1. Post the new bid
+      // Step 1: Post the new bid
+      const newBidResponse = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/bids`, {
+        postId: post._id,
+        BidText: BidText || "",
+        BidAmount: bidAmountValue,
+        userId: userId
+      }, { withCredentials: true });
+
+      const createdBid = newBidResponse.data.bid;
+      // 2. The server should ideally return the full, updated post object.
+      // If it doesn't, we need to fetch it again. Let's assume we need to fetch it.
+      const updatedPostResponse = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${post._id}`, {
+        withCredentials: true,
+      });
+      const updatedPost = updatedPostResponse.data;
+
+      // 3. Update the local state in BidOverlayPage via the setPost prop
+      setPost(updatedPost);
+
+      // 4. Dispatch the global event so JobFeed can hear about the update
+      window.dispatchEvent(new CustomEvent("jobdone-post-updated", { detail: updatedPost }));
+      
+      // 5. Emit socket event for real-time updates for OTHER users
+      // The newBidResponse.data should contain the newly created bid object with user details
+      socket.emit("newBid", newBidResponse.data);
+
+      // 6. Notify the job poster
+      const message = `${user.username} placed a new bid of ${bidAmountValue} on your job post:`;
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/notify`, {
         userId: post.user._id,
         message,
@@ -69,19 +100,16 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
         postId: post._id,
         type: "bid",
         postDescription: post.postDescription,
+        bidId: createdBid._id, // ✅ send it to store in job poster's notification
       }, { withCredentials: true });
 
-      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/bids`, {
-        postId: post._id,
-        BidText: BidText || "",
-        BidAmount,
-        userId: userId
-      });
+      setRefresh(prev => !prev); // Keep this for re-rendering bidSection
 
-      socket.emit("newBid", res.data);
-      setRefresh(prev => !prev);
     } catch (error) {
       console.error("Error posting bid:", error);
+      toast.error("Failed to place bid.");
+      // Optional: Revert input fields on error
+      setBidAmount(bidAmountValue);
     }
   };
 
@@ -145,7 +173,6 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
               currentUserId={userId}
               jobPosterId={post.user._id}
               post={post}
-              setPost={setPost}
               setRefresh={setRefresh}
               setActiveBidPost={setActiveBidPost}
             />

@@ -118,6 +118,10 @@ const UserSchema = mongoose.Schema(
           type: mongoose.Schema.Types.ObjectId,
           ref: 'User',
         },
+        bidId: { // ✅ NEW FIELD
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Post.bids',
+        },
         message: {
           type: String,
         },
@@ -125,9 +129,9 @@ const UserSchema = mongoose.Schema(
           type: Date,
           default: Date.now,
         },
-        postDescription: { 
-          type: String, 
-          required: [true, 'Description is required'] 
+        postDescription: {
+          type: String,
+          required: [true, 'Description is required'],
         },
         seen: {
           type: Boolean,
@@ -135,16 +139,6 @@ const UserSchema = mongoose.Schema(
         },
       }
     ],
-    allowNotifications: {
-      comments: {
-        type: Boolean,
-        default: true,
-      },
-      bids:{
-        type: Boolean,
-        default: true,
-      }
-    },
 
     phoneNumber: {
       type: String,

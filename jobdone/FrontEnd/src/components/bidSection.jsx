@@ -8,7 +8,7 @@ import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
 import toast from "react-hot-toast";
 import { createPortal } from "react-dom";
 
-function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post , setPosts , setRefresh , setActiveBidPost}) {
+function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post , setRefresh , setActiveBidPost}) {
   const [bids, setBids] = useState([]);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -88,11 +88,10 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
   const handleDelete = async () =>{
     try {
       await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/posts/bids`, {
-      data: {
-        postId: postId,
-        userId: selectedBid.user._id,
-        bidId: selectedBid._id, // It's safer to use a unique bid ID
-      }
+        data: {
+          postId,
+          bidId: selectedBid._id // pass the _id of the bid directly
+        }
     })
     setBids((prevBids) => prevBids.filter(bid => bid._id !== selectedBid._id));
     toast.success("Bid deleted!!");
