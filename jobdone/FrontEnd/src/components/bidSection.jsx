@@ -14,7 +14,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [socketError, setSocketError] = useState(null);
-  useSocketRoomJoin(user?._id, setSocketError);   // ONE line
+  useSocketRoomJoin(user?._id, setSocketError);
   const [bidComp , setBidComp] = useState(false);
   const [selectedBid , setSelectedBid] = useState(null);
   const [openReport , setOpenReport] = useState(false);
@@ -53,7 +53,9 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
   useEffect(() => {
     const handleNewBid = (bidData) => {
       if (bidData.postId === postId) {
+        // Ensure the full user object is included
         const normalizedBid = {
+          _id: bidData._id, // Make sure to handle _id if sent from socket
           BidAmount: bidData.BidAmount,
           BidText: bidData.BidText,
           user: bidData.user
@@ -62,6 +64,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
         setBids((prev) => {
           const updated = [...prev, normalizedBid];
 
+          // Re-apply sorting logic
           if (sortBy === "rating") {
             updated.sort((a, b) => (b.user.averageRating || 0) - (a.user.averageRating || 0));
           } else if (sortBy === "1") {
@@ -80,7 +83,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
     return () => {
       socket.off("receiveNewBid", handleNewBid);
     };
-  }, [post ]);
+  }, [post, sortBy]); // Added sortBy to dependencies
   
   const handleDelete = async () =>{
     try {
@@ -88,20 +91,15 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
       data: {
         postId: postId,
         userId: selectedBid.user._id,
-        BidAmount: selectedBid.BidAmount,
+        bidId: selectedBid._id, // It's safer to use a unique bid ID
       }
     })
-    setBids((prevBids) =>
-      prevBids.filter(
-        (bid) =>
-          bid.user._id !== selectedBid.user._id ||
-          bid.BidAmount !== selectedBid.BidAmount
-      )
-    );
+    setBids((prevBids) => prevBids.filter(bid => bid._id !== selectedBid._id));
     toast.success("Bid deleted!!");
     setBidComp(false);
     } catch (error) {
-      console.error("Failed to send report:", err);
+      console.error("Failed to delete bid:", error);
+      toast.error("Failed to delete bid.");
     }
   }
 
@@ -123,120 +121,128 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
     }
   }
   const handleSelectWinner = async () => {
-            try {
-              await axios.put(`${import.meta.env.VITE_API_BASE_URL}/posts/select-winner`, {
-                postId,
-                userId: pendingWinner,
-                bidId: selectedBid._id,
-              });
-              const message = `Congratulations! You have been hired with a pay of ₹${selectedBid.BidAmount} for the job : `;
-              await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/notify`, {
-                userId: selectedBid.user._id,
-                message: message,
-                senderId: user._id,
-                postId: post._id,
-                type: "Hired",
-                postDescription : post.postDescription,
-              },
-              {
-                withCredentials: true
-              } );
-              setPosts(prevPosts =>
-                prevPosts.map(p =>
-                  p._id === postId
-                    ? {
-                        ...p,
-                        winningBidId: selectedBid._id,
-                        selectedWinner: pendingWinner,
-                        status: "winnerSelected",
-                      }
-                    : p
-                ));
-              setActiveBidPost(prev => ({
-                ...prev,
-                winningBidId: selectedBid._id,
-                selectedWinner: pendingWinner,
-                status: "winnerSelected",
-              }));
+    try {
+      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/posts/select-winner`, {
+        postId,
+        userId: pendingWinner,
+        bidId: selectedBid._id,
+      });
+      const message = `Congratulations! You have been hired with a pay of ₹${selectedBid.BidAmount} for the job : `;
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/notify`, {
+        userId: selectedBid.user._id,
+        message: message,
+        senderId: user._id,
+        postId: post._id,
+        type: "Hired",
+        postDescription : post.postDescription,
+      },
+      {
+        withCredentials: true
+      } );
 
-              setRefresh(prev => !prev);
-              setConfirmWinner(false);
-            } catch (err) {
-              console.error("Error selecting winner:", err);
-              toast.error("Failed to select winner.");
-            }
-          }
+      // Propagate state update
+      const updatedPost = {
+        ...post,
+        winningBidId: selectedBid._id,
+        selectedWinner: pendingWinner,
+        status: "winnerSelected",
+      };
 
+      // Update local state in parent BidOverlayPage
+      if (setActiveBidPost) {
+          setActiveBidPost(updatedPost); 
+      }
+      
+      // Dispatch global event for other components like JobFeed
+      window.dispatchEvent(new CustomEvent("jobdone-post-updated", { detail: updatedPost }));
+
+      setRefresh(prev => !prev);
+      setConfirmWinner(false);
+    } catch (err) {
+      console.error("Error selecting winner:", err);
+      toast.error("Failed to select winner.");
+    }
+  }
+
+  // ✅ CORRECTED Loading State: Removed h-screen and other layout-breaking classes.
   if (loading) {
     return (
-      <div className="flex justify-center mt-25 h-screen bg-white">
-        <div className="w-12 h-12 border-4 border-teal-500 border-dashed rounded-full animate-spin"></div>
+      <div className="flex justify-center items-center py-8">
+        <div className="w-8 h-8 border-4 border-teal-500 border-dashed rounded-full animate-spin"></div>
       </div>
     );
   }
+
+  // ✅ CORRECTED Main Return: Removed flex-1 and overflow-y-auto. This is now a simple container.
   return (
-    <div className="flex-1 overflow-y-auto space-y-2 mb-4 w-full ">
-      {bids.map((bid, index) => {
-        const shouldBlur = !(
-          currentUserId === jobPosterId || 
-          currentUserId === bid.user._id
-        );
-        const isWinner = post?.winningBidId?.toString() === bid._id?.toString() ;
-
-        return (
-           <div key={index} className={`p-3 rounded-xl shadow-sm ${isWinner ? "bg-teal-400 border border-teal-400" : "bg-gray-100"}`}>
-            <div className="mb-1 flex items-center gap-2">
-              <p className="text-sm text-gray-700 flex items-center gap-1">
-                <span className="font-semibold text-black">{bid.BidAmount}₹ bid by{" "}</span>
-                <button disabled={shouldBlur}
-                  onClick={() => {
-                    if (user._id === bid.user._id) {
-                      navigate(`/profile`); 
-                    } else {
-                      navigate(`/profile/${bid.user._id}`); 
-                    }
-                  }}
-                  className={`font-semibold text-black cursor-pointer ${shouldBlur ? "blur-sm" : ""}`}
-                >
-                  {shouldBlur ? "anonymous" : `@${bid.user.username}`}
-                </button>
-                {bid.user.verified?.email && bid.user.verified?.phoneNumber && (
-                  <BadgeCheck className="h-5 w-5 text-teal-400 ml-1" />
-                )}
-              </p>
-              {typeof bid.user.totalRating === 'number' && bid.user.totalRating > 0 && (
-                <div className="flex items-center gap-1 text-sm text-gray-600">
-                  <Star
-                    className="w-4 h-4 text-yellow-400"
-                    fill="#facc15"
-                  />
-                  <span className="font-medium">{bid.user.averageRating?.toFixed(1) || "0.0"}</span>
-                  <span className="text-gray-400">({bid.user.totalRating})</span>
-                </div>
-              )}
-
-              <div className="ml-auto justify-between">
-                {user?._id === jobPosterId && post.status !== "winnerSelected" && !post.winningBidId && (<button onClick={() => {
-                    setPendingWinner(bid.user._id);
-                    setConfirmWinner(true);
-                    setSelectedBid(bid);
-                  }} className=" p-1 rounded-full hover:bg-gray-200 transition-colors duration-200 cursor-pointer">
-                  <Handshake className="w-6 h-6 text-teal-400 " />
-                </button>)}
-                <button onClick = {() => {setBidComp(true), setSelectedBid(bid)}}className={` p-1 rounded-full ${isWinner? "hover:bg-teal-500 " :"hover:bg-gray-200 "}transition-colors duration-200 cursor-pointer`}>
-                  <MoreVertical className= {`w-6 h-6 ${isWinner ? "text-white" : "text-gray-400"}`} />
-                </button>
-              </div>
-            </div>
-            <p className="text-gray-800">{bid.BidText}</p>
+    <div className="w-full">
+      {/* Bids List */}
+      <div className="space-y-2">
+        {bids.length === 0 ? (
+          <div className="text-center py-4 text-gray-500">
+            No bids yet. Be the first to place a bid!
           </div>
-        );
-      })}
-      {/* {socketError && (
-            <div className="p-4 text-red-500">
-              Connection error: {socketError}. Please try refreshing the page or logging in again.
-            </div>
-          )} */}
+        ) : (
+          bids.map((bid, index) => {
+            const shouldBlur = !(
+              currentUserId === jobPosterId || 
+              currentUserId === bid.user._id
+            );
+            const isWinner = post?.winningBidId?.toString() === bid._id?.toString() ;
+
+            return (
+               <div key={bid._id || index} className={`p-3 rounded-xl shadow-sm ${isWinner ? "bg-teal-400 border border-teal-400" : "bg-gray-100"}`}>
+                <div className="mb-1 flex items-center gap-2">
+                  <p className="text-sm text-gray-700 flex items-center gap-1">
+                    <span className="font-semibold text-black">{bid.BidAmount}₹ bid by{" "}</span>
+                    <button disabled={shouldBlur}
+                      onClick={() => {
+                        if (user._id === bid.user._id) {
+                          navigate(`/profile`); 
+                        } else {
+                          navigate(`/profile/${bid.user._id}`); 
+                        }
+                      }}
+                      className={`font-semibold text-black cursor-pointer ${shouldBlur ? "blur-sm" : ""}`}
+                    >
+                      {shouldBlur ? "anonymous" : `@${bid.user.username}`}
+                    </button>
+                    {bid.user.verified?.email && bid.user.verified?.phoneNumber && (
+                      <BadgeCheck className="h-5 w-5 text-teal-400 ml-1" />
+                    )}
+                  </p>
+                  {typeof bid.user.totalRating === 'number' && bid.user.totalRating > 0 && (
+                    <div className="flex items-center gap-1 text-sm text-gray-600">
+                      <Star
+                        className="w-4 h-4 text-yellow-400"
+                        fill="#facc15"
+                      />
+                      <span className="font-medium">{bid.user.averageRating?.toFixed(1) || "0.0"}</span>
+                      <span className="text-gray-400">({bid.user.totalRating})</span>
+                    </div>
+                  )}
+
+                  <div className="ml-auto justify-between">
+                    {user?._id === jobPosterId && post.status !== "winnerSelected" && !post.winningBidId && (<button onClick={() => {
+                        setPendingWinner(bid.user._id);
+                        setConfirmWinner(true);
+                        setSelectedBid(bid);
+                      }} className=" p-1 rounded-full hover:bg-gray-200 transition-colors duration-200 cursor-pointer">
+                      <Handshake className="w-6 h-6 text-teal-400 " />
+                    </button>)}
+                    <button onClick = {() => {setBidComp(true), setSelectedBid(bid)}}className={` p-1 rounded-full ${isWinner? "hover:bg-teal-500 " :"hover:bg-gray-200 "}transition-colors duration-200 cursor-pointer`}>
+                      <MoreVertical className= {`w-6 h-6 ${isWinner ? "text-white" : "text-gray-400"}`} />
+                    </button>
+                  </div>
+                </div>
+                <p className="text-gray-800">{bid.BidText}</p>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Modals are rendered via portal, they don't affect layout */}
       {bidComp && createPortal(
         <div className="fixed inset-0 z-[100] bg-black/50 flex justify-center items-center p-4">
           <div className="bg-white w-full max-w-sm p-5 rounded-xl shadow-xl relative">
@@ -310,9 +316,6 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
         </div>
       </div>
     )}
-
-
-
     </div>
   );
 }

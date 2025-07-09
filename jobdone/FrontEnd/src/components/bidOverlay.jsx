@@ -11,7 +11,8 @@ import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
 import useIsMobile from "../hooks/useIsMobile.js";
 import toast from "react-hot-toast";
 
-function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
+// Renamed setPost to onPostUpdate for clarity, but using setPost as passed from parent
+function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
   const [refresh, setRefresh] = useState(false);
   const [BidText, setBidText] = useState("");
   const [BidAmount, setBidAmount] = useState("");
@@ -23,26 +24,30 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [isTruncated, setIsTruncated] = useState(false);
   const descriptionRef = useRef(null);
-  const [keyboardOffset, setKeyboardOffset] = useState(0);
-  const [initialHeight, setInitialHeight] = useState(window.innerHeight);
   const scrollContainerRef = useRef(null);
+  const inputContainerRef = useRef(null);
+
+  // Instagram-like keyboard handling
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
 
   useEffect(() => {
-    if (window.visualViewport) {
-      setInitialHeight(window.visualViewport.height);
-    }
-
-    const handleResize = () => {
+    const handleViewportChange = () => {
       const currentHeight = window.visualViewport?.height || window.innerHeight;
-      const offset = initialHeight - currentHeight;
-      setKeyboardOffset(offset > 0 ? offset : 0);
+      const threshold = 150; // Keyboard detection threshold
+      
+      setViewportHeight(currentHeight);
+      setIsKeyboardOpen(window.innerHeight - currentHeight > threshold);
     };
 
-    window.visualViewport?.addEventListener("resize", handleResize);
-    return () => {
-      window.visualViewport?.removeEventListener("resize", handleResize);
-    };
-  }, [initialHeight]);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleViewportChange);
+      return () => window.visualViewport.removeEventListener('resize', handleViewportChange);
+    } else {
+      window.addEventListener('resize', handleViewportChange);
+      return () => window.removeEventListener('resize', handleViewportChange);
+    }
+  }, []);
 
   useEffect(() => {
     const el = descriptionRef.current;
@@ -69,152 +74,127 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
         postDescription: post.postDescription,
       }, { withCredentials: true });
 
-      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/bids`, {
+      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/bids`, {
         postId: post._id,
         BidText: BidText || "",
         BidAmount,
         userId: userId
       });
 
-      const newBid = {
-        postId: post._id,
-        BidText: BidText || "",
-        BidAmount,
-        user: {
-          _id: userId,
-          username,
-          verified: user.verified || {},
-          userImage: user.userImage
-        }
-      };
-
-      socket.emit("newBid", newBid);
+      // Emit the full new bid object from the server response
+      socket.emit("newBid", res.data);
       setRefresh(prev => !prev);
     } catch (error) {
-      console.error("Error posting comment:", error);
+      console.error("Error posting bid:", error);
     }
   };
 
   const overlayContent = isMobile ? (
-    // ✅ Mobile Layout
-    <div className="fixed inset-0 z-60 bg-white h-full overflow-hidden">
-      <div className="flex flex-col h-full">
-        <div className="flex items-center gap-3 p-4 border-b border-gray-200 flex-shrink-0">
-          <img
-            src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
-            alt="User"
-            className="w-10 h-10 rounded-full object-cover border"
-          />
-          <button
-            onClick={() =>
-              navigate(user._id === post.user._id ? `/profile` : `/profile/${post.user._id}`)
-            }
-            className="text-base font-semibold truncate"
-          >
-            {post.user.username}
-          </button>
-          {post.user.verified.email && post.user.verified.phoneNumber && (
-            <BadgeCheck className="h-5 w-5 text-teal-400" />
-          )}
-          <button onClick={onClose} className="ml-auto">
-            <X className="h-6 w-6 text-gray-600" />
-          </button>
+    // ✅ CLEAN FLEXBOX LAYOUT
+    <div className="fixed inset-0 z-50 bg-white flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white flex-shrink-0">
+        <img
+          src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
+          alt="User"
+          className="w-10 h-10 rounded-full object-cover border"
+        />
+        <button
+          onClick={() =>
+            navigate(user._id === post.user._id ? `/profile` : `/profile/${post.user._id}`)
+          }
+          className="text-base font-semibold truncate"
+        >
+          {post.user.username}
+        </button>
+        {post.user.verified.email && post.user.verified.phoneNumber && (
+          <BadgeCheck className="h-5 w-5 text-teal-400" />
+        )}
+        <button onClick={onClose} className="ml-auto">
+          <X className="h-6 w-6 text-gray-600" />
+        </button>
+      </div>
+
+      {/* Scrollable Content Area */}
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
+        {/* Post Description */}
+        <div className="p-4 border-b border-gray-100">
+          <div className="relative">
+            <p
+              ref={descriptionRef}
+              className={`text-gray-800 leading-relaxed whitespace-pre-wrap ${
+                showFullDescription ? "" : "line-clamp-4"
+              }`}
+            >
+              {post.postDescription}
+            </p>
+            {isTruncated && (
+              <button
+                onClick={() => setShowFullDescription(prev => !prev)}
+                className="text-sm mt-1 text-teal-600 hover:underline cursor-pointer"
+              >
+                {showFullDescription ? "Show less" : "Read more"}
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="flex flex-col flex-1 overflow-hidden min-h-0">
-          <div 
-            ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto"
-            style={{
-              paddingBottom: keyboardOffset > 0 ? `${keyboardOffset + 100}px` : '100px',
-              height: keyboardOffset > 0 ? `calc(100vh - 140px - ${keyboardOffset}px)` : 'calc(100vh - 140px)'
-            }}
-          >
-            <div className="p-4 border-b border-gray-100">
-              <div className="relative">
-                <p
-                  ref={descriptionRef}
-                  className={`text-gray-800 leading-relaxed whitespace-pre-wrap transition-all duration-300 ${
-                    showFullDescription ? "" : "line-clamp-4"
-                  }`}
-                >
-                  {post.postDescription}
-                </p>
-
-                {isTruncated && (
-                  <button
-                    onClick={() => setShowFullDescription(prev => !prev)}
-                    className="text-sm mt-1 text-teal-600 hover:underline cursor-pointer"
-                  >
-                    {showFullDescription ? "Show less" : "Read more"}
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="p-4">
-              <BidSection
-                postId={post._id}
-                sortBy={sortBy}
-                refresh={refresh}
-                currentUserId={userId}
-                jobPosterId={post.user._id}
-                post={post}
-                setPosts={setPosts}
-                setRefresh={setRefresh}
-                setActiveBidPost={setActiveBidPost}
-              />
-            </div>
-          </div>
-          
-          {post?.status === "open" && (
-            <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0">
-              <div className="flex flex-col gap-3">
-                <input
-                  type="number"
-                  onFocus={() => {
-                    const el = document.activeElement;
-                    if (el) {
-                      setTimeout(() => {
-                        el.scrollIntoView({ behavior: "smooth", block: "center" });
-                      }, 100);
-                    }
-                  }}
-                  placeholder="Enter your bid amount"
-                  className="w-full border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  onChange={(e) => setBidAmount(Number(e.target.value))}
-                  value={BidAmount}
-                />
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Add comment..."
-                    onFocus={() => {
-                      const el = document.activeElement;
-                      if (el) {
-                        setTimeout(() => {
-                          el.scrollIntoView({ behavior: "smooth", block: "center" });
-                        }, 100);
-                      }
-                    }}
-                    className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    onChange={(e) => setBidText(e.target.value)}
-                    value={BidText}
-                  />
-                  <button
-                    onClick={handlePostSubmit}
-                    className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 text-sm font-medium"
-                  >
-                    Place
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+        {/* Bid Section */}
+        <div className="p-4">
+          <BidSection
+            postId={post._id}
+            sortBy={sortBy}
+            refresh={refresh}
+            currentUserId={userId}
+            jobPosterId={post.user._id}
+            post={post}
+            setPost={setPost} // Pass the state setter down
+            setRefresh={setRefresh}
+            setActiveBidPost={setActiveBidPost}
+          />
         </div>
       </div>
+      
+      {/* Input Bar */}
+      {post?.status === "open" && (
+        <div 
+          ref={inputContainerRef}
+          className="bg-white border-t border-gray-200 p-4 flex-shrink-0"
+          style={{
+            // The transform logic for the keyboard is perfect as is
+            transform: isKeyboardOpen ? `translateY(-${window.innerHeight - viewportHeight}px)` : 'translateY(0)',
+            transition: 'transform 0.2s ease-out'
+          }}
+        >
+          <div className="flex flex-col gap-3">
+            <input
+              type="number"
+              placeholder="Enter your bid amount"
+              className="w-full border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
+              onChange={(e) => setBidAmount(Number(e.target.value))}
+              value={BidAmount}
+            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Add comment..."
+                className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
+                onChange={(e) => setBidText(e.target.value)}
+                value={BidText}
+              />
+              <button
+                onClick={handlePostSubmit}
+                className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 text-sm font-medium"
+              >
+                Place
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   ) : (
-    // ✅ Desktop Layout
+    // Desktop layout remains unchanged
     <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center">
       {post.mediaUrls && post.mediaUrls.length > 0 && (
           <div className="bg-white w-full max-w-md h-full md:h-5/6 p-4 flex items-center shadow-lg overflow-hidden">
@@ -279,7 +259,7 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
                 currentUserId={userId}
                 jobPosterId={post.user._id}
                 post={post}
-                setPosts={setPosts}
+                setPosts={setPost}
                 setRefresh={setRefresh}
                 setActiveBidPost={setActiveBidPost}
               />
@@ -318,7 +298,6 @@ function BidOverlay({ post, onClose, sortBy, setPosts, setActiveBidPost }) {
     </div>
   );
 
-  // ✅ Create portal rendering for modal
   return createPortal(overlayContent, document.body);
 }
 

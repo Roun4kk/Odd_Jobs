@@ -12,6 +12,17 @@ function BidOverlayPage() {
   const [sortByMap, setSortByMap] = useState({});
   const [loading, setLoading] = useState(true);
 
+  // ✅ CORE FIX: This effect controls the body scroll.
+  useEffect(() => {
+    // When the overlay page mounts, disable scrolling on the body.
+    document.body.style.overflow = "hidden";
+
+    // When the component unmounts, re-enable scrolling.
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, []); // Empty dependency array ensures this runs only on mount and unmount.
+
   useEffect(() => {
     const fetchPost = async () => {
       try {
@@ -35,16 +46,23 @@ function BidOverlayPage() {
     window.dispatchEvent(new CustomEvent("jobdone-post-updated", { detail: updatedPost }));
   };
 
-  if (loading || !post) return null;
+  if (loading || !post) {
+    // Render a loading state inside the page to prevent showing the underlying page briefly
+    return (
+      <div className="fixed inset-0 z-50 bg-white flex justify-center items-center">
+        <div className="w-12 h-12 border-4 border-teal-500 border-dashed rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <BidOverlay
       post={post}
       onClose={() => navigate(-1)}
       sortBy={sortByMap[post._id] || "1"}
-      setPosts={() => {}}
-      setActiveBidPost={() => navigate(-1)}
-      setPost={handlePostUpdate} // propagate changes
+      setPosts={() => {}} // This can be removed if not used
+      setActiveBidPost={handlePostUpdate} // Use the correct handler
+      setPost={handlePostUpdate} // Pass setPost to BidOverlay
     />
   );
 }
