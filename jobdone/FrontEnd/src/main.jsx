@@ -8,7 +8,6 @@ import { MessageProvider } from "./messageContext.jsx";
 import MainRouter from "./MainRouter.jsx";
 
 createRoot(document.getElementById("root")).render(
-  <StrictMode>
     <AuthProvider>
       <MessageProvider>
         <Router>
@@ -43,5 +42,4 @@ createRoot(document.getElementById("root")).render(
         />
       </MessageProvider>
     </AuthProvider>
-  </StrictMode>
 );
