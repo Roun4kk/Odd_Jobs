@@ -25,11 +25,6 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
   const descriptionRef = useRef(null);
   const scrollContainerRef = useRef(null);
   
-  // This is no longer needed for the layout but can be kept for other purposes if needed.
-  // We don't need to track the keyboard state for layout anymore.
-  // const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
-  // const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
-
   useEffect(() => {
     const el = descriptionRef.current;
     if (el && el.scrollHeight > el.clientHeight) {
@@ -37,13 +32,23 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
     }
   }, [post.postDescription, showFullDescription]);
 
-  // This effect is still useful to scroll to the bottom when new bids come in.
   useEffect(() => {
     if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
   }, [post.bids, refresh]);
 
+  // ✅ NEW: Explicit focus handler to solve the intermittent scroll issue.
+  const handleInputFocus = (event) => {
+    // A short delay allows the keyboard to start its animation,
+    // making the scroll behavior smoother and more reliable.
+    setTimeout(() => {
+      event.target.scrollIntoView({
+        behavior: "smooth",
+        block: "end", // Aligns the bottom of the element to the bottom of the visible area
+      });
+    }, 150);
+  };
 
   const handlePostSubmit = async () => {
     if (BidAmount < post.minimumBid || (post.maximumBid && BidAmount > post.maximumBid)) {
@@ -78,9 +83,8 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
   };
 
   const overlayContent = isMobile ? (
-    // ✅ FINAL, ROBUST FLEXBOX LAYOUT
     <div className="fixed inset-0 z-50 bg-white flex flex-col h-full">
-      {/* Header (flex-shrink-0 is crucial) */}
+      {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white flex-shrink-0">
         <img
           src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
@@ -103,9 +107,9 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
         </button>
       </div>
 
-      {/* Main content area that fills remaining space */}
+      {/* Main content area */}
       <div className="flex-1 flex flex-col min-h-0">
-        {/* Scrollable Content Area (takes up all available space) */}
+        {/* Scrollable Content Area */}
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
           {/* Post Description */}
           <div className="p-4 border-b border-gray-100">
@@ -145,16 +149,17 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
           </div>
         </div>
         
-        {/* Input Bar (does not shrink) */}
+        {/* Input Bar */}
         {post?.status === "open" && (
           <div 
             className="bg-white border-t border-gray-200 p-4 flex-shrink-0"
-            // ✅ REMOVED the problematic transform style
           >
             <div className="flex flex-col gap-3">
               <input
                 type="number"
                 placeholder="Enter your bid amount"
+                // ✅ ADDED onFocus handler
+                onFocus={handleInputFocus}
                 className="w-full border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
                 onChange={(e) => setBidAmount(Number(e.target.value))}
                 value={BidAmount}
@@ -163,6 +168,8 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
                 <input
                   type="text"
                   placeholder="Add comment..."
+                  // ✅ ADDED onFocus handler
+                  onFocus={handleInputFocus}
                   className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
                   onChange={(e) => setBidText(e.target.value)}
                   value={BidText}
