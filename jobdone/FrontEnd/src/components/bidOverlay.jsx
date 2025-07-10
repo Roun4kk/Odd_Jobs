@@ -24,36 +24,7 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
   const [isTruncated, setIsTruncated] = useState(false);
   const descriptionRef = useRef(null);
   const scrollContainerRef = useRef(null);
-
-  // ✅ THE "INSTAGRAM" FIX: Using the Visual Viewport API
-  useEffect(() => {
-    // This effect should only run on mobile devices where the visual viewport API is relevant.
-    if (!isMobile || !window.visualViewport) {
-      return;
-    }
-
-    const root = document.documentElement;
-    
-    const handleViewportResize = () => {
-      // Set a CSS variable with the current height of the keyboard.
-      // This is the difference between the full window height and the current visible height.
-      const keyboardHeight = window.innerHeight - window.visualViewport.height;
-      root.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
-      
-      // Ensure the latest bid is visible when the keyboard opens.
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-      }
-    };
-
-    window.visualViewport.addEventListener('resize', handleViewportResize);
-
-    // Cleanup when the component unmounts.
-    return () => {
-      window.visualViewport.removeEventListener('resize', handleViewportResize);
-      root.style.removeProperty('--keyboard-height');
-    };
-  }, [isMobile]);
+  const inputContainerRef = useRef(null);
 
   useEffect(() => {
     const el = descriptionRef.current;
@@ -68,41 +39,62 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
     }
   }, [post.bids, refresh]);
 
+  const handleInputFocus = () => {
+    // Increased timeout to allow for keyboard animation to complete
+    setTimeout(() => {
+      if (inputContainerRef.current) {
+        inputContainerRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "end",
+        });
+      }
+    }, 300);
+  };
+
   const handlePostSubmit = async () => {
+    // ✅ 1. Validate input is a valid number
     const bidAmountNumber = parseFloat(BidAmount.trim());
     if (isNaN(bidAmountNumber) || bidAmountNumber <= 0) {
       toast.error("Please enter a valid bid amount.");
       return;
     }
     
+    // ✅ 2. Validate against bid range
     if (bidAmountNumber < post.minimumBid || (post.maximumBid && bidAmountNumber > post.maximumBid)) {
       toast.error(`Bid out of bid range : ${post.minimumBid} to ${post.maximumBid}`);
       return;
     }
     
+    // ✅ 3. Capture inputs for optimistic UI and potential error recovery
     const originalBidAmount = BidAmount;
     const originalBidText = BidText;
     setBidText("");
     setBidAmount("");
 
     try {
+      // Post the new bid
       const newBidResponse = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/bids`, {
         postId: post._id,
         BidText: originalBidText || "",
-        BidAmount: bidAmountNumber,
+        BidAmount: bidAmountNumber, // Send the validated number
         userId: userId
       }, { withCredentials: true });
 
       const createdBid = newBidResponse.data.bid;
+      // Fetch the full, updated post object
       const updatedPostResponse = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${post._id}`, {
         withCredentials: true,
       });
       const updatedPost = updatedPostResponse.data;
 
+      // Update local and global state
       setPost(updatedPost);
       window.dispatchEvent(new CustomEvent("jobdone-post-updated", { detail: updatedPost }));
+      
+      // Emit socket event for real-time updates for OTHER users
       socket.emit("newBid", newBidResponse.data);
 
+      // Notify the job poster
       const message = `${user.username} placed a new bid of ${bidAmountNumber} on your job post:`;
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/notify`, {
         userId: post.user._id,
@@ -117,19 +109,15 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
     } catch (error) {
       console.error("Error posting bid:", error);
       toast.error("Failed to place bid.");
+      // ✅ Revert input fields on error
       setBidAmount(originalBidAmount);
       setBidText(originalBidText);
     }
   };
 
   const overlayContent = isMobile ? (
-    // ✅ The main container now uses the CSS variable for padding.
-    // We removed `h-dvh` and use `inset-0` (top/left/right/bottom: 0) to fill the screen,
-    // letting the dynamic padding handle the keyboard.
-    <div 
-      className="fixed inset-0 z-50 bg-white flex flex-col transition-[padding]"
-      style={{ paddingBottom: 'var(--keyboard-height, 0px)' }}
-    >
+    // ✅ Use h-dvh for dynamic viewport height to handle keyboard appearance
+    <div className="fixed inset-0 z-50 bg-white flex flex-col h-dvh">
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white flex-shrink-0">
         <img
@@ -197,12 +185,17 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
         
         {/* Input Bar */}
         {post?.status === "open" && (
-          <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0">
+          <div
+            ref={inputContainerRef}
+            className="bg-white border-t border-gray-200 p-4 flex-shrink-0"
+          >
             <div className="flex flex-col gap-3">
               <input
+                // ✅ Changed to text type with decimal inputMode for better mobile UX
                 type="text"
                 inputMode="decimal"
                 placeholder="Enter your bid amount"
+                onFocus={handleInputFocus}
                 className="w-full border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
                 onChange={(e) => setBidAmount(e.target.value)}
                 value={BidAmount}
@@ -211,6 +204,7 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
                 <input
                   type="text"
                   placeholder="Add comment..."
+                  onFocus={handleInputFocus}
                   className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
                   onChange={(e) => setBidText(e.target.value)}
                   value={BidText}
@@ -228,7 +222,7 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
       </div>
     </div>
   ) : (
-    // Desktop layout (remains unchanged)
+    // Desktop layout
     <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center">
       {post.mediaUrls && post.mediaUrls.length > 0 && (
           <div className="bg-white w-full max-w-md h-full md:h-5/6 p-4 flex items-center shadow-lg overflow-hidden">
@@ -304,6 +298,7 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
               <div className="flex flex-col gap-3">
                 <div className="flex gap-2">
                   <input
+                    // ✅ Changed to text type
                     type="text"
                     inputMode="decimal"
                     placeholder="  Bid"
