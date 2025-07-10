@@ -93,7 +93,6 @@ function BidOverlayPage() {
       post={post}
       onClose={() => navigate(-1)}
       sortBy={sortByMap[post._id] || "1"}
-      setPosts={() => {}} // This can be removed if not used
       setActiveBidPost={handlePostUpdate} // Use the correct handler
       setPost={handlePostUpdate} // Pass setPost to BidOverlay
     />
