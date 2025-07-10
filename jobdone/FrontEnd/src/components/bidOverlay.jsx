@@ -116,9 +116,10 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
   };
 
   const overlayContent = isMobile ? (
-    <div className="fixed-overlay fixed inset-0 z-50 bg-white flex flex-col">
+    // ✅ Use h-dvh for dynamic viewport height to handle keyboard appearance
+    <div className="fixed inset-0 z-50 bg-white flex flex-col h-dvh">
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-gray-200 flex-shrink-0">
+      <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white flex-shrink-0">
         <img
           src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
           alt="User"
@@ -140,75 +141,85 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
         </button>
       </div>
 
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto" ref={scrollContainerRef}>
-        <div className="p-4 border-b border-gray-100">
-          <p
-            ref={descriptionRef}
-            className={`text-gray-800 leading-relaxed whitespace-pre-wrap ${
-              showFullDescription ? "" : "line-clamp-4"
-            }`}
-          >
-            {post.postDescription}
-          </p>
-          {isTruncated && (
-            <button
-              onClick={() => setShowFullDescription(prev => !prev)}
-              className="text-sm mt-1 text-teal-600 hover:underline cursor-pointer"
-            >
-              {showFullDescription ? "Show less" : "Read more"}
-            </button>
-          )}
-        </div>
-        <div className="p-4">
-          <BidSection
-            postId={post._id}
-            sortBy={sortBy}
-            refresh={refresh}
-            currentUserId={userId}
-            jobPosterId={post.user._id}
-            post={post}
-            setPost={setPost}
-            setRefresh={setRefresh}
-            setActiveBidPost={setActiveBidPost}
-          />
-        </div>
-      </div>
-
-      {/* Input Bar */}
-      {post?.status === "open" && (
-        <div
-          ref={inputContainerRef}
-          className="bg-white border-t border-gray-200 p-4 flex-shrink-0"
-        >
-          <div className="flex flex-col gap-3">
-            <input
-              type="number"
-              placeholder="Enter your bid amount"
-              onFocus={handleInputFocus}
-              className="w-full border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
-              onChange={(e) => setBidAmount(Number(e.target.value))}
-              value={BidAmount}
-            />
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Add comment..."
-                onFocus={handleInputFocus}
-                className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
-                onChange={(e) => setBidText(e.target.value)}
-                value={BidText}
-              />
-              <button
-                onClick={handlePostSubmit}
-                className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 text-sm font-medium"
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Scrollable Content Area */}
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
+          {/* Post Description */}
+          <div className="p-4 border-b border-gray-100">
+            <div className="relative">
+              <p
+                ref={descriptionRef}
+                className={`text-gray-800 leading-relaxed whitespace-pre-wrap ${
+                  showFullDescription ? "" : "line-clamp-4"
+                }`}
               >
-                Place
-              </button>
+                {post.postDescription}
+              </p>
+              {isTruncated && (
+                <button
+                  onClick={() => setShowFullDescription(prev => !prev)}
+                  className="text-sm mt-1 text-teal-600 hover:underline cursor-pointer"
+                >
+                  {showFullDescription ? "Show less" : "Read more"}
+                </button>
+              )}
             </div>
           </div>
+
+          {/* Bid Section */}
+          <div className="p-4">
+            <BidSection
+              postId={post._id}
+              sortBy={sortBy}
+              refresh={refresh}
+              currentUserId={userId}
+              jobPosterId={post.user._id}
+              post={post}
+              setPost={setPost}
+              setRefresh={setRefresh}
+              setActiveBidPost={setActiveBidPost}
+            />
+          </div>
         </div>
-      )}
+        
+        {/* Input Bar */}
+        {post?.status === "open" && (
+          <div
+            ref={inputContainerRef}
+            className="bg-white border-t border-gray-200 p-4 flex-shrink-0"
+          >
+            <div className="flex flex-col gap-3">
+              <input
+                // ✅ Changed to text type with decimal inputMode for better mobile UX
+                type="text"
+                inputMode="decimal"
+                placeholder="Enter your bid amount"
+                onFocus={handleInputFocus}
+                className="w-full border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
+                onChange={(e) => setBidAmount(e.target.value)}
+                value={BidAmount}
+              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Add comment..."
+                  onFocus={handleInputFocus}
+                  className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  onChange={(e) => setBidText(e.target.value)}
+                  value={BidText}
+                />
+                <button
+                  onClick={handlePostSubmit}
+                  className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 text-sm font-medium"
+                >
+                  Place
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   ) : (
     // Desktop layout
