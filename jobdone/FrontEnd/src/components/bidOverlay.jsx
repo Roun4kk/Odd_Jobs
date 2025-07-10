@@ -24,8 +24,7 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
   const [isTruncated, setIsTruncated] = useState(false);
   const descriptionRef = useRef(null);
   const scrollContainerRef = useRef(null);
-  // ✅ REMOVED: inputContainerRef and handleInputFocus are no longer needed.
-  // The modern CSS layout with h-dvh and flexbox handles the keyboard appearance correctly.
+  const inputContainerRef = useRef(null);
 
   useEffect(() => {
     const el = descriptionRef.current;
@@ -35,28 +34,35 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
   }, [post.postDescription, showFullDescription]);
 
   useEffect(() => {
-    // Scrolls to the bottom to show the latest bid
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
   }, [post.bids, refresh]);
 
+  const handleInputFocus = () => {
+    // Increased timeout to allow for keyboard animation to complete
+    setTimeout(() => {
+      if (inputContainerRef.current) {
+        inputContainerRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "end",
+        });
+      }
+    }, 300);
+  };
+
   const handlePostSubmit = async () => {
     // ✅ 1. Validate input is a valid number
-    const bidAmountNumber = parseFloat(BidAmount.trim().replace(/,/g, '')); // Handle commas
+    const bidAmountNumber = parseFloat(BidAmount.trim());
     if (isNaN(bidAmountNumber) || bidAmountNumber <= 0) {
       toast.error("Please enter a valid bid amount.");
       return;
     }
     
-    // ✅ 2. Validate against bid range if it exists
-    if (post.minimumBid && bidAmountNumber < post.minimumBid) {
-         toast.error(`Bid must be at least ₹${post.minimumBid}`);
-         return;
-    }
-    if (post.maximumBid && bidAmountNumber > post.maximumBid) {
-        toast.error(`Bid cannot exceed ₹${post.maximumBid}`);
-        return;
+    // ✅ 2. Validate against bid range
+    if (bidAmountNumber < post.minimumBid || (post.maximumBid && bidAmountNumber > post.maximumBid)) {
+      toast.error(`Bid out of bid range : ${post.minimumBid} to ${post.maximumBid}`);
+      return;
     }
     
     // ✅ 3. Capture inputs for optimistic UI and potential error recovery
@@ -89,8 +95,8 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
       socket.emit("newBid", newBidResponse.data);
 
       // Notify the job poster
-      const message = `${user.username} placed a new bid of ₹${bidAmountNumber} on your job post:`;
-      await axios.post(`${import.meta.env.VITE_API_BSE_URL}/api/notify`, {
+      const message = `${user.username} placed a new bid of ${bidAmountNumber} on your job post:`;
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/notify`, {
         userId: post.user._id,
         message,
         senderId: user._id,
@@ -135,7 +141,7 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
         </button>
       </div>
 
-      {/* Main content area that fills remaining space */}
+      {/* Main content area */}
       <div className="flex-1 flex flex-col min-h-0">
         {/* Scrollable Content Area */}
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
@@ -177,10 +183,10 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
           </div>
         </div>
         
-        {/* Input Bar, fixed to the bottom of the flex container */}
+        {/* Input Bar */}
         {post?.status === "open" && (
           <div
-            // ✅ REMOVED: ref={inputContainerRef}
+            ref={inputContainerRef}
             className="bg-white border-t border-gray-200 p-4 flex-shrink-0"
           >
             <div className="flex flex-col gap-3">
@@ -189,7 +195,7 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
                 type="text"
                 inputMode="decimal"
                 placeholder="Enter your bid amount"
-                // ✅ REMOVED: onFocus={handleInputFocus}
+                onFocus={handleInputFocus}
                 className="w-full border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
                 onChange={(e) => setBidAmount(e.target.value)}
                 value={BidAmount}
@@ -198,7 +204,7 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
                 <input
                   type="text"
                   placeholder="Add comment..."
-                  // ✅ REMOVED: onFocus={handleInputFocus}
+                  onFocus={handleInputFocus}
                   className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
                   onChange={(e) => setBidText(e.target.value)}
                   value={BidText}
@@ -216,7 +222,7 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
       </div>
     </div>
   ) : (
-    // Desktop layout (remains unchanged)
+    // Desktop layout
     <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center">
       {post.mediaUrls && post.mediaUrls.length > 0 && (
           <div className="bg-white w-full max-w-md h-full md:h-5/6 p-4 flex items-center shadow-lg overflow-hidden">
@@ -292,6 +298,7 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
               <div className="flex flex-col gap-3">
                 <div className="flex gap-2">
                   <input
+                    // ✅ Changed to text type
                     type="text"
                     inputMode="decimal"
                     placeholder="  Bid"
