@@ -17,3 +17,16 @@ input.no-spinner {
   display: flex;
   flex-direction: column;
 }
+
+html,
+body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .fixed-overlay {
+    height: 100vh;
+    max-height: 100dvh; /* for Safari and iOS */
+  }
+}
