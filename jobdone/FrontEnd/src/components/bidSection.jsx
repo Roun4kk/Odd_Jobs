@@ -83,7 +83,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
     return () => {
       socket.off("receiveNewBid", handleNewBid);
     };
-  }, [post, sortBy]); // Added sortBy to dependencies
+  }, [post, sortBy]);
   
   const handleDelete = async () => {
     try {
@@ -146,7 +146,6 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
         withCredentials: true
       } );
 
-      // Propagate state update
       const updatedPost = {
         ...post,
         winningBidId: selectedBid._id,
@@ -154,12 +153,10 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
         status: "winnerSelected",
       };
 
-      // Update local state in parent BidOverlayPage
       if (setActiveBidPost) {
           setActiveBidPost(updatedPost); 
       }
       
-      // Dispatch global event for other components like JobFeed
       window.dispatchEvent(new CustomEvent("jobdone-post-updated", { detail: updatedPost }));
 
       setRefresh(prev => !prev);
@@ -170,7 +167,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
     }
   }
 
-  // ✅ CORRECTED Loading State: Removed layout-breaking classes.
+  // ✅ CORRECTED Loading State: Removed any layout-breaking classes like min-h-screen.
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -179,7 +176,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
     );
   }
 
-  // ✅ CORRECTED Main Return: Removed flex-1 and overflow-y-auto. This is now a simple container.
+  // ✅ CORRECTED Main Return: This is a simple container. It lets its parent (BidOverlay) handle scrolling.
   return (
     <div className="w-full">
       {/* Bids List */}

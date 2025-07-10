@@ -15,9 +15,12 @@ function BidOverlayPage() {
   // ✅ CORE FIX: This effect controls the body scroll.
   useEffect(() => {
     // When the overlay page mounts, disable scrolling on the body.
+    // This prevents the underlying page (like the feed) from moving
+    // when the user scrolls within the overlay, creating the
+    // "Instagram-like" modal experience.
     document.body.style.overflow = "hidden";
 
-    // When the component unmounts, re-enable scrolling.
+    // When the component unmounts (e.g., user clicks close), re-enable scrolling.
     return () => {
       document.body.style.overflow = "auto";
     };
@@ -47,6 +50,7 @@ function BidOverlayPage() {
   };
 
   if (loading || !post) {
+    // This skeleton loader is great for perceived performance.
     return (
       <div className="fixed inset-0 z-50 bg-white flex flex-col">
         {/* Header Skeleton */}
@@ -92,10 +96,9 @@ function BidOverlayPage() {
     <BidOverlay
       post={post}
       onClose={() => navigate(-1)}
-      sortBy={sortByMap[post._id] || "1"}
-      setPosts={() => {}} // This can be removed if not used
-      setActiveBidPost={handlePostUpdate} // Use the correct handler
-      setPost={handlePostUpdate} // Pass setPost to BidOverlay
+      sortBy={sortByMap[post._id] || "-1"} // Default to highest bid
+      setActiveBidPost={handlePostUpdate}
+      setPost={handlePostUpdate}
     />
   );
 }
