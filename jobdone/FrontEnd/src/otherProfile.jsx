@@ -221,7 +221,7 @@ function OtherProfile() {
                       {profile?.userSkills?.map((skill, index) => (
                         <span
                           key={index}
-                          className="bg-teal-400 text-white px-2 py-1 rounded-full text-xs"
+                          className="bg-teal-400 text-white px-2 py-1 rounded-full text-xs max-w-60 sm:max-w-none truncate"
                         >
                           {skill}
                         </span>
@@ -382,7 +382,7 @@ function OtherProfile() {
                 <p className="text-gray-600">{profile?.userBio || ""}</p>
                 <div className="flex gap-2 mt-2 flex-wrap">
                   {profile?.userSkills?.map((skill, index) => (
-                    <span key={index} className="bg-teal-400 text-white px-2 py-1 rounded-full text-sm">
+                    <span key={index} className="bg-teal-400 text-white px-2 py-1 rounded-full text-sm max-w-130 truncate">
                       {skill}
                     </span>
                   ))}

@@ -173,15 +173,23 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
   // ✅ CORRECTED Loading State: Removed layout-breaking classes.
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-8">
-        <div className="w-8 h-8 border-4 border-teal-500 border-dashed rounded-full animate-spin"></div>
-      </div>
+        <div className="p-4 space-y-3 flex-1 overflow-y-auto animate-pulse">
+           {[...Array(3)].map((_, i) => (
+             <div key={i} className="p-3 rounded-xl bg-gray-100 space-y-2">
+               <div className="flex items-center gap-2">
+                 <div className="w-4/6 h-4 bg-gray-300 rounded" />
+                 <div className="w-10 h-4 bg-gray-300 rounded ml-auto" />
+               </div>
+               <div className="h-3 bg-gray-300 rounded w-5/6" />
+             </div>
+           ))}
+         </div>
     );
   }
 
   // ✅ CORRECTED Main Return: Removed flex-1 and overflow-y-auto. This is now a simple container.
   return (
-    <div className="w-full">
+    <div className="w-full" style={{ scrollBehavior: 'auto' }}>
       {/* Bids List */}
       <div className="space-y-2">
         {bids.length === 0 ? (
@@ -197,7 +205,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
             const isWinner = post?.winningBidId?.toString() === bid._id?.toString() ;
 
             return (
-               <div key={bid._id || index} className={`p-3 rounded-xl shadow-sm ${isWinner ? "bg-teal-400 border border-teal-400" : "bg-gray-100"}`}>
+              <div key={bid._id || index} className={`p-3 rounded-xl shadow-sm ${isWinner ? "bg-teal-400 border border-teal-400" : "bg-gray-100"} transform-gpu`}>
                 <div className="mb-1 flex items-center gap-2">
                   <p className="text-sm text-gray-700 flex items-center gap-1">
                     <span className="font-semibold text-black">{bid.BidAmount}₹ bid by{" "}</span>
@@ -209,7 +217,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
                           navigate(`/profile/${bid.user._id}`); 
                         }
                       }}
-                      className={`font-semibold text-black cursor-pointer ${shouldBlur ? "blur-sm" : ""}`}
+                      className={`font-semibold text-black cursor-pointer ${shouldBlur ? "blur-sm" : ""} max-w-[100px] truncate`}
                     >
                       {shouldBlur ? "anonymous" : `@${bid.user.username}`}
                     </button>

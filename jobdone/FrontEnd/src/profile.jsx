@@ -94,7 +94,7 @@ function Profile() {
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
                     <h2
-                      className="text-lg font-bold text-gray-800 truncate max-w-[120px]"
+                      className="text-lg font-bold text-gray-800 truncate max-w-[80px]"
                       title={user?.username}
                     >
                       {user?.username || "User not found"}
@@ -128,7 +128,7 @@ function Profile() {
                   {user?.userSkills?.map((skill, index) => (
                     <span
                       key={index}
-                      className="bg-teal-400 text-white px-2 py-1 rounded-full text-xs"
+                      className="bg-teal-400 text-white px-2 py-1 rounded-full text-xs max-w-60 sm:max-w-none truncate"
                     >
                       {skill}
                     </span>
@@ -284,7 +284,7 @@ function Profile() {
               {user?.userSkills?.map((skill, index) => (
                 <span
                   key={index}
-                  className="bg-teal-400 text-white px-2 py-1 rounded-full text-sm"
+                  className="bg-teal-400 text-white px-2 py-1 rounded-full text-sm max-w-130 truncate"
                 >
                   {skill}
                 </span>

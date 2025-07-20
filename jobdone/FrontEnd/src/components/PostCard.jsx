@@ -8,7 +8,7 @@ import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
 import ReviewAndRatingForm from "./reviewAndRatingForm.jsx";
 import axios from "axios";
 import useAuth from "../hooks/useAuth.jsx";
-import { formatDistanceToNow } from "date-fns";
+import { differenceInMinutes, differenceInHours, differenceInDays, differenceInWeeks } from "date-fns";
 
 const PostCard = ({
   userProfile,
@@ -113,6 +113,27 @@ const PostCard = ({
     setTopBids((prev) => ({ ...prev, [localPost._id]: sorted[0] }));
   }, [bids, sortByMap[localPost._id]]);
 
+  function formatCustomTimeAgo(date) {
+    const now = new Date();
+    const diffMins = differenceInMinutes(now, date);
+
+    if (diffMins < 60) {
+      return `${diffMins}m`;
+    }
+
+    const diffHours = differenceInHours(now, date);
+    if (diffHours < 24) {
+      return `${diffHours}h`;
+    }
+
+    const diffDays = differenceInDays(now, date);
+    if (diffDays < 7) {
+      return `${diffDays}d`;
+    }
+
+    const diffWeeks = differenceInWeeks(now, date);
+    return `${diffWeeks}w`;
+  }
   const handleCompleted = async (postId) => {
     try {
       await axios.put(`${import.meta.env.VITE_API_BASE_URL}/posts/mark-Completed`, { postId }, {
@@ -139,14 +160,23 @@ const PostCard = ({
 
   return (
     <div className="bg-white p-4 rounded-md shadow-md flex flex-col gap-2 min-h-[200px]">
-      <div className="flex gap-2 items-center mb-2">
+      <div className="flex gap-2 mt-0">
           <div className="flex items-center gap-2">
-            <img
-              src={localPost.user.userImage || "..."}
-              alt="User"
-              className="w-12 h-12 rounded-full border-2 border-white object-cover"
-            />
-            <div>
+            <button
+                disabled={!hasToken}
+                onClick={() =>
+                  user._id === localPost.user._id
+                    ? navigate(`/profile`)
+                    : navigate(`/profile/${localPost.user._id}`)
+                }
+              >
+              <img
+                src={localPost.user.userImage || "..."}
+                alt="User"
+                className="w-12 h-12 rounded-full border-2 border-white object-cover"
+              />
+            </button>
+            <div className="flex flex-col items-start justify-start p-0 m-0">
               <button
                 disabled={!hasToken}
                 onClick={() =>
@@ -154,19 +184,21 @@ const PostCard = ({
                     ? navigate(`/profile`)
                     : navigate(`/profile/${localPost.user._id}`)
                 }
-                className="flex items-center text-lg font-semibold cursor-pointer"
+                className="flex items-center text-lg font-semibold cursor-pointer "
               >
-                {localPost.user.username}
+                <div className="max-w-[140px] md:max-w-[200px] truncate">
+                  {localPost.user.username}
+                </div>
                 {localPost.user.verified.email && localPost.user.verified.phoneNumber && (
                   <BadgeCheck className="h-5 w-5 text-teal-400 ml-1" />
                 )}
               </button>
               <p className="text-sm text-gray-500">
-                {formatDistanceToNow(new Date(localPost.createdAt), { addSuffix: true })}
+                {formatCustomTimeAgo(new Date(localPost.createdAt))}
               </p>
             </div>
           </div>
-        <div className="flex items-center ml-auto">
+        <div className="flex items-start justify-start p-0 m-0 ml-auto">
           <button disabled={!hasToken} onClick={() => toggleSavePost(localPost._id)} className="mr-4 cursor-pointer">
             {user?.savedPosts?.includes(localPost._id) ? (
               <Bookmark size={24} className="text-teal-400 fill-teal-400" />
@@ -174,7 +206,7 @@ const PostCard = ({
               <Bookmark size={24} className="text-gray-400" />
             )}
           </button>
-          <button className="mr-4">
+          <button>
             <MoreVertical size={24} className="text-gray-400 cursor-pointer" onClick={() => hasToken && setActiveOptionsPost(localPost)} />
           </button>
         </div>
@@ -280,7 +312,7 @@ const PostCard = ({
                 <button disabled={shouldBlur || !hasToken} onClick={() => {
                   if (user._id === topBid.user._id) navigate(`/profile`);
                   else navigate(`/profile/${topBid.user._id}`);
-                }} className={`font-semibold text-black ${shouldBlur ? "blur-sm" : ""} cursor-pointer `}>
+                }} className={`font-semibold text-black ${shouldBlur ? "blur-sm" : ""} cursor-pointer max-w-[180px]  md:max-w-[250px] truncate `}>
                   {shouldBlur ? "anonymous" : `@${topBid.user.username} `}
                 </button>
                 {topBid.user.verified.email && topBid.user.verified.phoneNumber && <BadgeCheck className="h-5 w-5 text-teal-400 cursor-pointer" />}

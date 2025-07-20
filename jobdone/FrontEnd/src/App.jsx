@@ -1,14 +1,84 @@
-import { useState, useEffect, memo } from "react"; // Added memo import
+import { useState, useEffect, memo, useRef } from "react";
 import logo from "./assets/logo/logo-transparent-jobdone.svg";
 import googleIcon from "./assets/icons/google.svg";
 import axios from "axios";
 import useAuth from "./hooks/useAuth.jsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import useIsMobile from "./hooks/useIsMobile"; // Custom hook for mobile detection
-// Lucide icons
-import { Rss, Search as SearchIcon, MessageCircle, User, Bell, ShieldCheck, ArrowDown, Briefcase, Zap, Star } from "lucide-react";
 
-// Constants
+// Lucide icons
+import { Rss, Search as SearchIcon, MessageCircle, User, Bell, ShieldCheck, ArrowDown, Briefcase, Zap, Star, Eye, EyeOff, ArrowLeft } from "lucide-react";
+
+// --- Custom Hooks ---
+
+// Custom hook for handling mobile keyboard and input focus
+// CORRECTED Custom hook for handling mobile keyboard and input focus
+// CORRECTED AND MORE ROBUST HOOK
+
+const useMobileInputFocus = () => {
+  const isMobile = useIsMobile();
+  // A ref to store the currently focused input element.
+  // We use a ref because it doesn't trigger a re-render when it changes.
+  const activeElementRef = useRef(null);
+
+  useEffect(() => {
+    // Only run this logic on mobile devices.
+    if (!isMobile) return;
+
+    // --- Event Handlers ---
+
+    // When an input is focused, store it in our ref.
+    const handleFocusIn = (e) => {
+      const target = e.target;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+        activeElementRef.current = target;
+      }
+    };
+
+    // When an input is blurred, clear the ref.
+    const handleFocusOut = () => {
+      activeElementRef.current = null;
+    };
+
+    // This is the key handler. It runs whenever the viewport is resized,
+    // which includes when the keyboard appears or disappears.
+    const handleViewportResize = () => {
+      // If we have a focused element stored in our ref...
+      if (activeElementRef.current) {
+        // ...scroll it into the center of the available view.
+        // A small delay can help ensure the browser's own scrolling logic doesn't interfere.
+        setTimeout(() => {
+          activeElementRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center", // "center" is often more reliable than "nearest"
+            inline: "nearest",
+          });
+        }, 100); 
+      }
+    };
+
+    // --- Attach and Detach Listeners ---
+
+    document.addEventListener("focusin", handleFocusIn);
+    document.addEventListener("focusout", handleFocusOut);
+    // Use the visualViewport's resize event, which is designed for this purpose.
+    window.visualViewport?.addEventListener("resize", handleViewportResize);
+
+    // Cleanup function to remove listeners when the component unmounts.
+    return () => {
+      document.removeEventListener("focusin", handleFocusIn);
+      document.removeEventListener("focusout", handleFocusOut);
+      window.visualViewport?.removeEventListener("resize", handleViewportResize);
+    };
+  }, [isMobile]); // The hook's logic depends on whether the device is mobile.
+
+  // This hook no longer needs to return a `keyboardVisible` state,
+  // as its job is now purely to manage scrolling. You can return null or false.
+  return null; 
+};
+
+
+// --- Constants ---
 const FEATURES = [
   { icon: <Rss className="w-8 h-8 text-teal-400" />, title: "Real-Time Job Feed", description: "Post jobs instantly and receive bids from skilled workers in a dynamic, social-style interface." },
   { icon: <Briefcase className="w-8 h-8 text-teal-400" />, title: "Personalized Profiles", description: "Showcase your skills, ratings, and completed gigs to build your reputation and attract opportunities." },
@@ -17,6 +87,9 @@ const FEATURES = [
   { icon: <MessageCircle className="w-8 h-8 text-teal-400" />, title: "Direct Messaging", description: "Communicate seamlessly with job posters and workers via our real-time text-based messaging." },
   { icon: <Bell className="w-8 h-8 text-teal-400" />, title: "Custom Notifications", description: "Stay updated on what matters most, from new bids and comments to direct messages." },
 ];
+
+
+// --- Components ---
 
 const Introduction = memo(({ onSignInClick, onSignUpClick }) => {
   const isMobile = useIsMobile();
@@ -159,6 +232,7 @@ const Introduction = memo(({ onSignInClick, onSignUpClick }) => {
 
 Introduction.displayName = "Introduction";
 
+
 function App() {
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
@@ -186,8 +260,11 @@ function App() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [wasLoggedOut, setWasLoggedOut] = useState(false);
-  const isMobile = useIsMobile();
   const [showMobileAuth, setShowMobileAuth] = useState(false);
+
+  const isMobile = useIsMobile();
+  const keyboardVisible = useMobileInputFocus();
+
 
   const validateUsername = (username) => {
     if (!username) return { valid: false, message: "Username is required" };
@@ -512,50 +589,42 @@ function App() {
   };
 
   const renderAuthForm = () => (
-    <div className="flex flex-col items-center justify-center gap-4 bg-teal-400 w-full p-4 h-screen">
+    <div
+      className={`flex flex-col items-center justify-center gap-4 bg-teal-400 w-full p-4 transition-all duration-300 ${
+        isMobile ? (keyboardVisible ? "min-h-screen pb-8" : "h-screen") : "h-screen"
+      }`}
+    >
       <div className="flex-shrink-0">
-        <div className="w-55 h-55">
-          <img
-            src={logo}
-            alt="JobDone Logo"
-            className="object-contain w-full h-full"
-            onError={(e) => {
-              console.error("Logo failed to load:", e);
-              e.target.src = "https://via.placeholder.com/144"; // Fallback image
-            }}
-          />
+        <div className="w-44 h-44">
+          <img src={logo} alt="JobDone Logo" className="object-contain w-full h-full" />
         </div>
       </div>
-      <div className="w-full max-w-md bg-white p-6 rounded-lg shadow-lg flex flex-col justify-between h-[450px]">
-        <div className="flex flex-col gap-2">
+      <div className={`w-full max-w-md bg-white p-6 rounded-lg shadow-lg transition-all duration-300 ${keyboardVisible && isMobile ? "mb-4" : ""}`}>
+        <div className="flex flex-col gap-4">
           {wasLoggedOut && (
             <div className="text-center text-green-600 text-sm mb-2">You have been logged out successfully.</div>
           )}
           {showOtpVerification && !showForgotPasswordOtp && (
             <>
-              <h2 className="text-xl font-bold text-center mb-2">Verify Your Email</h2>
-              <p className="text-center text-sm text-gray-600 mb-4">Enter the 6-digit code sent to {pendingEmail}</p>
+              <div className="text-center">
+                <h2 className="text-xl font-bold mb-2">Verify Your Email</h2>
+                <p className="text-sm text-gray-600 mb-4">Enter the 6-digit code sent to {pendingEmail}</p>
+              </div>
               {errorMessage && (
-                <p
-                  className={`text-center text-sm ${
-                    errorMessage.includes("sent") ? "text-green-600" : "text-red-500"
-                  }`}
-                >
-                  {errorMessage}
-                </p>
+                <p className={`text-center text-sm ${errorMessage.includes("sent") ? "text-green-600" : "text-red-500"}`}>{errorMessage}</p>
               )}
               <input
                 type="text"
                 value={otp}
                 placeholder="Enter 6-digit OTP"
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                className="w-full p-3 border border-gray-300 rounded-md text-center text-lg tracking-widest"
+                className="w-full p-3 border border-gray-300 rounded-md text-center text-lg tracking-widest focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-teal-500 transition-all duration-200 cursor-text"
                 disabled={isLoading}
                 maxLength={6}
                 aria-label="OTP Input"
               />
               <button
-                className="w-full bg-teal-400 text-white py-2 rounded-md hover:bg-teal-600 disabled:opacity-50"
+                className="w-full bg-teal-400 text-white py-3 rounded-md hover:bg-teal-600 disabled:opacity-50 transition-colors"
                 onClick={handleOtpVerification}
                 disabled={isLoading || otp.length !== 6}
                 aria-label="Verify Email"
@@ -566,23 +635,13 @@ function App() {
                 {otpTimer > 0 ? (
                   <p>Resend OTP in {formatTime(otpTimer)}</p>
                 ) : (
-                  <button
-                    className="text-teal-600 hover:underline disabled:opacity-50"
-                    onClick={handleResendOtp}
-                    disabled={isLoading || !canResendOtp}
-                    aria-label="Resend OTP"
-                  >
+                  <button className="text-teal-600 hover:underline disabled:opacity-50" onClick={handleResendOtp} disabled={isLoading || !canResendOtp} aria-label="Resend OTP">
                     Resend OTP
                   </button>
                 )}
               </div>
               <div className="text-center mt-2">
-                <button
-                  className="text-sm text-gray-500 underline disabled:opacity-50"
-                  onClick={handleBackToSignup}
-                  disabled={isLoading}
-                  aria-label="Back to Signup"
-                >
+                <button className="text-sm text-gray-500 underline disabled:opacity-50" onClick={handleBackToSignup} disabled={isLoading} aria-label="Back to Signup">
                   ← Back to signup
                 </button>
               </div>
@@ -590,75 +649,57 @@ function App() {
           )}
           {showForgotPasswordOtp && (
             <>
-              <h2 className="text-xl font-bold text-center mb-2">Reset Password</h2>
-              <p className="text-center text-sm text-gray-600 mb-4">Enter OTP and set your new password</p>
+              <div className="text-center">
+                <h2 className="text-xl font-bold mb-2">Reset Password</h2>
+                <p className="text-sm text-gray-600 mb-4">Enter OTP and set your new password</p>
+              </div>
               {errorMessage && (
-                <p
-                  className={`text-center text-sm ${
-                    errorMessage.includes("sent") || errorMessage.includes("successful")
-                      ? "text-green-600"
-                      : "text-red-500"
-                  }`}
-                >
-                  {errorMessage}
-                </p>
+                <p className={`text-center text-sm ${errorMessage.includes("sent") || errorMessage.includes("successful") ? "text-green-600" : "text-red-500"}`}>{errorMessage}</p>
               )}
               <input
                 type="text"
                 value={otp}
                 placeholder="Enter 6-digit OTP"
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                className="w-full p-3 border border-gray-300 rounded-md text-center"
+                className="w-full p-3 border border-gray-300 rounded-md text-center focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 disabled={isLoading}
                 maxLength={6}
                 aria-label="OTP Input"
               />
-              <div className="relative w-full">
+              <div className="relative">
                 <input
                   type={showNewPassword ? "text" : "password"}
                   placeholder="New Password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-md"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   disabled={isLoading}
                   aria-label="New Password"
                 />
                 {newPassword && (
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-3 text-sm"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    disabled={isLoading}
-                    aria-label="Toggle New Password Visibility"
-                  >
-                    {showNewPassword ? "Hide" : "Show"}
+                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700" onClick={() => setShowNewPassword(!showNewPassword)} disabled={isLoading} aria-label="Toggle New Password Visibility">
+                    {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 )}
               </div>
-              <div className="relative w-full">
+              <div className="relative">
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder="Confirm New Password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-md"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   disabled={isLoading}
                   aria-label="Confirm Password"
                 />
                 {confirmPassword && (
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-3 text-sm"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    disabled={isLoading}
-                    aria-label="Toggle Confirm Password Visibility"
-                  >
-                    {showConfirmPassword ? "Hide" : "Show"}
+                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700" onClick={() => setShowConfirmPassword(!showConfirmPassword)} disabled={isLoading} aria-label="Toggle Confirm Password Visibility">
+                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 )}
               </div>
               <button
-                className="w-full bg-teal-400 text-white py-2 rounded-md hover:bg-teal-600 disabled:opacity-50"
+                className="w-full bg-teal-400 text-white py-3 rounded-md hover:bg-teal-600 disabled:opacity-50 transition-colors"
                 onClick={handleForgotPasswordOtpVerification}
                 disabled={isLoading || otp.length !== 6 || !newPassword || !confirmPassword}
                 aria-label="Reset Password"
@@ -669,23 +710,13 @@ function App() {
                 {otpTimer > 0 ? (
                   <p>Resend OTP in {formatTime(otpTimer)}</p>
                 ) : (
-                  <button
-                    className="text-teal-600 hover:underline disabled:opacity-50"
-                    onClick={handleResendOtp}
-                    disabled={isLoading || !canResendOtp}
-                    aria-label="Resend OTP"
-                  >
+                  <button className="text-teal-600 hover:underline disabled:opacity-50" onClick={handleResendOtp} disabled={isLoading || !canResendOtp} aria-label="Resend OTP">
                     Resend OTP
                   </button>
                 )}
               </div>
               <div className="text-center mt-2">
-                <button
-                  className="text-sm text-gray-500 underline disabled:opacity-50"
-                  onClick={handleBackToSignup}
-                  disabled={isLoading}
-                  aria-label="Back to Sign In"
-                >
+                <button className="text-sm text-gray-500 underline disabled:opacity-50" onClick={handleBackToSignup} disabled={isLoading} aria-label="Back to Sign In">
                   ← Back to sign in
                 </button>
               </div>
@@ -693,28 +724,22 @@ function App() {
           )}
           {entryStage === "forgot-password" && !showForgotPasswordOtp && (
             <>
-              <h2 className="text-xl font-bold text-center mb-2">Forgot Password</h2>
-              <p className="text-center text-sm text-gray-600 mb-4">Enter your email to receive a reset code</p>
-              {errorMessage && (
-                <p
-                  className={`text-center text-sm ${
-                    errorMessage.includes("sent") ? "text-green-600" : "text-red-500"
-                  }`}
-                >
-                  {errorMessage}
-                </p>
-              )}
+              <div className="text-center">
+                <h2 className="text-xl font-bold mb-2">Forgot Password</h2>
+                <p className="text-sm text-gray-600 mb-4">Enter your email to receive a reset code</p>
+              </div>
+              {errorMessage && (<p className={`text-center text-sm ${errorMessage.includes("sent") ? "text-green-600" : "text-red-500"}`}>{errorMessage}</p>)}
               <input
                 type="email"
                 placeholder="Email Address"
                 value={forgotPasswordEmail}
                 onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-md"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 disabled={isLoading}
                 aria-label="Email Input"
               />
               <button
-                className="w-full bg-teal-400 text-white py-2 rounded-md hover:bg-teal-600 disabled:opacity-50"
+                className="w-full bg-teal-400 text-white py-3 rounded-md hover:bg-teal-600 disabled:opacity-50 transition-colors"
                 onClick={handleForgotPasswordSubmit}
                 disabled={isLoading || !forgotPasswordEmail}
                 aria-label="Send Reset Code"
@@ -724,11 +749,7 @@ function App() {
               <div className="text-center mt-4">
                 <button
                   className="text-sm text-gray-500 underline disabled:opacity-50"
-                  onClick={() => {
-                    setEntryStage("signin");
-                    setIsSignIn(true);
-                    resetAuthState();
-                  }}
+                  onClick={() => { setEntryStage("signin"); setIsSignIn(true); resetAuthState(); }}
                   disabled={isLoading}
                   aria-label="Back to Sign In"
                 >
@@ -739,50 +760,21 @@ function App() {
           )}
           {entryStage === "choose" && !showOtpVerification && !showForgotPasswordOtp && (
             <>
-              <h2 className="text-xl font-bold text-center mb-2">Join JobDone</h2>
-              {errorMessage && <p className="text-red-500 text-center text-sm">{errorMessage}</p>}
-              <button
-                className="w-full flex items-center justify-center gap-3 border rounded-md py-2 hover:shadow disabled:opacity-50"
-                onClick={handleGoogleLogin}
-                disabled={isLoading}
-                aria-label="Continue with Google"
-              >
-                <img
-                  src={googleIcon}
-                  alt="Google Icon"
-                  className="w-5 h-5"
-                  onError={(e) => {
-                    console.error("Google Icon failed to load:", e);
-                    e.target.src = "https://via.placeholder.com/20"; // Fallback image
-                  }}
-                />
+              <div className="text-center"><h2 className="text-xl font-bold mb-4">Join JobDone</h2></div>
+              {errorMessage && <p className="text-red-500 text-center text-sm mb-4">{errorMessage}</p>}
+              <button onClick={handleGoogleLogin} disabled={isLoading} className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-md py-3 hover:bg-gray-50 disabled:opacity-50 transition-colors">
+                <img src={googleIcon} alt="Google Icon" className="w-5 h-5"/>
                 {isLoading ? "Loading..." : "Continue with Google"}
               </button>
-              <div className="flex items-center gap-3 my-2">
-                <div className="flex-1 h-px bg-gray-300"></div>
-                <span className="text-gray-500 text-sm">or</span>
-                <div className="flex-1 h-px bg-gray-300"></div>
+              <div className="flex items-center gap-3 my-4">
+                <div className="flex-1 h-px bg-gray-300"></div><span className="text-gray-500 text-sm">or</span><div className="flex-1 h-px bg-gray-300"></div>
               </div>
-              <button
-                className="w-full bg-teal-400 text-white py-2 rounded-md hover:bg-teal-600 disabled:opacity-50"
-                onClick={() => {
-                  setEntryStage("signup");
-                  setIsSignIn(false);
-                }}
-                aria-label="Create Account"
-              >
+              <button onClick={() => { setEntryStage("signup"); setIsSignIn(false); }} className="w-full bg-teal-400 text-white py-3 rounded-md hover:bg-teal-600 transition-colors">
                 Create Account
               </button>
-              <p className="text-center text-md text-gray-600">
-                Already have an account?
-                <button
-                  className="ml-2 text-teal-700 hover:underline"
-                  onClick={() => {
-                    setEntryStage("signin");
-                    setIsSignIn(true);
-                  }}
-                  aria-label="Sign In"
-                >
+              <p className="text-center text-sm text-gray-600">
+                Already have an account?{" "}
+                <button className="text-teal-700 hover:underline font-medium" onClick={() => { setEntryStage("signin"); setIsSignIn(true); }}>
                   Sign In
                 </button>
               </p>
@@ -790,104 +782,35 @@ function App() {
           )}
           {(entryStage === "signup" || entryStage === "signin") && !showOtpVerification && !showForgotPasswordOtp && (
             <>
-              <h2 className="text-xl font-bold text-center mb-2">{isSignIn ? "Sign In" : "Sign Up"}</h2>
-              {errorMessage && (
-                <p
-                  className={`text-center text-sm ${
-                    errorMessage.includes("created") || errorMessage.includes("sent") ? "text-green-600" : "text-red-500"
-                  }`}
-                >
-                  {errorMessage}
-                </p>
-              )}
+              <div className="text-center"><h2 className="text-xl font-bold mb-4">{isSignIn ? "Sign In" : "Sign Up"}</h2></div>
+              {errorMessage && <p className={`text-center text-sm mb-4 ${errorMessage.includes("created") || errorMessage.includes("sent") ? "text-green-600" : "text-red-500"}`}>{errorMessage}</p>}
               {!isSignIn && (
-                <input
-                  type="text"
-                  value={username}
-                  placeholder="Username"
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-md"
-                  disabled={isLoading}
-                  aria-label="Username"
-                />
-              )}
-              <input
-                type="text"
-                value={email}
-                placeholder="Email"
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-md"
-                disabled={isLoading}
-                aria-label="Email"
-              />
-              <div className="relative w-full">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-md"
-                  disabled={isLoading}
-                  aria-label="Password"
-                />
-                {password && (
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-3 text-sm"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={isLoading}
-                    aria-label="Toggle Password Visibility"
-                  >
-                    {showPassword ? "Hide" : "Show"}
-                  </button>
-                )}
-              </div>
-              {isSignIn && (
-                <div className="text-right">
-                  <button
-                    className="text-sm text-gray-500 hover:underline"
-                    onClick={() => setEntryStage("forgot-password")}
-                    aria-label="Forgot Password"
-                  >
-                    Forgot Password?
-                  </button>
+                <div>
+                  <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1 ">Username</label>
+                  <input id="username" type="text" value={username} placeholder="Username" onChange={(e) => setUsername(e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500" disabled={isLoading}/>
                 </div>
               )}
-              <button
-                className="w-full bg-teal-400 text-white py-2 rounded-md hover:bg-teal-600 disabled:opacity-50"
-                onClick={handleSubmit}
-                disabled={isLoading}
-                aria-label={isSignIn ? "Sign In" : "Sign Up"}
-              >
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input id="email" type="email" value={email} placeholder="Email" onChange={(e) => setEmail(e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500" disabled={isLoading}/>
+              </div>
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <div className="relative">
+                  <input id="password" type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500" disabled={isLoading}/>
+                  {password && (<button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700" onClick={() => setShowPassword(!showPassword)} disabled={isLoading}>{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>)}
+                </div>
+              </div>
+              {isSignIn && (<div className="text-right"><button className="text-sm text-gray-500 hover:underline" onClick={() => setEntryStage("forgot-password")}>Forgot Password?</button></div>)}
+              <button onClick={handleSubmit} disabled={isLoading} className="w-full bg-teal-400 text-white py-3 rounded-md hover:bg-teal-600 disabled:opacity-50 transition-colors">
                 {isLoading ? "Loading..." : isSignIn ? "Sign In" : "Sign Up"}
               </button>
-            </>
-          )}
-        </div>
-        <div className="flex flex-col gap-2">
-          {(entryStage === "signup" || entryStage === "signin") && !showOtpVerification && !showForgotPasswordOtp && (
-            <>
               <div className="text-center text-gray-600">
-                {isSignIn ? "Don't have an account?" : "Already have an account?"}
-                <button
-                  className="ml-2 text-teal-600 hover:underline"
-                  onClick={toggleSignInMode}
-                  disabled={isLoading}
-                  aria-label={isSignIn ? "Sign Up" : "Sign In"}
-                >
-                  {isSignIn ? "Sign Up" : "Sign In"}
-                </button>
+                {isSignIn ? "Don't have an account?" : "Already have an account?"}{" "}
+                <button className="text-teal-600 hover:underline font-medium" onClick={toggleSignInMode} disabled={isLoading}>{isSignIn ? "Sign Up" : "Sign In"}</button>
               </div>
               <div className="text-center">
-                <button
-                  className="text-sm text-gray-500 underline"
-                  onClick={() => {
-                    setEntryStage("choose");
-                    resetAuthState();
-                  }}
-                  disabled={isLoading}
-                  aria-label="Back to Options"
-                >
+                <button className="text-sm text-gray-500 hover:underline" onClick={() => { setEntryStage("choose"); resetAuthState(); }} disabled={isLoading}>
                   ← Back to options
                 </button>
               </div>
@@ -924,7 +847,16 @@ function App() {
               }}
             />
           ) : (
-            renderAuthForm()
+            <div className="relative">
+              <button
+                className="absolute top-4 left-4 z-20 text-white bg-black/20 backdrop-blur-sm rounded-full p-2 hover:bg-black/30 transition-colors"
+                onClick={() => { setShowMobileAuth(false); resetAuthState(); setEntryStage("choose"); }}
+                aria-label="Back to landing page"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              {renderAuthForm()}
+            </div>
           )}
         </div>
       ) : (
@@ -932,12 +864,10 @@ function App() {
           <div className="w-full lg:w-[70%] h-screen overflow-y-auto">
             <Introduction
               onSignInClick={() => {
-                setShowMobileAuth(true);
                 setIsSignIn(true);
                 setEntryStage("signin");
               }}
               onSignUpClick={() => {
-                setShowMobileAuth(true);
                 setIsSignIn(false);
                 setEntryStage("choose");
               }}
