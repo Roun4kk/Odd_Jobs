@@ -33,7 +33,7 @@ const ReviewAndRatingForm = ({ targetUserType = "worker" , post  , setReviewSubm
       const payload = {
         rating,
         review,
-        target: targetUserType, // 'worker' or 'hirer'
+        target: targetUserType, 
       };
 
       console.log("Submitting review:", payload);
@@ -43,12 +43,10 @@ const ReviewAndRatingForm = ({ targetUserType = "worker" , post  , setReviewSubm
       setRating(0);
       setHoverRating(0);
       setReview("");
-      // ✅ Show API response message as success
       setSuccessMessage(`✅ ${response.data.message}`);
       setTimeout(() => setReviewSubmitted(), 2000);
     } catch (err) {
       console.error("Review submission failed:", err);
-      // ✅ Show error message from API if present
       const msg = err.response?.data?.message || "Something went wrong. Please try again.";
       setError(`❌ ${msg}`);
       setTimeout(() => setError(""), 3000);
@@ -60,7 +58,7 @@ const ReviewAndRatingForm = ({ targetUserType = "worker" , post  , setReviewSubm
   const StarIcon = ({ filled, half = false }) => (
     <svg
       className={`w-8 h-8 transition-colors duration-150 ${
-        filled ? 'text-yellow-400' : half ? 'text-yellow-200' : 'text-gray-300'
+        filled ? 'text-yellow-400' : half ? 'text-yellow-200' : 'text-gray-300 dark:text-gray-600'
       }`}
       fill="currentColor"
       viewBox="0 0 20 20"
@@ -78,14 +76,14 @@ const ReviewAndRatingForm = ({ targetUserType = "worker" , post  , setReviewSubm
   };
 
   return (
-    <div className="max-w-md mx-auto mt-8 p-6 border rounded-lg bg-white shadow-lg">
-      <h3 className="text-lg font-semibold mb-4 text-gray-800">
+    <div className="max-w-md mx-auto mt-8 p-6 border dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-lg">
+      <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
         Rate & Review {targetUserType.charAt(0).toUpperCase() + targetUserType.slice(1)}
       </h3>
 
       {/* Star Rating */}
       <div className="mb-4">
-        <label className="block mb-3 text-sm font-medium text-gray-700">
+        <label className="block mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
           Your Rating
         </label>
         
@@ -94,7 +92,7 @@ const ReviewAndRatingForm = ({ targetUserType = "worker" , post  , setReviewSubm
             <button
               key={star}
               type="button"
-              className="focus:outline-none  rounded transition-transform hover:scale-110 cursor-pointer"
+              className="focus:outline-none rounded transition-transform hover:scale-110 cursor-pointer"
               onClick={() => setRating(star)}
               onMouseEnter={() => setHoverRating(star)}
               onMouseLeave={() => setHoverRating(0)}
@@ -107,7 +105,7 @@ const ReviewAndRatingForm = ({ targetUserType = "worker" , post  , setReviewSubm
 
         {/* Rating Label */}
         {(hoverRating || rating) > 0 && (
-          <p className="text-sm text-gray-600 font-medium">
+          <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
             {ratingLabels[hoverRating || rating]} ({hoverRating || rating} star{(hoverRating || rating) > 1 ? 's' : ''})
           </p>
         )}
@@ -115,18 +113,18 @@ const ReviewAndRatingForm = ({ targetUserType = "worker" , post  , setReviewSubm
 
       {/* Review Text Area */}
       <div className="mb-4">
-        <label className="block mb-2 text-sm font-medium text-gray-700">
+        <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
           Your Review
         </label>
         <textarea
           maxLength={500}
-          className="w-full h-24 p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-colors"
+          className="w-full h-24 p-3 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-md resize-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-colors"
           placeholder={`Share your experience with this ${targetUserType}...`}
           value={review}
           onChange={(e) => setReview(e.target.value)}
           disabled={submitting}
         />
-        <div className="text-right text-xs text-gray-500 mt-1">
+        <div className="text-right text-xs text-gray-500 dark:text-gray-400 mt-1">
           {review.length}/500
         </div>
 
@@ -134,8 +132,8 @@ const ReviewAndRatingForm = ({ targetUserType = "worker" , post  , setReviewSubm
 
       {/* Error Message */}
       {(error || successMessage) && (
-        <div className= {`mb-4 p-3 ${successMessage ? "bg-green-50" : "bg-red-50"  } border border-red-200 rounded-md`}>
-          <p className={`${successMessage ? "text-green-600" : "text-red-600"  }text-red-600 text-sm font-medium`}>{error||successMessage}</p>
+        <div className={`mb-4 p-3 ${successMessage ? "bg-green-50 dark:bg-green-900/20" : "bg-red-50 dark:bg-red-900/20"} border ${successMessage ? 'border-green-200 dark:border-green-500/30' : 'border-red-200 dark:border-red-500/30'} rounded-md`}>
+          <p className={`${successMessage ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"} text-sm font-medium`}>{error||successMessage}</p>
         </div>
       )}
 
@@ -145,7 +143,7 @@ const ReviewAndRatingForm = ({ targetUserType = "worker" , post  , setReviewSubm
         disabled={submitting || !rating}
         className={`w-full py-3 px-4 rounded-md font-medium transition-all duration-200 ${
           submitting || !rating
-            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+            ? "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
             : "bg-teal-400 text-white hover:bg-teal-600 active:transform active:scale-95 shadow-md hover:shadow-lg cursor-pointer"
         }`}
       >

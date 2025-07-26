@@ -41,42 +41,35 @@ function Profile() {
     }
   }, [user?._id]);
 
-  // Show loading screen while checking authentication
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-white">
+      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
         <img src={logo} alt="Loading..." className="w-40 h-40 animate-pulse" />
       </div>
     );
   }
 
-  // Show loading screen briefly while redirect is happening
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-screen bg-white">
+      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
         <img src={logo} alt="Redirecting..." className="w-40 h-40 animate-pulse" />
-        <div className="ml-4 text-gray-600">Redirecting to login...</div>
+        <div className="ml-4 text-gray-600 dark:text-gray-300">Redirecting to login...</div>
       </div>
     );
   }
 
   const reviewCount = user?.totalRating || user?.ratings?.length || 0;
 
-  // Mobile layout with proper space constraints
   if (isMobile) {
     return (
-      <div className="min-h-screen flex flex-col">
-        {/* Mobile Header */}
-        <div className="flex z-10 items-center justify-center w-full h-16 shadow-sm border-b border-gray-200 bg-teal-50 flex-shrink-0">
-          <h1 className="text-2xl font-semibold text-teal-800">Profile</h1>
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+        <div className="flex z-10 items-center justify-center w-full h-16 shadow-sm border-b border-gray-200 dark:border-gray-700 bg-teal-50 dark:bg-gray-800 flex-shrink-0">
+          <h1 className="text-2xl font-semibold text-teal-800 dark:text-white">Profile</h1>
         </div>
 
-        {/* Mobile Profile Content - Constrained container */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Profile Info Section */}
           <div className="p-4 flex-shrink-0">
             <div className="flex items-start gap-4">
-              {/* User Image */}
               <button className="w-20 h-20 cursor-pointer flex-shrink-0">
                 <img
                   src={
@@ -88,13 +81,11 @@ function Profile() {
                 />
               </button>
 
-              {/* Right Side: Username, Buttons, Bio, Skills */}
               <div className="flex-1 flex flex-col">
-                {/* Username and Buttons Row */}
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
                     <h2
-                      className="text-lg font-bold text-gray-800 truncate max-w-[80px]"
+                      className="text-lg font-bold text-gray-800 dark:text-white truncate max-w-[80px]"
                       title={user?.username}
                     >
                       {user?.username || "User not found"}
@@ -120,10 +111,9 @@ function Profile() {
                     </button>
                   </div>
                 </div>
-                <p className="text-gray-600 text-sm">{user?.email || "User not found"}</p>
-                <p className="text-gray-600 text-sm mt-2">{user?.userBio || ""}</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm truncate max-w-[200px]">{user?.email || "User not found"}</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">{user?.userBio || ""}</p>
 
-                {/* Skills */}
                 <div className="flex flex-wrap gap-2 mt-2">
                   {user?.userSkills?.map((skill, index) => (
                     <span
@@ -137,7 +127,6 @@ function Profile() {
               </div>
             </div>
 
-            {/* Email and Reviews (Centered) */}
             <div className="mt-4 text-center">
               {reviewCount > 0 && (
                 <div className="mt-2 flex items-center justify-center gap-1">
@@ -147,7 +136,7 @@ function Profile() {
                       className={`w-4 h-4 ${
                         i < Math.round(user?.averageRating || 0)
                           ? "text-yellow-400"
-                          : "text-gray-300"
+                          : "text-gray-300 dark:text-gray-600"
                       }`}
                       fill={
                         i < Math.round(user?.averageRating || 0)
@@ -158,11 +147,11 @@ function Profile() {
                   ))}
                   <span
                     title="Average user rating"
-                    className="text-xs text-gray-600 ml-1"
+                    className="text-xs text-gray-600 dark:text-gray-400 ml-1"
                   >
                     {user?.averageRating?.toFixed(1)}
                   </span>
-                  <span className="text-xs text-gray-600">
+                  <span className="text-xs text-gray-600 dark:text-gray-400">
                     ({reviewCount} reviews)
                   </span>
                 </div>
@@ -170,12 +159,11 @@ function Profile() {
             </div>
           </div>
 
-          {/* Mobile Tabs - Fixed position */}
-          <div className="flex border-t border-gray-200 bg-white flex-shrink-0">
+          <div className="flex border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0">
             <button
               onClick={() => setJob("posts")}
               className={`flex-1 py-2 text-center text-sm font-medium ${
-                job === "posts" ? "border-t-2 border-teal-400 text-teal-800" : "text-gray-600"
+                job === "posts" ? "border-t-2 border-teal-400 text-teal-800 dark:text-teal-300" : "text-gray-600 dark:text-gray-400"
               }`}
             >
               Posts
@@ -183,7 +171,7 @@ function Profile() {
             <button
               onClick={() => setJob("bids")}
               className={`flex-1 py-2 text-center text-sm font-medium ${
-                job === "bids" ? "border-t-2 border-teal-400 text-teal-800" : "text-gray-600"
+                job === "bids" ? "border-t-2 border-teal-400 text-teal-800 dark:text-teal-300" : "text-gray-600 dark:text-gray-400"
               }`}
             >
               Bids
@@ -191,7 +179,7 @@ function Profile() {
             <button
               onClick={() => setJob("saved")}
               className={`flex-1 py-2 text-center text-sm font-medium ${
-                job === "saved" ? "border-t-2 border-teal-400 text-teal-800" : "text-gray-600"
+                job === "saved" ? "border-t-2 border-teal-400 text-teal-800 dark:text-teal-300" : "text-gray-600 dark:text-gray-400"
               }`}
             >
               Saved
@@ -199,19 +187,18 @@ function Profile() {
             <button
               onClick={() => setJob("reviews")}
               className={`flex-1 py-2 text-center text-sm font-medium ${
-                job === "reviews" ? "border-t-2 border-teal-400 text-teal-800" : "text-gray-600"
+                job === "reviews" ? "border-t-2 border-teal-400 text-teal-800 dark:text-teal-300" : "text-gray-600 dark:text-gray-400"
               }`}
             >
               Reviews
             </button>
           </div>
 
-          {/* UserJobs Content - Properly constrained scrollable area */}
           <div className="flex-1 overflow-hidden">
             <div 
               className="h-full overflow-y-auto px-4"
               style={{
-                paddingBottom: hasToken ? '80px' : '20px' // Account for bottom navbar height
+                paddingBottom: hasToken ? '80px' : '20px'
               }}
             >
               <div className="w-full max-w-md mx-auto">
@@ -221,9 +208,8 @@ function Profile() {
           </div>
         </div>
 
-        {/* Mobile Bottom Navbar - Fixed at bottom */}
         {hasToken && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
             <BottomNavbar />
           </div>
         )}
@@ -231,11 +217,10 @@ function Profile() {
     );
   }
 
-  // Desktop UI (Unchanged)
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden dark:bg-gray-900">
       <Sidebar user={user} />
-      <div className="w-[70%] h-full fixed right-0 top-0 bg-white flex flex-col items-center justify-start overflow-y-scroll">
+      <div className="w-[70%] h-full fixed right-0 top-0 bg-white dark:bg-gray-900 flex flex-col items-center justify-start overflow-y-scroll">
         <div className="w-2/3 flex items-center justify-start py-6">
           <div className="w-40 h-40 flex-shrink-0">
             <button className="w-full h-full cursor-pointer">
@@ -253,7 +238,7 @@ function Profile() {
           <div className="ml-6 flex-1 flex-col items-start justify-center">
             <div className="flex items-center justify-start w-full gap-2">
               <button
-                className="text-2xl font-bold text-gray-800 cursor-pointer truncate max-w-[200px] overflow-hidden whitespace-nowrap"
+                className="text-2xl font-bold text-gray-800 dark:text-white cursor-pointer truncate max-w-[200px] overflow-hidden whitespace-nowrap"
                 title={user?.username}
               >
                 {user?.username || "User not found"}
@@ -278,8 +263,8 @@ function Profile() {
                 </button>
               </div>
             </div>
-            <p className="text-gray-600">{user?.email || "User not found"}</p>
-            <p className="text-gray-600">{user?.userBio || ""}</p>
+            <p className="text-gray-600 dark:text-gray-400">{user?.email || "User not found"}</p>
+            <p className="text-gray-600 dark:text-gray-400">{user?.userBio || ""}</p>
             <div className="flex gap-2 mt-2 flex-wrap w-full items-center">
               {user?.userSkills?.map((skill, index) => (
                 <span
@@ -298,7 +283,7 @@ function Profile() {
                       className={`w-5 h-5 ${
                         i < Math.round(user?.averageRating || 0)
                           ? "text-yellow-400"
-                          : "text-gray-300"
+                          : "text-gray-300 dark:text-gray-600"
                       }`}
                       fill={
                         i < Math.round(user?.averageRating || 0)
@@ -309,11 +294,11 @@ function Profile() {
                   ))}
                   <span
                     title="Average user rating"
-                    className="text-sm text-gray-600 ml-1"
+                    className="text-sm text-gray-600 dark:text-gray-400 ml-1"
                   >
                     {user?.averageRating?.toFixed(1)}
                   </span>
-                  <span className="text-sm text-gray-600 ml-1">
+                  <span className="text-sm text-gray-600 dark:text-gray-400 ml-1">
                     ({reviewCount} reviews)
                   </span>
                 </div>
@@ -322,14 +307,14 @@ function Profile() {
           </div>
         </div>
 
-        <div className="w-5/6 flex items-center justify-center border-t">
+        <div className="w-5/6 flex items-center justify-center border-t dark:border-gray-700">
           <button
             onClick={() => setJob("posts")}
             className={`w-1/2 flex justify-center cursor-pointer border-t-4 ${
               job === "posts" ? "border-teal-400" : "border-transparent"
             }`}
           >
-            <div className="py-2">POSTS</div>
+            <div className="py-2 dark:text-white">POSTS</div>
           </button>
 
           <button
@@ -338,7 +323,7 @@ function Profile() {
               job === "bids" ? "border-teal-400" : "border-transparent"
             }`}
           >
-            <div className="py-2">BIDS</div>
+            <div className="py-2 dark:text-white">BIDS</div>
           </button>
 
           <button
@@ -347,7 +332,7 @@ function Profile() {
               job === "saved" ? "border-teal-400" : "border-transparent"
             }`}
           >
-            <div className="py-2">SAVED</div>
+            <div className="py-2 dark:text-white">SAVED</div>
           </button>
 
           <button
@@ -356,7 +341,7 @@ function Profile() {
               job === "reviews" ? "border-teal-400" : "border-transparent"
             }`}
           >
-            <div className="py-2">REVIEWS</div>
+            <div className="py-2 dark:text-white">REVIEWS</div>
           </button>
         </div>
 

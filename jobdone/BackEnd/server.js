@@ -78,6 +78,7 @@ console.log("Email OTP Limit:", EMAIL_OTP_LIMIT);
 const allowedOrigins = [
   "http://localhost:5173",
   "https://jobdone-ecru.vercel.app",
+  "http://192.168.1.4:5173"
 ];
 
 app.use(cors({
@@ -842,8 +843,18 @@ const anonymizeBidders = (posts, currentUserId) => {
 
 app.get('/posts', verifyToken, async (req, res) => {
   try {
-    const posts = await Post.find({ status: "open" })
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+
+    // Get total count for debugging
+    const totalPosts = await Post.countDocuments({ status: "open", isDeleted: false });
+
+    const posts = await Post.find({ status: "open", isDeleted: false })
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
       .populate({
         path: 'user',
         select: 'username userImage verified blockedUsers _id ratings',
@@ -865,10 +876,10 @@ app.get('/posts', verifyToken, async (req, res) => {
         select: 'username userImage verified _id '
       });
 
+    console.log('Posts fetched:', posts.length);
+
     const userId = req.user.id;
 
-    // 🔧 Do not call `toObject()` here — keep Mongoose documents
-    // Just filter soft-deleted items in-place
     const filteredPosts = posts.map(post => {
       post.bids = (post.bids || []).filter(bid => !bid.isDeleted);
       post.comments = (post.comments || []).filter(comment => !comment.isDeleted);
@@ -879,10 +890,19 @@ app.get('/posts', verifyToken, async (req, res) => {
       return post;
     });
 
-    // 🧠 Now call anonymizeBidders, which safely calls `.toObject()` inside
     const modifiedPosts = anonymizeBidders(filteredPosts, userId);
 
-    res.status(200).json(modifiedPosts);
+    // DEBUG: Return additional pagination info
+    res.status(200).json({
+      posts: modifiedPosts,
+      pagination: {
+        currentPage: page,
+        limit: limit,
+        totalPosts: totalPosts,
+        totalPages: Math.ceil(totalPosts / limit),
+        hasMore: (page * limit) < totalPosts
+      }
+    });
   } catch (err) {
     console.error("Error fetching posts:", err);
     res.status(500).json({ message: "Something went wrong" });
@@ -891,7 +911,7 @@ app.get('/posts', verifyToken, async (req, res) => {
 
 app.delete("/posts", verifyToken, async (req, res) => {
   const { postId } = req.body;
-  const userId = req.user.id; // assuming you're decoding JWT
+  const userId = req.user.id; // decoded from JWT
 
   try {
     const post = await Post.findById(postId);
@@ -899,16 +919,20 @@ app.delete("/posts", verifyToken, async (req, res) => {
       return res.status(404).json({ message: "Post not found." });
     }
 
-    // ✅ Optional: Only the post owner can delete
     if (post.user.toString() !== userId) {
       return res.status(403).json({ message: "Unauthorized: You can only delete your own post." });
     }
 
-    await Post.findByIdAndDelete(postId);
+    if (post.isDeleted) {
+      return res.status(400).json({ message: "Post already deleted." });
+    }
 
-    return res.status(200).json({ message: "Post deleted successfully." });
+    post.isDeleted = true;
+    await post.save();
+
+    return res.status(200).json({ message: "Post soft deleted successfully." });
   } catch (err) {
-    console.error("Error deleting post:", err);
+    console.error("Error during soft delete:", err);
     return res.status(500).json({ message: "Server error while deleting post." });
   }
 });
@@ -1079,6 +1103,7 @@ app.get("/posts/search", verifyToken, async (req, res) => {
       {
         $match: {
           status: "open",
+          isDeleted: false,
           $or: searchConditions.map(condition => {
             const { status, ...rest } = condition;
             return rest;
@@ -1160,8 +1185,17 @@ app.get("/posts/search", verifyToken, async (req, res) => {
         select: "username userImage verified _id ratings"
       }
     ]);
+    const filteredPosts = populatedPosts.map(post => {
+      post.bids = (post.bids || []).filter(bid => !bid.isDeleted);
+      post.comments = (post.comments || []).filter(comment => !comment.isDeleted);
+      post.comments = post.comments.map(comment => {
+        comment.replies = (comment.replies || []).filter(reply => !reply.isDeleted);
+        return comment;
+      });
+      return post;
+    });
 
-    res.json(populatedPosts);
+    res.json(filteredPosts);
   } catch (err) {
     console.error("Search error:", err);
     res.status(500).json({ message: "Server error" });
@@ -1292,82 +1326,76 @@ app.post(
     console.log("Raw req.body payload:", req.body);
 
     try {
-      console.log("Received /upload request:", {
-        body: req.body,
-        files: req.files,
-      });
+      // Case 1: Multiple file upload (JobPostInput.jsx)
+      if (req.files?.files?.length > 0) {
+        const urls = [];
 
-      // Case 2: Multiple file upload (JobPostInput.jsx)
-      if (req.files && req.files.files && req.files.files.length > 0) {
-        const files = req.files.files;
-        console.log("Processing multiple files:", files.length);
+        for (const file of req.files.files) {
+          const isVideo = file.mimetype.startsWith("video/");
+          const result = await cloudinary.uploader.upload(file.path, {
+            resource_type: "auto",
+            folder: "posts",
+            format: isVideo ? "mp4" : "jpg",
+            public_id: file.originalname.split(".")[0],
+          });
 
-        const urls = files.map(file => {
-          const url = file?.path || file?.cloudinary?.secure_url || file?.cloudinary?.url;
-          if (!url) {
-            throw new Error(`File upload failed for ${file.originalname}: No URL available`);
+          if (!result.secure_url) {
+            throw new Error(`Upload failed for ${file.originalname}`);
           }
-          return url;
-        });
 
+          urls.push(result.secure_url);
+        }
 
         return res.status(200).json({ urls });
       }
 
-      // Case 3: Google image URL upload (for OAuth callback)
+      // Case 2: Google image URL upload (for OAuth callback)
       if (req.body.googleImageUrl) {
         const googleImageUrl = req.body.googleImageUrl;
-        console.log("Processing Google image URL:", googleImageUrl);
 
         if (!/^https?:\/\/.*/.test(googleImageUrl)) {
           return res.status(400).json({ message: "Invalid Google image URL" });
         }
 
-        try {
-          const response = await axios.get(googleImageUrl, {
-            responseType: "arraybuffer",
-            timeout: 10000,
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (compatible; JobDone/1.0)'
-            }
-          });
-          const buffer = Buffer.from(response.data);
+        const response = await axios.get(googleImageUrl, {
+          responseType: "arraybuffer",
+          timeout: 10000,
+          headers: { "User-Agent": "Mozilla/5.0 (compatible; JobDone/1.0)" },
+        });
 
-          if (!buffer || buffer.length === 0) {
-            return res.status(400).json({ message: "Empty Google image buffer" });
-          }
-
-          const contentType = response.headers["content-type"];
-          const resourceType = contentType && contentType.startsWith("video") ? "video" : "image";
-
-          const uploadStream = cloudinary.uploader.upload_stream(
-            {
-              resource_type: resourceType,
-              folder: "google_images",
-            },
-            (error, result) => {
-              if (error) {
-                console.error("Cloudinary upload error:", error);
-                return res.status(500).json({ message: "Failed to upload Google image to Cloudinary", error: error.message });
-              }
-              res.status(200).json({ url: result.secure_url });
-            }
-          );
-
-          const bufferStream = new PassThrough();
-          bufferStream.end(buffer);
-          bufferStream.pipe(uploadStream);
-          return;
-        } catch (downloadError) {
-          console.error("Error downloading Google image:", downloadError);
-          return res.status(500).json({ message: "Failed to download Google image", error: downloadError.message });
+        const buffer = Buffer.from(response.data);
+        if (!buffer.length) {
+          return res.status(400).json({ message: "Empty image buffer" });
         }
+
+        const contentType = response.headers["content-type"];
+        const resourceType = contentType?.startsWith("video") ? "video" : "image";
+
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            resource_type: "auto",
+            folder: "google_images",
+            format: resourceType === "video" ? "mp4" : "jpg",
+          },
+          (error, result) => {
+            if (error) {
+              console.error("Cloudinary upload error:", error);
+              return res.status(500).json({ message: "Failed to upload", error: error.message });
+            }
+            res.status(200).json({ url: result.secure_url });
+          }
+        );
+
+        const bufferStream = new PassThrough();
+        bufferStream.end(buffer);
+        bufferStream.pipe(uploadStream);
+        return;
       }
 
       return res.status(400).json({ message: "No file or Google image URL provided" });
     } catch (error) {
       console.error("Error uploading file:", error);
-      res.status(500).json({ message: error.message || "Failed to upload file" });
+      return res.status(500).json({ message: error.message || "Failed to upload file" });
     }
   }
 );
@@ -1379,23 +1407,39 @@ app.post("/posts/comments", async (req, res) => {
     if (!postId || !commentText || !username) {
       return res.status(400).json({ message: "Missing required fields" });
     }
+
     const user = await User.findOne({ username });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
     const post = await Post.findById(postId);
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
-    post.comments.push({ commentText, user:user._id });
+
+    // ✨ Create comment
+    const newComment = {
+      commentText,
+      user: user._id,
+    };
+
+    post.comments.push(newComment);
     await post.save();
-    res.status(200).json({ message: "Comment added successfully" });
+
+    // ✨ Get the new comment's ID (last pushed one)
+    const addedComment = post.comments[post.comments.length - 1];
+
+    res.status(200).json({ 
+      message: "Comment added successfully",
+      commentId: addedComment._id, // ✅ Return this
+    });
+
   } catch (error) {
     console.error("❌ Error while adding comment:", error);
     res.status(500).json({ message: error.message });
   }
 });
-
 
 app.get("/posts/comments", async (req, res) => {
   const { postId } = req.query;
@@ -1411,6 +1455,12 @@ app.get("/posts/comments", async (req, res) => {
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
+    post.comments = (post.comments || []).filter(comment => !comment.isDeleted);
+    post.comments = post.comments.map(comment => {
+      comment.replies = (comment.replies || []).filter(reply => !reply.isDeleted);
+      return comment;
+    });
+
     res.status(200).json(post.comments || []);
   } catch (error) {
     console.error("❌ Error while loading comments:", error);
@@ -1420,25 +1470,42 @@ app.get("/posts/comments", async (req, res) => {
 
 
 app.post("/posts/comments/replies", async (req, res) => {
-  const { postId , commentId, replyText ,username } = req.body;
+  const { postId, commentId, replyText, username } = req.body;
+
   if (!postId || !commentId || !replyText || !username) {
     return res.status(400).json({ message: "Missing required fields" });
   }
+
   try {
     const post = await Post.findById(postId);
     if (!post) return res.status(404).json({ message: "Post not found" });
-    const user =  await User.findOne({username});
+
+    const user = await User.findOne({ username });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
     const comment = post.comments.id(commentId);
     if (!comment) return res.status(404).json({ message: "Comment not found" });
 
-    comment.replies.push({replyText, user:user._id});
+    const newReply = {
+      replyText,
+      user: user._id,
+    };
+
+    comment.replies.push(newReply);
+
     await post.save();
-    res.status(200).json({ message: "reply added successfully" });
+
+    const addedReply = comment.replies[comment.replies.length - 1]; // ✅ Get the last pushed reply
+
+    res.status(200).json({
+      message: "Reply added successfully",
+      replyId: addedReply._id, // ✅ Send back the replyId
+    });
+
   } catch (error) {
-    console.error("❌ Error while adding comment:", error);
+    console.error("❌ Error while adding reply:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -1645,127 +1712,139 @@ app.get("/posts/topbid", verifyToken, async (req, res) => {
 });
 
 
-app.get("/user/posts",verifyToken, async (req, res) => {
-  const { userId } = req.query;
+const filterDeletedSubdocuments = (posts) => {
+  return posts.map(post => {
+    // Filter bids
+    post.bids = (post.bids || []).filter(bid => !bid.isDeleted);
+    
+    // Filter top-level comments
+    let comments = (post.comments || []).filter(comment => !comment.isDeleted);
+    
+    // For each remaining comment, filter its replies
+    comments = comments.map(comment => {
+      comment.replies = (comment.replies || []).filter(reply => !reply.isDeleted);
+      return comment;
+    });
 
-  if (!userId) {
-    return res.status(400).json({ message: "userId is missing" });
-  }
+    post.comments = comments;
+    return post;
+  });
+};
+
+
+app.get("/user/posts", verifyToken, async (req, res) => {
+  const { userId } = req.query;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 5;
+  const skip = (page - 1) * limit;
+
+  if (!userId) return res.status(400).json({ message: "userId is missing" });
 
   try {
     const user = await User.findById(userId);
-    const postIds = user?.postIds || [];
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    const posts = await Post.find({ _id: { $in: postIds } })
-      .sort({ createdAt: -1 })
+    const postIds = user.postIds || [];
+    const query = { _id: { $in: postIds }, isDeleted: false };
+    const totalPosts = await Post.countDocuments(query);
+
+    const posts = await Post.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit)
       .populate({
         path: 'user',
         select: 'username userImage verified blockedUsers _id ratings',
-        populate: {
-          path: 'ratings.from',
-          select: 'username userImage verified blockedUsers _id'
-        }
+        populate: { path: 'ratings.from', select: 'username userImage verified blockedUsers _id' }
       })
-      .populate({
-        path: 'bids.user',
-        select: 'username userImage verified _id averageRating totalRating'
-      })
-      .populate({
-        path: 'comments.user',
-        select: 'username userImage verified _id '
-      })
-      .populate({
-        path: 'comments.replies.user',
-        select: 'username userImage verified _id '
-      });
-    const modifiedPosts = anonymizeBidders(posts, req.user.id);
-    res.status(200).json(modifiedPosts);
+      .populate({ path: 'bids.user', select: 'username userImage verified _id averageRating totalRating' })
+      .populate({ path: 'comments.user', select: 'username userImage verified _id' })
+      .populate({ path: 'comments.replies.user', select: 'username userImage verified _id' });
+    
+    // **CORRECTION:** Apply filtering before anonymizing and sending
+    const filteredPosts = filterDeletedSubdocuments(posts);
+    const modifiedPosts = anonymizeBidders(filteredPosts, req.user.id);
+
+    res.status(200).json({
+      posts: modifiedPosts,
+      pagination: { currentPage: page, limit, totalPosts, totalPages: Math.ceil(totalPosts / limit), hasMore: (page * limit) < totalPosts }
+    });
   } catch (error) {
     console.error("❌ Error while loading user posts:", error);
     res.status(500).json({ message: error.message });
   }
 });
 
-app.get("/user/bids",verifyToken, async (req, res) => {
+app.get("/user/bids", verifyToken, async (req, res) => {
   const { userId } = req.query;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 5;
+  const skip = (page - 1) * limit;
 
-  if (!userId) {
-    return res.status(400).json({ message: "userId is missing" });
-  }
+  if (!userId) return res.status(400).json({ message: "userId is missing" });
 
   try {
     const user = await User.findById(userId);
-    const bidIds = user?.bidIds || [];
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    const posts = await Post.find({ _id: { $in: bidIds } })
-      .sort({ createdAt: -1 })
+    const bidIds = user.bidIds || [];
+    const query = { _id: { $in: bidIds }, isDeleted: false };
+    const totalPosts = await Post.countDocuments(query);
+
+    const posts = await Post.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit)
       .populate({
         path: 'user',
         select: 'username userImage verified blockedUsers _id ratings',
-        populate: {
-          path: 'ratings.from',
-          select: 'username userImage verified blockedUsers _id'
-        }
+        populate: { path: 'ratings.from', select: 'username userImage verified blockedUsers _id' }
       })
-      .populate({
-        path: 'bids.user',
-        select: 'username userImage verified _id averageRating totalRating'
-      })
-      .populate({
-        path: 'comments.user',
-        select: 'username userImage verified _id'
-      })
-      .populate({
-        path: 'comments.replies.user',
-        select: 'username userImage verified _id'
-      });
-    const modifiedPosts = anonymizeBidders(posts, req.user.id);
-    res.status(200).json(modifiedPosts);
+      .populate({ path: 'bids.user', select: 'username userImage verified _id averageRating totalRating' })
+      .populate({ path: 'comments.user', select: 'username userImage verified _id' })
+      .populate({ path: 'comments.replies.user', select: 'username userImage verified _id' });
+
+    // **CORRECTION:** Apply filtering before anonymizing and sending
+    const filteredPosts = filterDeletedSubdocuments(posts);
+    const modifiedPosts = anonymizeBidders(filteredPosts, req.user.id);
+
+    res.status(200).json({
+      posts: modifiedPosts,
+      pagination: { currentPage: page, limit, totalPosts, totalPages: Math.ceil(totalPosts / limit), hasMore: (page * limit) < totalPosts }
+    });
   } catch (error) {
     console.error("❌ Error while loading posts user has bid on:", error);
     res.status(500).json({ message: error.message });
   }
 });
-
-app.get("/user/reviews",verifyToken, async (req, res) => {
+app.get("/user/reviews", verifyToken, async (req, res) => {
   const { userId } = req.query;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 5;
+  const skip = (page - 1) * limit;
 
-  if (!userId) {
-    return res.status(400).json({ message: "userId is missing" });
-  }
+  if (!userId) return res.status(400).json({ message: "userId is missing" });
 
   try {
     const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     const reviewIds = user.ratings.map(r => r.post);
+    const query = { _id: { $in: reviewIds }, isDeleted: false };
+    const totalPosts = await Post.countDocuments(query);
 
-    const posts = await Post.find({ _id: { $in: reviewIds } })
-      .sort({ createdAt: -1 })
+    const posts = await Post.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit)
       .populate({
         path: 'user',
         select: 'username userImage verified blockedUsers _id ratings',
-        populate: {
-          path: 'ratings.from',
-          select: 'username userImage verified blockedUsers _id'
-        }
+        populate: { path: 'ratings.from', select: 'username userImage verified blockedUsers _id' }
       })
-      .populate({
-        path: 'bids.user',
-        select: 'username userImage verified _id averageRating totalRating'
-      })
-      .populate({
-        path: 'comments.user',
-        select: 'username userImage verified _id'
-      })
-      .populate({
-        path: 'comments.replies.user',
-        select: 'username userImage verified _id'
-      });
-    const modifiedPosts = anonymizeBidders(posts, req.user.id);
-    res.status(200).json(modifiedPosts);
+      .populate({ path: 'bids.user', select: 'username userImage verified _id averageRating totalRating' })
+      .populate({ path: 'comments.user', select: 'username userImage verified _id' })
+      .populate({ path: 'comments.replies.user', select: 'username userImage verified _id' });
+
+    // **CORRECTION:** Apply filtering before anonymizing and sending
+    const filteredPosts = filterDeletedSubdocuments(posts);
+    const modifiedPosts = anonymizeBidders(filteredPosts, req.user.id);
+
+    res.status(200).json({
+      posts: modifiedPosts,
+      pagination: { currentPage: page, limit, totalPosts, totalPages: Math.ceil(totalPosts / limit), hasMore: (page * limit) < totalPosts }
+    });
   } catch (error) {
     console.error("❌ Error while loading reviewed posts:", error);
     res.status(500).json({ message: error.message });
@@ -2786,56 +2865,43 @@ app.get('/api/user/connections', verifyToken, async (req, res) => {
   }
 });
 
-app.get("/users/saved",verifyToken , async (req, res) => {
+app.get("/users/saved", verifyToken, async (req, res) => {
   const { userId } = req.query;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 5;
+  const skip = (page - 1) * limit;
 
-  if (!userId) {
-    return res.status(400).json({ message: "userId is missing" });
-  }
+  if (!userId) return res.status(400).json({ message: "userId is missing" });
 
   try {
     const user = await User.findById(userId);
-    const savedIds = user?.savedPosts || [];
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    const posts = await Post.find({ _id: { $in: savedIds } })
-      .sort({ createdAt: -1 })
+    const savedIds = user.savedPosts || [];
+    const query = { _id: { $in: savedIds } , isDeleted: false  };
+    const totalPosts = await Post.countDocuments(query);
+
+    const posts = await Post.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit)
       .populate({
         path: 'user',
         select: 'username userImage verified blockedUsers _id ratings',
-        populate: {
-          path: 'ratings.from',
-          select: 'username userImage verified blockedUsers _id'
-        }
+        populate: { path: 'ratings.from', select: 'username userImage verified blockedUsers _id' }
       })
-      .populate({
-        path: 'bids.user',
-        select: 'username userImage verified _id averageRating totalRating'
-      })
-      .populate({
-        path: 'comments.user',
-        select: 'username userImage verified _id '
-      })
-      .populate({
-        path: 'comments.replies.user',
-        select: 'username userImage verified _id '
-      });
-    const modifiedPosts = anonymizeBidders(posts, req.user.id);
-    res.status(200).json(modifiedPosts);
+      .populate({ path: 'bids.user', select: 'username userImage verified _id averageRating totalRating' })
+      .populate({ path: 'comments.user', select: 'username userImage verified _id' })
+      .populate({ path: 'comments.replies.user', select: 'username userImage verified _id' });
+
+    // **CORRECTION:** Apply filtering before anonymizing and sending
+    const filteredPosts = filterDeletedSubdocuments(posts);
+    const modifiedPosts = anonymizeBidders(filteredPosts, req.user.id);
+
+    res.status(200).json({
+      posts: modifiedPosts,
+      pagination: { currentPage: page, limit, totalPosts, totalPages: Math.ceil(totalPosts / limit), hasMore: (page * limit) < totalPosts }
+    });
   } catch (error) {
     console.error("❌ Error while loading posts user has saved:", error);
     res.status(500).json({ message: error.message });
-  }
-});
-
-app.get('/users/savedPosts/:userId', async (req, res) => {
-  const { userId } = req.params;
-  try {
-    const user = await User.findById(userId).populate('savedPosts');
-    const savedPostIds = user.savedPosts.map(post => post._id.toString());
-    res.json(savedPostIds);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Server error');
   }
 });
 
@@ -3001,7 +3067,7 @@ app.post('/api/report/:userId', verifyToken, async (req, res) => {
 
 
 app.post('/api/notify', verifyToken, async (req, res) => {
-  const { type, postId, senderId, message, userId, postDescription, bidId } = req.body;
+  const { type, postId, senderId, userId, postDescription, bidId , commentId , replyId } = req.body;
 
   if (!type || !senderId) {
     return res.status(400).json({ message: 'Missing required fields: type and sender.' });
@@ -3012,11 +3078,13 @@ app.post('/api/notify', verifyToken, async (req, res) => {
       type,
       postId,
       sender: senderId,
-      message,
       createdAt: new Date(),
       postDescription,
       seen: false,
       ...(type === 'bid' && bidId ? { bidId } : {}),
+      ...(type === 'comment' && commentId ? { commentId } : {}),
+      ...(type === 'Reply' && replyId ? { replyId } : {}),
+      ...(type === 'Hired' && bidId ? { bidId } : {})
     };
 
     await User.findByIdAndUpdate(userId, {
@@ -3024,11 +3092,11 @@ app.post('/api/notify', verifyToken, async (req, res) => {
     });
 
     const user = await User.findById(userId);
+    
+    const condition1 = user?.allowNotifications?.bids && ['bid', 'Hired'].includes(type);
+    const condition2 = user?.allowNotifications?.comments && ['comment', 'Reply'].includes(type);
 
-    const shouldNotify = (
-      (user?.allowNotifications?.bids && ['bid', 'Hired'].includes(type)) ||
-      (user?.allowNotifications?.comments && ['comment', 'Reply'].includes(type))
-    );
+    const shouldNotify = condition1 || condition2;
 
     if (shouldNotify) {
       io.to(userId).emit('receiveNotification', notification);
@@ -3038,6 +3106,82 @@ app.post('/api/notify', verifyToken, async (req, res) => {
   } catch (err) {
     console.error('Notification error:', err);
     res.status(500).json({ message: 'Failed to send notification.' });
+  }
+});
+
+app.get('/api/notifications', verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .populate({
+        path: 'notifications.sender',
+        select: 'username userImage',
+      })
+      .lean();
+
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    const notifications = user.notifications;
+
+    // 🔹 Gather unique postIds we need to fetch
+    const postIdsSet = new Set();
+    for (const notif of notifications) {
+      if (notif.postId) postIdsSet.add(notif.postId.toString());
+    }
+
+    const postIds = [...postIdsSet];
+    const posts = await Post.find({ _id: { $in: postIds } }).lean();
+
+    // 🔹 Map for quick access
+    const postMap = {};
+    posts.forEach((p) => (postMap[p._id.toString()] = p));
+
+    // 🔹 Build enriched notifications
+    const enriched = notifications.map((notif) => {
+      const base = {
+        ...notif,
+        sender: notif.sender,
+      };
+
+      const post = postMap[notif.postId?.toString()];
+      if (!post) return base;
+
+      // 🔸 BID
+      if (notif.type === 'bid' && notif.bidId) {
+        const bid = post.bids?.find((b) => b._id.toString() === notif.bidId.toString());
+        if (bid) {
+          base.bidText = bid.BidText || '';
+          base.bidAmount = bid.BidAmount || 0;
+        }
+      }
+
+      // 🔸 COMMENT
+      if (notif.type === 'comment' && notif.commentId) {
+        const comment = post.comments?.find((c) => c._id.toString() === notif.commentId.toString());
+        if (comment) {
+          base.commentText = comment.commentText;
+        }
+      }
+
+      // 🔸 REPLY
+      if (notif.type === 'Reply' && notif.replyId) {
+        for (const comment of post.comments || []) {
+          const reply = comment.replies?.find(
+            (r) => r._id.toString() === notif.replyId.toString()
+          );
+          if (reply) {
+            base.commentText = reply.replyText;
+            break;
+          }
+        }
+      }
+
+      return base;
+    });
+
+    res.json({ notifications: enriched });
+  } catch (err) {
+    console.error('Error fetching notifications:', err);
+    res.status(500).json({ message: 'Failed to fetch notifications.' });
   }
 });
 
@@ -3084,7 +3228,7 @@ app.get('/api/notifications/unseen-count', verifyToken, async (req, res) => {
 
       return true;
     }).length;
-
+    console.log("Unseen notifications count:", unseenCount);
     res.json({ unseenCount });
 
   } catch (err) {
@@ -3196,7 +3340,7 @@ mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log("Connection established");
     
-    server.listen(PORT, () => {
+    server.listen(PORT , () => {
       console.log(`Server running on port ${PORT}`);
     });
   })

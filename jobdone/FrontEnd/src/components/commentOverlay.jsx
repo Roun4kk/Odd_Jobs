@@ -10,6 +10,7 @@ import useIsMobile from "../hooks/useIsMobile.js";
 import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
 import socket from "../socket.js";
 import toast from "react-hot-toast";
+import BottomNavbar from "../bottomNavBar.jsx";
 
 function CommentOverlay({ post, onClose }) {
   const [refresh, setRefresh] = useState(false);
@@ -23,22 +24,24 @@ function CommentOverlay({ post, onClose }) {
   const [socketError, setSocketError] = useState(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [isTruncated, setIsTruncated] = useState(false);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false); // Add keyboard state
   const descriptionRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const inputContainerRef = useRef(null);
   const activeElementRef = useRef(null);
   const savedScrollPosition = useRef(0);
   const lastViewportHeight = useRef(0);
-  useSocketRoomJoin(user?._id, setSocketError);
-  useEffect(() => {
-    // When the overlay mounts, disable scrolling on the body.
-    document.body.style.overflow = "hidden";
+  const initialViewportHeight = useRef(0); // Store initial height
 
-    // When the component unmounts, re-enable scrolling.
+  useSocketRoomJoin(user?._id, setSocketError);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "auto";
     };
   }, []);
+
   useEffect(() => {
     const el = descriptionRef.current;
     if (el && el.scrollHeight > el.clientHeight) {
@@ -46,19 +49,19 @@ function CommentOverlay({ post, onClose }) {
     }
   }, [post.postDescription, showFullDescription]);
 
-  // ✅✅✅ FIXED: More robust mobile input handling that tracks resize direction.
+  // Enhanced keyboard handling logic
   useEffect(() => {
     const visualViewport = window.visualViewport;
     if (!isMobile || !visualViewport) return;
 
-    // Initialize the last known height when the component mounts.
+    // Store initial viewport height
+    initialViewportHeight.current = visualViewport.height;
     lastViewportHeight.current = visualViewport.height;
 
     const handleFocusIn = (e) => {
       const target = e.target;
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
         activeElementRef.current = target;
-        // Save the current scroll position right when an input is focused.
         if (scrollContainerRef.current) {
           savedScrollPosition.current = scrollContainerRef.current.scrollTop;
         }
@@ -66,21 +69,30 @@ function CommentOverlay({ post, onClose }) {
     };
 
     const handleFocusOut = () => {
-      // Clear the active element reference when it's blurred for any reason.
       activeElementRef.current = null;
+      // Reset keyboard state when focus is lost
+      setTimeout(() => {
+        if (!activeElementRef.current) {
+          setIsKeyboardOpen(false);
+        }
+      }, 100);
     };
 
     const handleViewportResize = () => {
+      const currentHeight = visualViewport.height;
+      const heightDifference = initialViewportHeight.current - currentHeight;
+      
+      // More sensitive keyboard detection - consider keyboard open if height reduced by more than 50px
+      const keyboardThreshold = 50;
+      const isKeyboardCurrentlyOpen = heightDifference > keyboardThreshold;
+      
+      setIsKeyboardOpen(isKeyboardCurrentlyOpen);
+
       if (!activeElementRef.current) return;
       
-      const currentHeight = visualViewport.height;
-      const heightDifference = currentHeight - lastViewportHeight.current;
-      // Use a threshold to avoid reacting to minor, non-keyboard resizes.
-      const keyboardThreshold = 100;
+      const heightChange = currentHeight - lastViewportHeight.current;
 
-      if (heightDifference < -keyboardThreshold) {
-        // Viewport SHRANK significantly: Keyboard is APPEARING.
-        // Run the logic to ensure the input is visible.
+      if (heightChange < -keyboardThreshold) {
         setTimeout(() => {
           if (activeElementRef.current && inputContainerRef.current) {
             inputContainerRef.current.scrollIntoView({
@@ -88,7 +100,6 @@ function CommentOverlay({ post, onClose }) {
               block: "end",
               inline: "nearest",
             });
-            // Restore the main content's scroll position.
             setTimeout(() => {
               if (scrollContainerRef.current) {
                 scrollContainerRef.current.scrollTop = savedScrollPosition.current;
@@ -97,15 +108,12 @@ function CommentOverlay({ post, onClose }) {
           }
         }, 100);
 
-      } else if (heightDifference > keyboardThreshold) {
-        // Viewport GREW significantly: Keyboard is HIDING.
-        // Deselect (blur) the input. This is the fix.
+      } else if (heightChange > keyboardThreshold) {
         if (activeElementRef.current) {
           activeElementRef.current.blur();
         }
       }
 
-      // ALWAYS update the last known height for the next resize event.
       lastViewportHeight.current = currentHeight;
     };
 
@@ -131,9 +139,8 @@ function CommentOverlay({ post, onClose }) {
   };
 
   const handlePostSubmit = async () => {
-    // Blur active input to hide keyboard on submission
     if (document.activeElement) document.activeElement.blur();
-    
+
     if (!commentText.trim()) return;
 
     const originalCommentText = commentText;
@@ -144,24 +151,25 @@ function CommentOverlay({ post, onClose }) {
 
     try {
       if (replyTo) {
-        if (user._id !== post.user._id) {
-          const message = `${username} replied: "${originalCommentText}" to you on job post:`;
-          await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/notify`, {
-            userId: replyUserId,
-            message,
-            senderId: user._id,
-            postId: post._id,
-            type: "Reply",
-            postDescription: post.postDescription,
-          }, { withCredentials: true });
-        }
-
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/comments/replies`, {
+        const replyResponse = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/comments/replies`, {
           postId: post._id,
           commentId: replyTo,
           replyText: originalCommentText,
           username,
         });
+
+        const replyId = replyResponse.data.replyId;
+
+        if (user._id !== post.user._id) {
+          await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/notify`, {
+            userId: replyUserId,
+            senderId: user._id,
+            postId: post._id,
+            type: "Reply",
+            replyId: replyId,
+            postDescription: post.postDescription,
+          }, { withCredentials: true });
+        }
 
         socket.emit("newReply", {
           postId: post._id,
@@ -173,24 +181,24 @@ function CommentOverlay({ post, onClose }) {
             verified: user.verified || {},
           },
         });
+
       } else {
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/comments`, {
+        const commentRes = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/posts/comments`, {
           postId: post._id,
           commentText: originalCommentText,
           username,
         });
 
-        if (user._id !== post.user._id) {
-          const message = `${username} commented: "${originalCommentText}" on your job post:`;
-          await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/notify`, {
-            userId: post.user._id,
-            message,
-            senderId: user._id,
-            postId: post._id,
-            type: "comment",
-            postDescription: post.postDescription,
-          }, { withCredentials: true });
-        }
+        const commentId = commentRes.data.commentId;
+
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/notify`, {
+          userId: post.user._id,
+          senderId: user._id,
+          postId: post._id,
+          type: "comment",
+          commentId,
+          postDescription: post.postDescription,
+        }, { withCredentials: true });
 
         socket.emit("newComment", {
           postId: post._id,
@@ -211,46 +219,49 @@ function CommentOverlay({ post, onClose }) {
     }
   };
 
-  // ✅✅✅ ROBUST MOBILE LAYOUT FIX ✅✅✅
+  const handleProfileNavigation = (userId) => {
+    if (user._id === userId) {
+      navigate(`/profile`);
+    } else {
+      navigate(`/profile/${userId}`);
+    }
+  };
+
+  const handleClose = () => {
+    onClose();
+  };
+
   const overlayContent = isMobile ? (
-    // This is the main frame. `h-dvh` makes it shrink when the keyboard appears.
-    // `flex-col` arranges its children (header, content, footer) vertically.
-    <div className="fixed inset-0 z-50 bg-white flex flex-col h-dvh">
-      {/* Header: This part does not grow or shrink. */}
-      <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white flex-shrink-0">
+    <div className="fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col h-dvh">
+      {/* Header */}
+      <div className="flex items-center gap-3 p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex-shrink-0">
         <img
           src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
           alt="User"
-          className="w-10 h-10 rounded-full object-cover border"
+          className="w-10 h-10 rounded-full object-cover border dark:border-gray-600"
         />
         <button
-          onClick={() =>
-            navigate(user._id === post.user._id ? `/profile` : `/profile/${post.user._id}`)
-          }
-          className="text-base font-semibold max-w-[190px] truncate"
+          onClick={() => handleProfileNavigation(post.user._id)}
+          className="text-base font-semibold max-w-[190px] truncate dark:text-white"
         >
           {post.user.username}
         </button>
         {post.user.verified.email && post.user.verified.phoneNumber && (
           <BadgeCheck className="h-5 w-5 text-teal-400" />
         )}
-        <button onClick={onClose} className="ml-auto">
-          <X className="h-6 w-6 text-gray-600" />
+        <button onClick={handleClose} className="ml-auto">
+          <X className="h-6 w-6 text-gray-600 dark:text-gray-300" />
         </button>
       </div>
 
-      {/* Main Content Area: This is the ONLY scrollable part.
-          - `flex-1`: Takes up all available vertical space.
-          - `overflow-y-auto`: Makes ONLY this div scrollable.
-          - `min-h-0`: Crucial fix. Allows the flex item to shrink below its content size, preventing layout overflow.
-      */}
+      {/* Main Content Area */}
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0">
         {/* Post Description */}
-        <div className="p-4 border-b border-gray-100">
+        <div className="p-4 border-b border-gray-100 dark:border-gray-800">
           <div className="relative">
             <p
               ref={descriptionRef}
-              className={`text-gray-800 leading-relaxed whitespace-pre-wrap ${
+              className={`text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap ${
                 showFullDescription ? "" : "line-clamp-4"
               }`}
             >
@@ -259,7 +270,7 @@ function CommentOverlay({ post, onClose }) {
             {isTruncated && (
               <button
                 onClick={() => setShowFullDescription(prev => !prev)}
-                className="text-sm mt-1 text-teal-600 hover:underline cursor-pointer"
+                className="text-sm mt-1 text-teal-600 dark:text-teal-400 hover:underline cursor-pointer"
               >
                 {showFullDescription ? "Show less" : "Read more"}
               </button>
@@ -280,17 +291,17 @@ function CommentOverlay({ post, onClose }) {
         </div>
       </div>
       
-      {/* Input Bar (Footer): This part does not grow or shrink. */}
+      {/* Input Bar */}
       {post?.status === "open" && (
         <div
           ref={inputContainerRef}
-          className="bg-white border-t border-gray-200 p-4 flex-shrink-0"
+          className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4 flex-shrink-0"
         >
           <div className="flex gap-3">
             <input
               type="text"
               placeholder="Add comment..."
-              className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400"
               onChange={handleChange}
               value={commentText}
             />
@@ -304,32 +315,28 @@ function CommentOverlay({ post, onClose }) {
           </div>
         </div>
       )}
+      {/* Conditionally render BottomNavbar - hide when keyboard is open */}
+      {!isKeyboardOpen && <BottomNavbar isEmbedded />}
     </div>
   ) : (
-    // Desktop layout (unchanged)
+    // Desktop layout remains unchanged
     <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center">
       {post.mediaUrls && post.mediaUrls.length > 0 && (
-        <div className="bg-white w-full max-w-md h-full md:h-5/6 p-4 flex items-center shadow-lg overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 w-full max-w-md h-full md:h-5/6 p-4 flex items-center shadow-lg overflow-hidden">
           <ImageSlider mediaUrls={post.mediaUrls} />
         </div>
       )}
-      <div className="bg-white w-full max-w-md h-full md:h-5/6 p-4 flex flex-col shadow-lg overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 w-full max-w-md h-full md:h-5/6 p-4 flex flex-col shadow-lg overflow-hidden">
         <div className="gap-2 mb-2 flex items-center">
           <img
             src={post.user.userImage || "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg"}
             alt="User"
-            className="w-12 h-12 rounded-full border-2 border-white object-cover"
+            className="w-12 h-12 rounded-full border-2 border-white dark:border-gray-600 object-cover"
           />
           <button>
             <h2
-              onClick={() => {
-                if (user._id === post.user._id) {
-                  navigate(`/profile`);
-                } else {
-                  navigate(`/profile/${post.user._id}`);
-                }
-              }}
-              className="text-lg font-semibold cursor-pointer max-w-[250px] truncate"
+              onClick={() => handleProfileNavigation(post.user._id)}
+              className="text-lg font-semibold cursor-pointer max-w-[250px] truncate dark:text-white"
             >
               {post.user.username}
             </h2>
@@ -338,7 +345,7 @@ function CommentOverlay({ post, onClose }) {
             <BadgeCheck className="h-6 w-6 text-teal-400" />
           )}
           <button onClick={onClose} className="ml-auto">
-            <X className="text-gray-600 hover:text-black cursor-pointer" />
+            <X className="text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white cursor-pointer" />
           </button>
         </div>
 
@@ -347,7 +354,7 @@ function CommentOverlay({ post, onClose }) {
             <div className="relative transform-gpu">
               <p
                 ref={descriptionRef}
-                className={`text-gray-800 leading-relaxed whitespace-pre-wrap transition-all duration-300 ${
+                className={`text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap transition-all duration-300 ${
                   showFullDescription ? "" : "line-clamp-4"
                 }`}
               >
@@ -357,12 +364,12 @@ function CommentOverlay({ post, onClose }) {
               {isTruncated && (
                 <button
                   onClick={() => setShowFullDescription(prev => !prev)}
-                  className="text-sm mt-1 text-teal-600 hover:underline cursor-pointer"
+                  className="text-sm mt-1 text-teal-600 dark:text-teal-400 hover:underline cursor-pointer"
                 >
                   {showFullDescription ? "Show less" : "Read more"}
                 </button>
-              )}
-            </div>
+                )}
+              </div>
             <div className="pt-2">
               <CommentSection
                 postId={post._id}
@@ -375,12 +382,12 @@ function CommentOverlay({ post, onClose }) {
             </div>
           </div>
           {post?.status === "open" && (
-            <div className="border-t border-gray-200 bg-white p-4 flex-shrink-0">
+            <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 flex-shrink-0">
               <div className="flex gap-2">
                 <input
                   type="text"
                   placeholder="Add a comment..."
-                  className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400"
                   onChange={handleChange}
                   value={commentText}
                 />

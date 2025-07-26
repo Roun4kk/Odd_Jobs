@@ -47,12 +47,14 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
 
   useEffect(() => {
     const handleNewComment = (commentData) => {
+    console.log("newcomment added");
       if (commentData.postId === postId) {
         setComments((prev) => [...prev, commentData]);
       }
     };
 
     const handleNewReply = (replyData) => {
+    console.log("newreply added");
       if (replyData.postId === postId) {
         setComments((prev) =>
           prev.map((comment) =>
@@ -63,7 +65,6 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
         );
       }
     };
-
     socket.on("receiveNewComment", handleNewComment);
     socket.on("receiveNewReply", handleNewReply);
 
@@ -73,35 +74,33 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
     };
   }, [postId]);
 
-  // ✅ CORRECTED Loading State: Removed layout-breaking classes.
   if (loading) {
     return (
         <div className="p-4 space-y-3 flex-1 overflow-y-auto animate-pulse">
            {[...Array(3)].map((_, i) => (
-             <div key={i} className="p-3 rounded-xl bg-gray-100 space-y-2">
+             <div key={i} className="p-3 rounded-xl bg-gray-100 dark:bg-gray-700/50 space-y-2">
                <div className="flex items-center gap-2">
-                 <div className="w-4/6 h-4 bg-gray-300 rounded" />
-                 <div className="w-10 h-4 bg-gray-300 rounded ml-auto" />
+                 <div className="w-4/6 h-4 bg-gray-300 dark:bg-gray-600 rounded" />
+                 <div className="w-10 h-4 bg-gray-300 dark:bg-gray-600 rounded ml-auto" />
                </div>
-               <div className="h-3 bg-gray-300 rounded w-5/6" />
+               <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-5/6" />
              </div>
            ))}
          </div>
     );
   }
 
-  // ✅ CORRECTED Main Return: Removed flex-1 and overflow-y-auto. This is now a simple container.
   return (
     <div className="w-full" style={{ scrollBehavior: 'auto' }}>
       {/* Comments List */}
       <div className="space-y-2">
         {comments.length === 0 ? (
-          <div className="text-center py-4 text-gray-500">
+          <div className="text-center py-4 text-gray-500 dark:text-gray-400">
             No comments yet. Be the first to comment!
           </div>
         ) : (
           comments.map((comment, index) => (
-            <div key={index} className="bg-gray-100 p-3 rounded-xl shadow-sm transform-gpu">
+            <div key={index} className="bg-gray-100 dark:bg-gray-800 p-3 rounded-xl shadow-sm transform-gpu">
               <div className="flex gap-2 mb-2 items-center">
                 <button
                   onClick={() => {
@@ -111,7 +110,7 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
                       navigate(`/profile/${comment.user._id}`);
                     }
                   }}
-                  className="font-semibold text-black cursor-pointer max-w-[200px] md:max-w-[250px] truncate"
+                  className="font-semibold text-black dark:text-white cursor-pointer max-w-[200px] md:max-w-[250px] truncate"
                 >
                   {comment.user.username}
                 </button>
@@ -119,10 +118,10 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
                   <BadgeCheck className="h-5 w-5 text-teal-400" />
                 )}
               </div>
-              <p className="text-gray-800 mb-2">{comment.commentText}</p>
+              <p className="text-gray-800 dark:text-gray-200 mb-2">{comment.commentText}</p>
 
               <button
-                className="text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition-colors duration-200"
+                className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer transition-colors duration-200"
                 onClick={() => {
                   setReplyTo(comment._id);
                   setReplyingTo(comment.user.username);
@@ -136,7 +135,7 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
               {comment.replies?.length > 0 && (
                 <div className="mt-2">
                   <button
-                    className="text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition-colors duration-200"
+                    className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer transition-colors duration-200"
                     onClick={() =>
                       setShowRepliesFor((prev) => ({
                         ...prev,
@@ -152,7 +151,7 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
                   {showRepliesFor[comment._id] && (
                     <div className="ml-4 mt-2 space-y-2">
                       {comment.replies.map((reply, idx) => (
-                        <div key={idx} className="bg-white p-3 rounded-lg shadow-sm">
+                        <div key={idx} className="bg-white dark:bg-gray-700/60 p-3 rounded-lg shadow-sm">
                           <div className="flex gap-2 mb-2 items-center">
                             <button
                               onClick={() => {
@@ -162,22 +161,22 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
                                   navigate(`/profile/${reply.user._id}`);
                                 }
                               }}
-                              className="font-semibold text-black cursor-pointer max-w-[180px] md:max-w-[250px] truncate"
+                              className="font-semibold text-black dark:text-white cursor-pointer max-w-[180px] md:max-w-[250px] truncate"
                             >
                               {reply.user.username}
                             </button>
                             {reply?.user?.verified?.email && reply?.user?.verified?.phoneNumber && (
-                              <BadgeCheck className="h-5 w-5 text-black" />
+                              <BadgeCheck className="h-5 w-5 text-teal-400" />
                             )}
                           </div>
-                          <p className="text-gray-800 mb-2">
+                          <p className="text-gray-800 dark:text-gray-200 mb-2">
                             {reply.replyText.split(" ").map((word, i) => {
                               if (word.startsWith("@")) {
                                 return (
                                   <button
                                     key={i}
                                     onClick={eventHandler(word)}
-                                    className="font-semibold text-black cursor-pointer"
+                                    className="font-semibold text-teal-500 dark:text-teal-400 cursor-pointer"
                                   >
                                     {word}
                                   </button>
@@ -188,7 +187,7 @@ function CommentSection({ postId, refresh, setCommentText, setReplyTo, setReplyi
                             })}
                           </p>
                           <button
-                            className="text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition-colors duration-200"
+                            className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer transition-colors duration-200"
                             onClick={() => {
                               setReplyTo(comment._id);
                               setReplyingTo(reply.user.username);

@@ -51,7 +51,7 @@ function OtherProfile() {
 
   if (!profile) {
     return (
-      <div className="flex items-center justify-center h-screen bg-white">
+      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
         <img src={logo} alt="Loading..." className="w-40 h-40 animate-pulse" />
       </div>
     );
@@ -60,12 +60,11 @@ function OtherProfile() {
   if (error) {
     return (
       <div className={`${isMobile ? 'min-h-screen flex flex-col' : 'flex h-screen'}`}>
-        {/* Mobile Header */}
         {isMobile && (
-          <div className="flex items-center justify-center p-4 border-b border-gray-200 bg-teal-50 flex-shrink-0">
+          <div className="flex items-center justify-center p-4 border-b border-gray-200 dark:border-gray-700 bg-teal-50 dark:bg-gray-800 flex-shrink-0">
             {hasToken ? (
               <>
-                <h1 className="text-2xl font-semibold text-teal-800">Profile</h1>
+                <h1 className="text-2xl font-semibold text-teal-800 dark:text-white">Profile</h1>
               </>
             ) : (
               <>
@@ -97,22 +96,20 @@ function OtherProfile() {
           </div>
         )}
         
-        {/* Desktop Sidebar */}
         {!isMobile && user && <Sidebar user={user} />}
         
         <div className={`${
           isMobile 
-            ? "flex-1 flex justify-center items-center bg-white px-4" 
-            : hasToken ? "w-[70%] fixed right-0 bg-white h-full overflow-y-scroll" : "w-full flex justify-center bg-white h-full overflow-y-scroll"
+            ? "flex-1 flex justify-center items-center bg-white dark:bg-gray-900 px-4" 
+            : hasToken ? "w-[70%] fixed right-0 bg-white dark:bg-gray-900 h-full overflow-y-scroll" : "w-full flex justify-center bg-white dark:bg-gray-900 h-full overflow-y-scroll"
         }`}>
           <div className="flex justify-center items-center h-full text-red-500 text-center">
             {error}
           </div>
         </div>
         
-        {/* Mobile Bottom Navbar */}
         {isMobile && hasToken && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
             <BottomNavbar />
           </div>
         )}
@@ -122,12 +119,11 @@ function OtherProfile() {
 
   if (isMobile) {
     return (
-      <div className="min-h-screen flex flex-col">
-        {/* Mobile Header */}
-        <div className="flex items-center justify-center border-b z-10 shadow-sm h-16 w-full border-gray-200 bg-teal-50 flex-shrink-0">
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+        <div className="flex items-center justify-center border-b z-10 shadow-sm h-16 w-full border-gray-200 dark:border-gray-700 bg-teal-50 dark:bg-gray-800 flex-shrink-0">
           {hasToken ? (
             <>
-              <h1 className="text-2xl font-semibold text-teal-800">Profile</h1>
+              <h1 className="text-2xl font-semibold text-teal-800 dark:text-white">Profile</h1>
             </>
           ) : (
             <div className="flex items-center justify-between h-12 px-4 w-full">
@@ -158,18 +154,15 @@ function OtherProfile() {
           )}
         </div>
 
-        {/* Mobile Profile Content - Constrained container */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {profile.blockedUsers?.includes(user?._id) ? (
-            <div className="flex items-center justify-center h-full text-gray-500 font-semibold">
+            <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400 font-semibold">
               User not available.
             </div>
           ) : (
             <>
-              {/* Profile Info Section */}
               <div className="p-4 flex-shrink-0">
                 <div className="flex items-start gap-4">
-                  {/* User Image */}
                   <button disabled={!hasToken} className="w-20 h-20 cursor-pointer flex-shrink-0">
                     <img
                       src={
@@ -180,14 +173,11 @@ function OtherProfile() {
                       className="w-full h-full rounded-full border-2 border-teal-400 object-cover"
                     />
                   </button>
-
-                  {/* Right Side: Username, Buttons, Bio, Skills */}
                   <div className="flex-1 flex flex-col">
-                    {/* Username and Buttons Row */}
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1">
                         <h2
-                          className="text-lg font-bold text-gray-800 truncate max-w-[120px]"
+                          className="text-lg font-bold text-gray-800 dark:text-white truncate max-w-[120px]"
                           title={profile?.username}
                         >
                           {profile?.username || "User not found"}
@@ -212,11 +202,9 @@ function OtherProfile() {
                       )}
                     </div>
 
-                    {/* Bio */}
-                    <p className="text-gray-600 text-sm">{profile?.email || "User not found"}</p>
-                    <p className="text-gray-600 text-sm mt-2">{profile?.userBio || ""}</p>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">{profile?.email || "User not found"}</p>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">{profile?.userBio || ""}</p>
 
-                    {/* Skills */}
                     <div className="flex flex-wrap gap-2 mt-2">
                       {profile?.userSkills?.map((skill, index) => (
                         <span
@@ -230,7 +218,6 @@ function OtherProfile() {
                   </div>
                 </div>
 
-                {/* Email and Reviews (Centered) */}
                 <div className="mt-4 text-center">
                   {typeof profile?.totalRating === 'number' && profile.totalRating > 0 && (
                     <div className="mt-2 flex items-center justify-center gap-1">
@@ -240,15 +227,15 @@ function OtherProfile() {
                           className={`w-4 h-4 ${
                             i < Math.round(profile.averageRating || 0)
                               ? "text-yellow-400"
-                              : "text-gray-300"
+                              : "text-gray-300 dark:text-gray-600"
                           }`}
                           fill={i < Math.round(profile.averageRating || 0) ? "#facc15" : "none"}
                         />
                       ))}
-                      <span className="text-xs text-gray-600 ml-1">
+                      <span className="text-xs text-gray-600 dark:text-gray-400 ml-1">
                         {profile.averageRating?.toFixed(1) || "0.0"}
                       </span>
-                      <span className="text-xs text-gray-600">
+                      <span className="text-xs text-gray-600 dark:text-gray-400">
                         ({profile.totalRating} {profile.totalRating === 1 ? "Review" : "Reviews"})
                       </span>
                     </div>
@@ -256,12 +243,11 @@ function OtherProfile() {
                 </div>
               </div>
 
-              {/* Mobile Tabs - Fixed position */}
-              <div className="flex border-t border-gray-200 bg-white flex-shrink-0">
+              <div className="flex border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0">
                 <button
                   onClick={() => setJob("posts")}
                   className={`flex-1 py-2 text-center text-sm font-medium ${
-                    job === "posts" ? "border-t-2 border-teal-400 text-teal-800" : "text-gray-600"
+                    job === "posts" ? "border-t-2 border-teal-400 text-teal-800 dark:text-teal-300" : "text-gray-600 dark:text-gray-400"
                   }`}
                 >
                   Posts
@@ -269,19 +255,18 @@ function OtherProfile() {
                 <button
                   onClick={() => setJob("reviews")}
                   className={`flex-1 py-2 text-center text-sm font-medium ${
-                    job === "reviews" ? "border-t-2 border-teal-400 text-teal-800" : "text-gray-600"
+                    job === "reviews" ? "border-t-2 border-teal-400 text-teal-800 dark:text-teal-300" : "text-gray-600 dark:text-gray-400"
                   }`}
                 >
                   Reviews
                 </button>
               </div>
 
-              {/* UserJobs Content - Properly constrained scrollable area */}
               <div className="flex-1 overflow-hidden">
                 <div 
                   className="h-full overflow-y-auto px-4"
                   style={{
-                    paddingBottom: hasToken ? '80px' : '20px' // Account for bottom navbar height
+                    paddingBottom: hasToken ? '80px' : '20px'
                   }}
                 >
                   <div className="w-full max-w-md mx-auto">
@@ -294,9 +279,8 @@ function OtherProfile() {
           {hasToken && comp && <ProfileComp userId={userId} setComp={setComp} />}
         </div>
 
-        {/* Mobile Bottom Navbar - Fixed at bottom */}
         {hasToken && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
             <BottomNavbar />
           </div>
         )}
@@ -304,13 +288,12 @@ function OtherProfile() {
     );
   }
 
-  // Desktop UI (Unchanged)
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden dark:bg-gray-900">
       {hasToken && <Sidebar user={user} />}
-      <div className={`h-full overflow-y-scroll ${hasToken ? "fixed right-0 w-[70%]" : "w-full"} bg-white`}>
+      <div className={`h-full overflow-y-scroll ${hasToken ? "fixed right-0 w-[70%]" : "w-full"} bg-white dark:bg-gray-900`}>
         { !isMobile && !hasToken && (
-          <div className=" flex items-center justify-between p-4 border-b border-gray-200 bg-teal-50 flex-shrink-0">
+          <div className=" flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-teal-50 dark:bg-gray-800 flex-shrink-0">
             <div className="flex items-center justify-start h-12 px-4">
                 <div className="w-full items-center mt-4 justify-center max-w-[160px]">
                   <img
@@ -337,12 +320,11 @@ function OtherProfile() {
           </div>
           )}
         {profile.blockedUsers?.includes(user?._id) ? (
-          <div className="flex items-center text-bold justify-center h-screen text-gray-500">
+          <div className="flex items-center text-bold justify-center h-screen text-gray-500 dark:text-gray-400">
             User not available.
           </div>
         ) : (
           <div className={`h-full flex flex-col items-center justify-start ${!hasToken ? 'mx-auto max-w-[70%]' : ''}`}>
-            {/* Profile Header */}
             <div className="w-2/3 flex items-center justify-start py-6">
               <div className="w-40 h-40 flex-shrink-0">
                 <button disabled={!hasToken} className="w-full h-full cursor-pointer">
@@ -358,7 +340,7 @@ function OtherProfile() {
               </div>
               <div className="ml-6 flex-1 flex-col items-start justify-center">
                 <div className="flex items-center justify-start w-full gap-2">
-                  <button disabled={!hasToken} className="text-2xl font-bold text-gray-800 cursor-pointer">
+                  <button disabled={!hasToken} className="text-2xl font-bold text-gray-800 dark:text-white cursor-pointer">
                     {profile?.username || "User not found"}
                   </button>
                   {verified && <BadgeCheck className="h-6 w-6 text-teal-400" />}
@@ -372,14 +354,14 @@ function OtherProfile() {
                           Message
                         </button>
                         <button>
-                          <MoreVertical onClick={() => setComp(true)} className="h-6 w-6 text-gray-400 cursor-pointer ml-2" />
+                          <MoreVertical onClick={() => setComp(true)} className="h-6 w-6 text-gray-400 dark:text-gray-300 cursor-pointer ml-2" />
                         </button>
                       </div>
                     )}
                   </div>
                 </div>
-                <p className="text-gray-600">{profile?.email || "User not found"}</p>
-                <p className="text-gray-600">{profile?.userBio || ""}</p>
+                <p className="text-gray-600 dark:text-gray-400">{profile?.email || "User not found"}</p>
+                <p className="text-gray-600 dark:text-gray-400">{profile?.userBio || ""}</p>
                 <div className="flex gap-2 mt-2 flex-wrap">
                   {profile?.userSkills?.map((skill, index) => (
                     <span key={index} className="bg-teal-400 text-white px-2 py-1 rounded-full text-sm max-w-130 truncate">
@@ -394,15 +376,15 @@ function OtherProfile() {
                           className={`w-5 h-5 ${
                             i < Math.round(profile.averageRating || 0)
                               ? "text-yellow-400"
-                              : "text-gray-300"
+                              : "text-gray-300 dark:text-gray-600"
                           }`}
                           fill={i < Math.round(profile.averageRating || 0) ? "#facc15" : "none"}
                         />
                       ))}
-                      <span className="text-sm text-gray-700 font-medium ml-1">
+                      <span className="text-sm text-gray-700 dark:text-gray-300 font-medium ml-1">
                         {profile.averageRating?.toFixed(1) || "0.0"}
                       </span>
-                      <span className="text-sm text-gray-500 ml-1">
+                      <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">
                         ({profile.totalRating} {profile.totalRating === 1 ? "Review" : "Reviews"})
                       </span>
                     </div>
@@ -411,15 +393,14 @@ function OtherProfile() {
               </div>
             </div>
 
-            {/* Posts / Bids Toggle */}
-            <div className="w-5/6 flex items-center justify-center border-t">
+            <div className="w-5/6 flex items-center justify-center border-t dark:border-gray-700">
               <button
                 onClick={() => setJob("posts")}
                 className={`w-1/2 flex justify-center cursor-pointer border-t-4 ${
                   job === "posts" ? "border-teal-400" : "border-transparent"
                 }`}
               >
-                <div className="py-2">POSTS</div>
+                <div className="py-2 dark:text-white">POSTS</div>
               </button>
               <button
                 onClick={() => setJob("reviews")}
@@ -427,11 +408,10 @@ function OtherProfile() {
                   job === "reviews" ? "border-teal-400" : "border-transparent"
                 }`}
               >
-                <div className="py-2">REVIEWS</div>
+                <div className="py-2 dark:text-white">REVIEWS</div>
               </button>
             </div>
 
-            {/* Posts / Bids Display */}
             <div className="w-5/6 flex items-center justify-center mt-4">
               <UserJobs job={job} userProfile={profile} hasToken={hasToken} />
             </div>

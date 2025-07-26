@@ -35,7 +35,7 @@ function ImageSlider({ mediaUrls }) {
         <img
           src={currentMedia}
           alt={`Media ${currentIndex}`}
-          className="w-full aspect-square object-contain rounded-md bg-gray-100"
+          className="w-full aspect-square object-contain rounded-md bg-gray-100 dark:bg-gray-800"
         />
       )}
 
@@ -44,8 +44,7 @@ function ImageSlider({ mediaUrls }) {
           {/* Left Arrow */}
           <button
             onClick={handlePrev}
-            className="absolute left-2 bg-white p-2 rounded-full cursor-pointer"
-            style={{ backgroundColor: "rgba(255, 255, 255, 0.5)" }}
+            className="absolute left-2 bg-white/50 dark:bg-black/50 p-2 rounded-full cursor-pointer text-gray-800 dark:text-white hover:bg-white/75 dark:hover:bg-black/75 transition-colors"
           >
             <ChevronLeft size={24} />
           </button>
@@ -53,8 +52,7 @@ function ImageSlider({ mediaUrls }) {
           {/* Right Arrow */}
           <button
             onClick={handleNext}
-            className="absolute right-2 bg-white p-2 rounded-full cursor-pointer"
-            style={{ backgroundColor: "rgba(255, 255, 255, 0.5)" }}
+            className="absolute right-2 bg-white/50 dark:bg-black/50 p-2 rounded-full cursor-pointer text-gray-800 dark:text-white hover:bg-white/75 dark:hover:bg-black/75 transition-colors"
           >
             <ChevronRight size={24} />
           </button>

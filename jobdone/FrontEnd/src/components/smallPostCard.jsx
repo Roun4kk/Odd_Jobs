@@ -10,14 +10,13 @@ const SmallPostCard = ({ postId }) => {
   const [post, setPost] = useState(null);
   const [topBid, setTopBid] = useState(null);
   const [bids, setBids] = useState([]);
-  const [sortBy, setSortBy] = useState("-1"); // Default to highest bid first
+  const [sortBy, setSortBy] = useState("-1");
   const { user, userId, loading } = useAuth();
   const navigate = useNavigate();
   const hasToken = !!userId;
   const [socketError, setSocketError] = useState(null);
-  useSocketRoomJoin(user?._id, setSocketError);   // ONE line
+  useSocketRoomJoin(user?._id, setSocketError);
 
-  // Fetch post details
   useEffect(() => {
     const fetchPost = async () => {
       try {
@@ -36,7 +35,6 @@ const SmallPostCard = ({ postId }) => {
     }
   }, [postId]);
 
-  // Handle real-time bid updates
   useEffect(() => {
     const handleNewBid = (bidData) => {
       if (bidData.postId === postId) {
@@ -58,7 +56,6 @@ const SmallPostCard = ({ postId }) => {
     };
   }, [postId]);
 
-  // Update top bid when bids or sortBy change
   useEffect(() => {
     if (bids.length === 0) {
       setTopBid(null);
@@ -85,21 +82,21 @@ const SmallPostCard = ({ postId }) => {
 
   if (loading || !post) {
     return (
-      <div className="bg-gray-100 p-2 rounded-md text-sm text-gray-500">
+      <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-md text-sm text-gray-500 dark:text-gray-400">
         Loading post...
       </div>
     );
   }
   if (post.user.blockedUsers && post.user.blockedUsers.includes(userId)) {
     return (
-      <div className="bg-gray-100 p-2 rounded-md text-sm text-gray-500">
+      <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-md text-sm text-gray-500 dark:text-gray-400">
         Post Unavailable
       </div>
     );
   }
   return (
     <div
-      className="bg-white p-3 rounded-md shadow-sm border border-gray-200 w-full max-w-[250px] cursor-pointer hover:bg-gray-50 transition"
+      className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm border border-gray-200 dark:border-gray-700 w-full max-w-[250px] cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition"
       onClick={() => hasToken && navigate(`/post/${post._id}`)}
     >
       <div className="flex items-center gap-2 mb-2">
@@ -111,21 +108,34 @@ const SmallPostCard = ({ postId }) => {
           alt="User"
           className="w-8 h-8 rounded-full object-cover"
         />
-        <span className="text-sm font-semibold text-gray-800">{post.user.username}</span>
+        <span className="text-sm font-semibold text-gray-800 dark:text-white max-w-[140px] md:max-w-[200px] truncate">{post.user.username}</span>
         {post.user.verified.email && post.user.verified.phoneNumber && (
           <BadgeCheck className="h-4 w-4 text-teal-400" />
         )}
       </div>
-      <p className="text-sm text-gray-600 line-clamp-2">{post.postDescription}</p>
-      {post.mediaUrls && post.mediaUrls.length > 0 && (
-        <img
-          src={post.mediaUrls[0]}
-          alt="Post media"
-          className="w-full h-20 object-cover rounded-md mt-2"
-        />
-      )}
+      <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">{post.postDescription}</p>
+      {post.mediaUrls && post.mediaUrls.length > 0 && (() => {
+        const media = post.mediaUrls[0];
+        const isVideo = media.endsWith(".mp4") || media.includes("/video/");
+
+        return isVideo ? (
+          <video
+            src={media}
+            className="w-full h-20 object-cover rounded-md mt-2 bg-black"
+            muted
+            playsInline
+            preload="metadata"
+          />
+        ) : (
+          <img
+            src={media}
+            alt="Post media"
+            className="w-full h-20 object-cover rounded-md mt-2"
+          />
+        );
+      })()}
       {topBid ? (
-        <p className="text-xs text-gray-700 mt-2">
+        <p className="text-xs text-gray-700 dark:text-gray-300 mt-2">
           <span className="font-semibold">Top Bid: </span>
           {topBid.BidAmount}₹ by{" "}
           <span className={`${(topBid?.user._id === userId || post.user._id === userId) ? "blur-sm filter" : ""}`}>
@@ -133,13 +143,8 @@ const SmallPostCard = ({ postId }) => {
           </span>
         </p>
       ) : (
-        <p className="text-xs text-gray-500 mt-2">No bids yet</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">No bids yet</p>
       )}
-      {/* {socketError && (
-            <div className="p-4 text-red-500">
-              Connection error: {socketError}. Please try refreshing the page or logging in again.
-            </div>
-          )} */}
     </div>
   );
 };

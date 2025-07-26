@@ -11,26 +11,6 @@ function ProfileComp({ setComp, userId }) {
   const { user, updateUser } = useAuth();
   const isMobile = useIsMobile();
 
-  // useEffect(() => {
-  //   const handleOutsideClick = (event) => {
-  //     if (popoverRef.current && !popoverRef.current.contains(event.target)) {
-  //       setComp(false);
-  //     }
-  //   };
-
-  //   const handleScroll = () => {
-  //     setComp(false);
-  //   };
-
-  //   document.addEventListener("mousedown", handleOutsideClick);
-  //   window.addEventListener("scroll", handleScroll, true);
-
-  //   return () => {
-  //     document.removeEventListener("mousedown", handleOutsideClick);
-  //     window.removeEventListener("scroll", handleScroll, true);
-  //   };
-  // }, [setComp]);
-
   const handleBlock = async (userId) => {
     try {
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/block/${userId}`, null, {
@@ -78,13 +58,13 @@ function ProfileComp({ setComp, userId }) {
     return (
       <div
         ref={popoverRef}
-        className="absolute top-32 right-3 z-50 bg-gray-200 text-black w-max max-w-xs shadow-lg shadow-white rounded-xl"
+        className="absolute top-32 right-3 z-50 bg-gray-200 dark:bg-gray-800 text-black dark:text-white w-max max-w-xs shadow-lg shadow-white dark:shadow-black/20 rounded-xl"
       >
-        <div className="absolute -top-2 right-3 w-4 h-4 bg-gray-200 rotate-45"></div>
+        <div className="absolute -top-2 right-3 w-4 h-4 bg-gray-200 dark:bg-gray-800 rotate-45"></div>
         <div className="flex flex-col p-4">
           <button
             onClick={() => setReportComp(true)}
-            className="text-left hover:bg-gray-100 p-2 rounded-md cursor-pointer"
+            className="text-left hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-md cursor-pointer"
           >
             Report
           </button>
@@ -92,33 +72,33 @@ function ProfileComp({ setComp, userId }) {
             onClick={() => {
               user?.blockedUsers?.includes(userId) ? handleUnblock(userId) : handleBlock(userId);
             }}
-            className="text-left hover:bg-gray-100 p-2 rounded-md text-black cursor-pointer"
+            className="text-left hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-md text-black dark:text-white cursor-pointer"
           >
             {user?.blockedUsers?.includes(userId) ? "Unblock User" : "Block User"}
           </button>
         </div>
         {reportComp && (
           <div className="fixed inset-0 z-100 bg-black/50 flex justify-center items-center">
-            <div className="bg-white w-full max-w-sm p-5 rounded-xl shadow-xl relative">
+            <div className="bg-white dark:bg-gray-800 w-full max-w-sm p-5 rounded-xl shadow-xl relative">
               <div className="relative flex items-center justify-center mb-3">
-                <h2 className="text-lg font-semibold">Report</h2>
+                <h2 className="text-lg font-semibold dark:text-white">Report</h2>
                 <button
                   onClick={() => setReportComp(false)}
                   className="absolute right-0"
                 >
-                  <X className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer" />
+                  <X className="w-5 h-5 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white cursor-pointer" />
                 </button>
               </div>
               <div className="space-y-3">
                 <textarea
-                  className="w-full mt-4 p-2 border rounded-md resize-none h-24 focus:outline-none"
+                  className="w-full mt-4 p-2 border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md resize-none h-24 focus:outline-none"
                   placeholder="Please provide a reason for reporting this user (optional)"
                   value={reportText}
                   onChange={(e) => setReportText(e.target.value)}
                 />
                 <button
                   onClick={handleSendReport}
-                  className="w-full flex justify-center items-center gap-2 px-4 py-2 rounded-md border hover:bg-gray-100 cursor-pointer transition-colors duration-200"
+                  className="w-full flex justify-center items-center gap-2 px-4 py-2 rounded-md border dark:border-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors duration-200"
                 >
                   Send
                 </button>
@@ -130,17 +110,17 @@ function ProfileComp({ setComp, userId }) {
     );
   }
 
-  // Desktop UI (Unchanged)
+  // Desktop UI
   return (
     <div
       ref={popoverRef}
-      className="absolute top-22 z-50 right-38 bg-gray-200 text-black w-max shadow-lg shadow-white rounded-xl"
+      className="absolute top-22 z-50 right-38 bg-gray-200 dark:bg-gray-800 text-black dark:text-white w-max shadow-lg shadow-white dark:shadow-black/20 rounded-xl"
     >
-      <div className="absolute -top-2 right-3 w-4 h-4 bg-gray-200 rotate-45"></div>
+      <div className="absolute -top-2 right-3 w-4 h-4 bg-gray-200 dark:bg-gray-800 rotate-45"></div>
       <div className="flex flex-col p-4">
         <button
           onClick={() => setReportComp(true)}
-          className="text-left hover:bg-gray-100 p-2 rounded-md cursor-pointer"
+          className="text-left hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-md cursor-pointer"
         >
           Report
         </button>
@@ -148,33 +128,33 @@ function ProfileComp({ setComp, userId }) {
           onClick={() => {
             user?.blockedUsers?.includes(userId) ? handleUnblock(userId) : handleBlock(userId);
           }}
-          className="text-left hover:bg-gray-100 p-2 rounded-md text-black cursor-pointer"
+          className="text-left hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-md text-black dark:text-white cursor-pointer"
         >
           {user?.blockedUsers?.includes(userId) ? "Unblock User" : "Block User"}
         </button>
       </div>
       {reportComp && (
         <div className="fixed inset-0 z-100 bg-black/50 flex justify-center items-center">
-          <div className="bg-white w-full max-w-sm p-5 rounded-xl shadow-xl relative">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-sm p-5 rounded-xl shadow-xl relative">
             <div className="relative flex items-center justify-center mb-3">
-              <h2 className="text-lg font-semibold">Report</h2>
+              <h2 className="text-lg font-semibold dark:text-white">Report</h2>
               <button
                 onClick={() => setReportComp(false)}
                 className="absolute right-0"
               >
-                <X className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer" />
+                <X className="w-5 h-5 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white cursor-pointer" />
               </button>
             </div>
             <div className="space-y-3">
               <textarea
-                className="w-full mt-4 p-2 border rounded-md resize-none h-24 focus:outline-none"
+                className="w-full mt-4 p-2 border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md resize-none h-24 focus:outline-none"
                 placeholder="Please provide a reason for reporting this user (optional)"
                 value={reportText}
                 onChange={(e) => setReportText(e.target.value)}
               />
               <button
                 onClick={handleSendReport}
-                className="w-full flex justify-center items-center gap-2 px-4 py-2 rounded-md border hover:bg-gray-100 cursor-pointer transition-colors duration-200"
+                className="w-full flex justify-center items-center gap-2 px-4 py-2 rounded-md border dark:border-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors duration-200"
               >
                 Send
               </button>

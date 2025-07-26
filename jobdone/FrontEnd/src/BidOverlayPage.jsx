@@ -1,16 +1,29 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate , useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import BidOverlay from "./components/bidOverlay";
 import useAuth from "./hooks/useAuth";
 import axios from "axios";
+import { useSortBy } from "./SortByContext";
 
 function BidOverlayPage() {
   const { postId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [post, setPost] = useState(null);
-  const [sortByMap, setSortByMap] = useState({});
   const [loading, setLoading] = useState(true);
+  // 2. Get the new context actions and the derived activeSortMap
+  const { setActiveFeed, activeSortMap } = useSortBy();
+
+  // 3. Extract the feed key from the URL query parameter
+  const queryParams = new URLSearchParams(location.search);
+  const feedKeyFromUrl = queryParams.get('feed');
+  
+  useEffect(() => {
+    // If we have a feed key from the URL, set it as the active one.
+    if (feedKeyFromUrl) {
+      setActiveFeed(feedKeyFromUrl);
+    }
+  }, [feedKeyFromUrl, setActiveFeed]); // Run this whenever the feed key changes.
 
   // ✅ CORE FIX: This effect controls the body scroll.
   useEffect(() => {
@@ -93,7 +106,7 @@ function BidOverlayPage() {
     <BidOverlay
       post={post}
       onClose={() => navigate(-1)}
-      sortBy={sortByMap[post._id] || "1"}
+      sortBy={activeSortMap[post._id] || "1"} 
       setActiveBidPost={handlePostUpdate} // Use the correct handler
       setPost={handlePostUpdate} // Pass setPost to BidOverlay
     />

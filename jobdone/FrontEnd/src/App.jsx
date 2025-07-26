@@ -1,33 +1,25 @@
 import { useState, useEffect, memo, useRef } from "react";
 import logo from "./assets/logo/logo-transparent-jobdone.svg";
+import logoDark from "./assets/logo/logo-dark.svg"
 import googleIcon from "./assets/icons/google.svg";
 import axios from "axios";
 import useAuth from "./hooks/useAuth.jsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import useIsMobile from "./hooks/useIsMobile"; // Custom hook for mobile detection
+import { useTheme } from "./ThemeContext";
 
 // Lucide icons
 import { Rss, Search as SearchIcon, MessageCircle, User, Bell, ShieldCheck, ArrowDown, Briefcase, Zap, Star, Eye, EyeOff, ArrowLeft } from "lucide-react";
 
 // --- Custom Hooks ---
 
-// Custom hook for handling mobile keyboard and input focus
-// CORRECTED Custom hook for handling mobile keyboard and input focus
-// CORRECTED AND MORE ROBUST HOOK
-
 const useMobileInputFocus = () => {
   const isMobile = useIsMobile();
-  // A ref to store the currently focused input element.
-  // We use a ref because it doesn't trigger a re-render when it changes.
   const activeElementRef = useRef(null);
 
   useEffect(() => {
-    // Only run this logic on mobile devices.
     if (!isMobile) return;
 
-    // --- Event Handlers ---
-
-    // When an input is focused, store it in our ref.
     const handleFocusIn = (e) => {
       const target = e.target;
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
@@ -35,45 +27,33 @@ const useMobileInputFocus = () => {
       }
     };
 
-    // When an input is blurred, clear the ref.
     const handleFocusOut = () => {
       activeElementRef.current = null;
     };
 
-    // This is the key handler. It runs whenever the viewport is resized,
-    // which includes when the keyboard appears or disappears.
     const handleViewportResize = () => {
-      // If we have a focused element stored in our ref...
       if (activeElementRef.current) {
-        // ...scroll it into the center of the available view.
-        // A small delay can help ensure the browser's own scrolling logic doesn't interfere.
         setTimeout(() => {
           activeElementRef.current?.scrollIntoView({
             behavior: "smooth",
-            block: "center", // "center" is often more reliable than "nearest"
+            block: "center",
             inline: "nearest",
           });
         }, 100); 
       }
     };
 
-    // --- Attach and Detach Listeners ---
-
     document.addEventListener("focusin", handleFocusIn);
     document.addEventListener("focusout", handleFocusOut);
-    // Use the visualViewport's resize event, which is designed for this purpose.
     window.visualViewport?.addEventListener("resize", handleViewportResize);
 
-    // Cleanup function to remove listeners when the component unmounts.
     return () => {
       document.removeEventListener("focusin", handleFocusIn);
       document.removeEventListener("focusout", handleFocusOut);
       window.visualViewport?.removeEventListener("resize", handleViewportResize);
     };
-  }, [isMobile]); // The hook's logic depends on whether the device is mobile.
+  }, [isMobile]);
 
-  // This hook no longer needs to return a `keyboardVisible` state,
-  // as its job is now purely to manage scrolling. You can return null or false.
   return null; 
 };
 
@@ -100,9 +80,9 @@ const Introduction = memo(({ onSignInClick, onSignUpClick }) => {
   };
 
   return (
-    <div className="w-full h-full overflow-y-auto bg-gray-50 text-gray-800 antialiased">
+    <div className="w-full h-full overflow-y-auto bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 antialiased">
       {/* Hero Section */}
-      <header className="relative w-full h-screen min-h-[600px] flex flex-col items-center justify-center text-center text-white bg-gradient-to-br from-teal-500 to-teal-700">
+      <header className="relative w-full h-screen min-h-[600px] flex flex-col items-center justify-center text-center text-white bg-gradient-to-br from-teal-500 to-teal-700 dark:from-gray-900 dark:to-teal-900">
         <nav className="absolute top-0 left-0 w-full p-4 sm:p-6 flex justify-between items-center z-10">
           <div className="flex items-center gap-2">
             <span className="font-bold text-2xl tracking-tight">JobDone</span>
@@ -150,11 +130,11 @@ const Introduction = memo(({ onSignInClick, onSignUpClick }) => {
       </header>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-4 bg-white">
+      <section id="features" className="py-20 px-4 bg-white dark:bg-gray-800">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">One Platform, Endless Possibilities</h2>
-            <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">One Platform, Endless Possibilities</h2>
+            <p className="mt-4 text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
               From posting jobs to getting paid, everything you need is right here.
             </p>
           </div>
@@ -162,13 +142,13 @@ const Introduction = memo(({ onSignInClick, onSignUpClick }) => {
             {FEATURES.map((feature, index) => (
               <div
                 key={index}
-                className="bg-gray-50 p-6 rounded-xl border border-gray-200/80 hover:shadow-xl hover:-translate-y-2 transition-all duration-300"
+                className="bg-gray-50 dark:bg-gray-700/50 p-6 rounded-xl border border-gray-200/80 dark:border-gray-700 hover:shadow-xl hover:-translate-y-2 transition-all duration-300"
               >
-                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-teal-100 mb-4">
+                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-teal-100 dark:bg-teal-900/30 mb-4">
                   {feature.icon}
                 </div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
+                <h3 className="text-xl font-semibold mb-2 dark:text-gray-100">{feature.title}</h3>
+                <p className="text-gray-600 dark:text-gray-300">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -176,11 +156,11 @@ const Introduction = memo(({ onSignInClick, onSignUpClick }) => {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-20 px-4 bg-gray-50">
+      <section className="py-20 px-4 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Get Started in Minutes</h2>
-            <p className="mt-4 text-lg text-gray-600">A simple, four-step process to get your job done.</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">Get Started in Minutes</h2>
+            <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">A simple, four-step process to get your job done.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
             {[
@@ -190,11 +170,11 @@ const Introduction = memo(({ onSignInClick, onSignUpClick }) => {
               { step: "4", title: "Job Done!", desc: "Mark the job complete and leave a rating." },
             ].map((step, index) => (
               <div key={index} className="p-4">
-                <div className="flex items-center justify-center h-16 w-16 mx-auto rounded-full bg-teal-500 text-white font-bold text-2xl mb-4 border-4 border-white shadow-lg">
+                <div className="flex items-center justify-center h-16 w-16 mx-auto rounded-full bg-teal-500 text-white font-bold text-2xl mb-4 border-4 border-white dark:border-gray-800 shadow-lg">
                   {step.step}
                 </div>
-                <h3 className="font-semibold text-xl mb-2">{step.title}</h3>
-                <p className="text-gray-600">{step.desc}</p>
+                <h3 className="font-semibold text-xl mb-2 dark:text-gray-100">{step.title}</h3>
+                <p className="text-gray-600 dark:text-gray-400">{step.desc}</p>
               </div>
             ))}
           </div>
@@ -202,10 +182,10 @@ const Introduction = memo(({ onSignInClick, onSignUpClick }) => {
       </section>
 
       {/* Footer CTA */}
-      <footer className="bg-teal-600 text-white py-12 px-4">
+      <footer className="bg-teal-600 dark:bg-gray-800 text-white py-12 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
-          <p className="text-lg text-teal-100 mb-8">Join a growing community of job posters and skilled workers today. Your next opportunity is just a click away.</p>
+          <p className="text-lg text-teal-100 dark:text-gray-300 mb-8">Join a growing community of job posters and skilled workers today. Your next opportunity is just a click away.</p>
           {!isMobile && (
             <div className="flex justify-center gap-4">
               <button
@@ -234,6 +214,7 @@ Introduction.displayName = "Introduction";
 
 
 function App() {
+  const {theme} = useTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -590,35 +571,40 @@ function App() {
 
   const renderAuthForm = () => (
     <div
-      className={`flex flex-col items-center justify-center gap-4 bg-teal-400 w-full p-4 transition-all duration-300 ${
+      className={`flex flex-col items-center justify-center gap-4 bg-teal-400 dark:bg-gray-800 w-full p-4 transition-all duration-300 ${
         isMobile ? (keyboardVisible ? "min-h-screen pb-8" : "h-screen") : "h-screen"
       }`}
     >
       <div className="flex-shrink-0">
-        <div className="w-44 h-44">
-          <img src={logo} alt="JobDone Logo" className="object-contain w-full h-full" />
-        </div>
+        {theme!=='dark' && (<div className=" w-44 h-44">
+            <img src={logo} alt="JobDone Logo" className="object-contain w-full h-full" />
+          </div>)}
+        {theme === 'dark' && (
+          <div className=" w-46 h-46">
+            <img src={logoDark} alt="JobDone Logo Dark" className="object-contain w-full h-full" />
+          </div>
+        )}
       </div>
-      <div className={`w-full max-w-md bg-white p-6 rounded-lg shadow-lg transition-all duration-300 ${keyboardVisible && isMobile ? "mb-4" : ""}`}>
+      <div className={`w-full max-w-md bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg transition-all duration-300 ${keyboardVisible && isMobile ? "mb-4" : ""}`}>
         <div className="flex flex-col gap-4">
           {wasLoggedOut && (
-            <div className="text-center text-green-600 text-sm mb-2">You have been logged out successfully.</div>
+            <div className="text-center text-green-600 dark:text-green-400 text-sm mb-2">You have been logged out successfully.</div>
           )}
           {showOtpVerification && !showForgotPasswordOtp && (
             <>
               <div className="text-center">
-                <h2 className="text-xl font-bold mb-2">Verify Your Email</h2>
-                <p className="text-sm text-gray-600 mb-4">Enter the 6-digit code sent to {pendingEmail}</p>
+                <h2 className="text-xl font-bold mb-2 dark:text-white">Verify Your Email</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Enter the 6-digit code sent to {pendingEmail}</p>
               </div>
               {errorMessage && (
-                <p className={`text-center text-sm ${errorMessage.includes("sent") ? "text-green-600" : "text-red-500"}`}>{errorMessage}</p>
+                <p className={`text-center text-sm ${errorMessage.includes("sent") ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}>{errorMessage}</p>
               )}
               <input
                 type="text"
                 value={otp}
                 placeholder="Enter 6-digit OTP"
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                className="w-full p-3 border border-gray-300 rounded-md text-center text-lg tracking-widest focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-teal-500 transition-all duration-200 cursor-text"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md text-center text-lg tracking-widest focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-teal-500 transition-all duration-200 cursor-text"
                 disabled={isLoading}
                 maxLength={6}
                 aria-label="OTP Input"
@@ -631,17 +617,17 @@ function App() {
               >
                 {isLoading ? "Verifying..." : "Verify Email"}
               </button>
-              <div className="text-center text-sm text-gray-600">
+              <div className="text-center text-sm text-gray-600 dark:text-gray-400">
                 {otpTimer > 0 ? (
                   <p>Resend OTP in {formatTime(otpTimer)}</p>
                 ) : (
-                  <button className="text-teal-600 hover:underline disabled:opacity-50" onClick={handleResendOtp} disabled={isLoading || !canResendOtp} aria-label="Resend OTP">
+                  <button className="text-teal-600 dark:text-teal-400 hover:underline disabled:opacity-50" onClick={handleResendOtp} disabled={isLoading || !canResendOtp} aria-label="Resend OTP">
                     Resend OTP
                   </button>
                 )}
               </div>
               <div className="text-center mt-2">
-                <button className="text-sm text-gray-500 underline disabled:opacity-50" onClick={handleBackToSignup} disabled={isLoading} aria-label="Back to Signup">
+                <button className="text-sm text-gray-500 dark:text-gray-400 underline disabled:opacity-50" onClick={handleBackToSignup} disabled={isLoading} aria-label="Back to Signup">
                   ← Back to signup
                 </button>
               </div>
@@ -650,18 +636,18 @@ function App() {
           {showForgotPasswordOtp && (
             <>
               <div className="text-center">
-                <h2 className="text-xl font-bold mb-2">Reset Password</h2>
-                <p className="text-sm text-gray-600 mb-4">Enter OTP and set your new password</p>
+                <h2 className="text-xl font-bold mb-2 dark:text-white">Reset Password</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Enter OTP and set your new password</p>
               </div>
               {errorMessage && (
-                <p className={`text-center text-sm ${errorMessage.includes("sent") || errorMessage.includes("successful") ? "text-green-600" : "text-red-500"}`}>{errorMessage}</p>
+                <p className={`text-center text-sm ${errorMessage.includes("sent") || errorMessage.includes("successful") ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}>{errorMessage}</p>
               )}
               <input
                 type="text"
                 value={otp}
                 placeholder="Enter 6-digit OTP"
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                className="w-full p-3 border border-gray-300 rounded-md text-center focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md text-center focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 disabled={isLoading}
                 maxLength={6}
                 aria-label="OTP Input"
@@ -672,7 +658,7 @@ function App() {
                   placeholder="New Password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   disabled={isLoading}
                   aria-label="New Password"
                 />
@@ -688,7 +674,7 @@ function App() {
                   placeholder="Confirm New Password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   disabled={isLoading}
                   aria-label="Confirm Password"
                 />
@@ -706,17 +692,17 @@ function App() {
               >
                 {isLoading ? "Resetting..." : "Reset Password"}
               </button>
-              <div className="text-center text-sm text-gray-600">
+              <div className="text-center text-sm text-gray-600 dark:text-gray-400">
                 {otpTimer > 0 ? (
                   <p>Resend OTP in {formatTime(otpTimer)}</p>
                 ) : (
-                  <button className="text-teal-600 hover:underline disabled:opacity-50" onClick={handleResendOtp} disabled={isLoading || !canResendOtp} aria-label="Resend OTP">
+                  <button className="text-teal-600 dark:text-teal-400 hover:underline disabled:opacity-50" onClick={handleResendOtp} disabled={isLoading || !canResendOtp} aria-label="Resend OTP">
                     Resend OTP
                   </button>
                 )}
               </div>
               <div className="text-center mt-2">
-                <button className="text-sm text-gray-500 underline disabled:opacity-50" onClick={handleBackToSignup} disabled={isLoading} aria-label="Back to Sign In">
+                <button className="text-sm text-gray-500 dark:text-gray-400 underline disabled:opacity-50" onClick={handleBackToSignup} disabled={isLoading} aria-label="Back to Sign In">
                   ← Back to sign in
                 </button>
               </div>
@@ -725,16 +711,16 @@ function App() {
           {entryStage === "forgot-password" && !showForgotPasswordOtp && (
             <>
               <div className="text-center">
-                <h2 className="text-xl font-bold mb-2">Forgot Password</h2>
-                <p className="text-sm text-gray-600 mb-4">Enter your email to receive a reset code</p>
+                <h2 className="text-xl font-bold mb-2 dark:text-white">Forgot Password</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Enter your email to receive a reset code</p>
               </div>
-              {errorMessage && (<p className={`text-center text-sm ${errorMessage.includes("sent") ? "text-green-600" : "text-red-500"}`}>{errorMessage}</p>)}
+              {errorMessage && (<p className={`text-center text-sm ${errorMessage.includes("sent") ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}>{errorMessage}</p>)}
               <input
                 type="email"
                 placeholder="Email Address"
                 value={forgotPasswordEmail}
                 onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 disabled={isLoading}
                 aria-label="Email Input"
               />
@@ -748,7 +734,7 @@ function App() {
               </button>
               <div className="text-center mt-4">
                 <button
-                  className="text-sm text-gray-500 underline disabled:opacity-50"
+                  className="text-sm text-gray-500 dark:text-gray-400 underline disabled:opacity-50"
                   onClick={() => { setEntryStage("signin"); setIsSignIn(true); resetAuthState(); }}
                   disabled={isLoading}
                   aria-label="Back to Sign In"
@@ -760,21 +746,21 @@ function App() {
           )}
           {entryStage === "choose" && !showOtpVerification && !showForgotPasswordOtp && (
             <>
-              <div className="text-center"><h2 className="text-xl font-bold mb-4">Join JobDone</h2></div>
-              {errorMessage && <p className="text-red-500 text-center text-sm mb-4">{errorMessage}</p>}
-              <button onClick={handleGoogleLogin} disabled={isLoading} className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-md py-3 hover:bg-gray-50 disabled:opacity-50 transition-colors">
+              <div className="text-center"><h2 className="text-xl font-bold mb-4 dark:text-white">Join JobDone</h2></div>
+              {errorMessage && <p className="text-red-500 dark:text-red-400 text-center text-sm mb-4">{errorMessage}</p>}
+              <button onClick={handleGoogleLogin} disabled={isLoading} className="w-full flex items-center justify-center gap-3 border border-gray-300 dark:border-gray-600 rounded-md py-3 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors">
                 <img src={googleIcon} alt="Google Icon" className="w-5 h-5"/>
-                {isLoading ? "Loading..." : "Continue with Google"}
+                <span className="dark:text-white">{isLoading ? "Loading..." : "Continue with Google"}</span>
               </button>
               <div className="flex items-center gap-3 my-4">
-                <div className="flex-1 h-px bg-gray-300"></div><span className="text-gray-500 text-sm">or</span><div className="flex-1 h-px bg-gray-300"></div>
+                <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700"></div><span className="text-gray-500 dark:text-gray-400 text-sm">or</span><div className="flex-1 h-px bg-gray-300 dark:bg-gray-700"></div>
               </div>
               <button onClick={() => { setEntryStage("signup"); setIsSignIn(false); }} className="w-full bg-teal-400 text-white py-3 rounded-md hover:bg-teal-600 transition-colors">
                 Create Account
               </button>
-              <p className="text-center text-sm text-gray-600">
+              <p className="text-center text-sm text-gray-600 dark:text-gray-400">
                 Already have an account?{" "}
-                <button className="text-teal-700 hover:underline font-medium" onClick={() => { setEntryStage("signin"); setIsSignIn(true); }}>
+                <button className="text-teal-700 dark:text-teal-400 hover:underline font-medium" onClick={() => { setEntryStage("signin"); setIsSignIn(true); }}>
                   Sign In
                 </button>
               </p>
@@ -782,35 +768,35 @@ function App() {
           )}
           {(entryStage === "signup" || entryStage === "signin") && !showOtpVerification && !showForgotPasswordOtp && (
             <>
-              <div className="text-center"><h2 className="text-xl font-bold mb-4">{isSignIn ? "Sign In" : "Sign Up"}</h2></div>
-              {errorMessage && <p className={`text-center text-sm mb-4 ${errorMessage.includes("created") || errorMessage.includes("sent") ? "text-green-600" : "text-red-500"}`}>{errorMessage}</p>}
+              <div className="text-center"><h2 className="text-xl font-bold mb-4 dark:text-white">{isSignIn ? "Sign In" : "Sign Up"}</h2></div>
+              {errorMessage && <p className={`text-center text-sm mb-4 ${errorMessage.includes("created") || errorMessage.includes("sent") ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}>{errorMessage}</p>}
               {!isSignIn && (
                 <div>
-                  <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1 ">Username</label>
-                  <input id="username" type="text" value={username} placeholder="Username" onChange={(e) => setUsername(e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500" disabled={isLoading}/>
+                  <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 ">Username</label>
+                  <input id="username" type="text" value={username} placeholder="Username" onChange={(e) => setUsername(e.target.value)} className="w-full p-3 border dark:border-gray-600 dark:bg-gray-800 dark:text-white focus:border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" disabled={isLoading}/>
                 </div>
               )}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input id="email" type="email" value={email} placeholder="Email" onChange={(e) => setEmail(e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500" disabled={isLoading}/>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                <input id="email" type="email" value={email} placeholder="Email" onChange={(e) => setEmail(e.target.value)} className="w-full p-3 border dark:border-gray-600 dark:bg-gray-800 dark:text-white focus:border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" disabled={isLoading}/>
               </div>
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
                 <div className="relative">
-                  <input id="password" type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500" disabled={isLoading}/>
-                  {password && (<button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700" onClick={() => setShowPassword(!showPassword)} disabled={isLoading}>{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>)}
+                  <input id="password" type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 border dark:border-gray-600 dark:bg-gray-800 dark:text-white focus:border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" disabled={isLoading}/>
+                  {password && (<button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" onClick={() => setShowPassword(!showPassword)} disabled={isLoading}>{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>)}
                 </div>
               </div>
-              {isSignIn && (<div className="text-right"><button className="text-sm text-gray-500 hover:underline" onClick={() => setEntryStage("forgot-password")}>Forgot Password?</button></div>)}
+              {isSignIn && (<div className="text-right"><button className="text-sm text-gray-500 dark:text-gray-400 hover:underline" onClick={() => setEntryStage("forgot-password")}>Forgot Password?</button></div>)}
               <button onClick={handleSubmit} disabled={isLoading} className="w-full bg-teal-400 text-white py-3 rounded-md hover:bg-teal-600 disabled:opacity-50 transition-colors">
                 {isLoading ? "Loading..." : isSignIn ? "Sign In" : "Sign Up"}
               </button>
-              <div className="text-center text-gray-600">
+              <div className="text-center text-gray-600 dark:text-gray-400">
                 {isSignIn ? "Don't have an account?" : "Already have an account?"}{" "}
-                <button className="text-teal-600 hover:underline font-medium" onClick={toggleSignInMode} disabled={isLoading}>{isSignIn ? "Sign Up" : "Sign In"}</button>
+                <button className="text-teal-600 dark:text-teal-400 hover:underline font-medium" onClick={toggleSignInMode} disabled={isLoading}>{isSignIn ? "Sign Up" : "Sign In"}</button>
               </div>
               <div className="text-center">
-                <button className="text-sm text-gray-500 hover:underline" onClick={() => { setEntryStage("choose"); resetAuthState(); }} disabled={isLoading}>
+                <button className="text-sm text-gray-500 dark:text-gray-400 hover:underline" onClick={() => { setEntryStage("choose"); resetAuthState(); }} disabled={isLoading}>
                   ← Back to options
                 </button>
               </div>
@@ -823,14 +809,14 @@ function App() {
 
   if (checkingAuth && !wasLoggedOut) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gray-50">
+      <div className="flex justify-center items-center h-screen bg-gray-50 dark:bg-gray-900">
         <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-teal-600" aria-label="Loading"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-gray-100">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-gray-100 dark:bg-gray-900">
       {isMobile ? (
         <div className="w-full min-h-screen">
           {!showMobileAuth ? (

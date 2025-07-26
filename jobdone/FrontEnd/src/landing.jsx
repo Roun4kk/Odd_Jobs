@@ -4,14 +4,17 @@ import JobPostInput from "./components/jobpostinput.jsx";
 import JobFeed from "./components/jobfeed.jsx";
 import Sidebar from "./Sidebar";
 import logo from "./assets/logo/logo-jobddone-cropped.svg";
+import logoDark from"./assets/logo/logo-jobdone-dark.svg";
 import loadingLogo from "./assets/logo/logo-transparent-jobdone.svg";
 import SearchSkills from "./components/searchSkills.jsx";
 import BottomNavbar from "./bottomNavBar.jsx";
 import useIsMobile from "./hooks/useIsMobile";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "./ThemeContext"; // Import useTheme
 
 function Landing() {
   const { user, loading } = useAuth();
+  const { theme } = useTheme(); // Get current theme
   const isMobile = useIsMobile();
   const [refreshFlag, setRefreshFlag] = useState(false);
   const [showJobPost, setShowJobPost] = useState(false);
@@ -33,7 +36,7 @@ function Landing() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-white">
+      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
         <img src={loadingLogo} alt="Loading..." className="w-40 h-40 animate-pulse" />
       </div>
     );
@@ -42,17 +45,26 @@ function Landing() {
   // Mobile layout
   if (isMobile) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
         {/* Mobile Header */}
-        <div className="sticky top-0 bg-teal-50 w-full h-16 z-10 shadow-sm flex-shrink-0">
+        <div className="sticky top-0 bg-teal-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 w-full h-16 z-10 shadow-sm flex-shrink-0">
           <div className="flex items-center justify-center h-12 px-4">
-            <div className="w-full items-center justify-center max-w-[250px] mt-3">
+            {theme!=="dark" && (<div className="w-full items-center justify-center max-w-[250px] mt-3">
               <img
                 src={logo}
                 alt="JobDone Logo"
                 className="w-full h-auto object-contain"
               />
-            </div>
+            </div>)}
+            {theme==="dark" && (
+              <div className="w-full items-center justify-center max-w-[130px] mt-3">
+                <img
+                  src={logoDark}
+                  alt="JobDone Logo Dark"
+                  className="w-full h-auto object-contain"
+                />
+              </div>)
+            }
           </div>
         </div>
 
@@ -74,7 +86,7 @@ function Landing() {
           </div>
 
         {/* Bottom Nav - Fixed at bottom */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
           <BottomNavbar />
         </div>
       </div>
@@ -83,7 +95,7 @@ function Landing() {
 
   // Desktop layout
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-white dark:bg-gray-900">
       <Sidebar user={user} />
       <div className="w-[70%] h-full overflow-y-scroll overflow-x-hidden">
         <div className="flex min-h-screen">
@@ -98,7 +110,7 @@ function Landing() {
             </div>
           </div>
           {/* Right */}
-          <div className="w-[43%] bg-white sticky top-0 h-screen border-l border-gray-200">
+          <div className="w-[43%] bg-white dark:bg-gray-800 sticky top-0 h-screen border-l border-gray-200 dark:border-gray-700">
             <SearchSkills />
           </div>
         </div>

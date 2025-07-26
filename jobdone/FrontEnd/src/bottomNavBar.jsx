@@ -13,24 +13,22 @@ import useAuth from "./hooks/useAuth";
 import axios from "axios";
 import socket from "./socket.js";
 import useSocketRoomJoin from "./hooks/socketRoomJoin.js";
+import { useTheme } from "./ThemeContext"; 
 
-function BottomNavbar({ onPostClick }) {
+// 1. Accept 'isEmbedded' prop
+function BottomNavbar({ onPostClick, isEmbedded }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { unseenConversations } = useMessageContext();
   const { user } = useAuth();
   const [unseenNotifications, setUnseenNotifications] = useState(0);
+  const { theme } = useTheme(); 
 
   // --- Logic copied from Sidebar.jsx ---
-
   const isValidObjectId = (id) => {
     return /^[0-9a-fA-F]{24}$/.test(id);
   };
-
-  // Join socket room
   useSocketRoomJoin(user?._id);
-
-  // Fetch initial unseen notifications count
   useEffect(() => {
     if (!user?._id || !isValidObjectId(user._id)) {
       return;
@@ -47,37 +45,48 @@ function BottomNavbar({ onPostClick }) {
     };
     fetchUnseenNotifications();
   }, [user]);
-
-  // Handle real-time notifications via socket events
   useEffect(() => {
     socket.on("receiveNotification", (notification) => {
       if (!notification.seen) {
         setUnseenNotifications((prev) => prev + 1);
       }
     });
-
     socket.on("notificationsMarkedSeen", () => {
       setUnseenNotifications(0);
     });
-
     return () => {
       socket.off("receiveNotification");
       socket.off("notificationsMarkedSeen");
     };
   }, []);
-
   // --- End of logic from Sidebar.jsx ---
 
   const isActive = (path) => location.pathname === path;
 
+  const navbarStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#2dd4bf' // This is the hex code for teal-400
+  };
+
+  // 2. Conditionally set classes based on 'isEmbedded' prop
+  const containerClasses = isEmbedded
+    ? "lg:hidden w-full border-t border-transparent dark:border-gray-700 flex-shrink-0"
+    : "lg:hidden fixed bottom-0 left-0 right-0 border-t border-transparent dark:border-gray-700";
+
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-teal-500">
+    <div 
+      className={containerClasses} // 3. Use the conditional classes
+      style={navbarStyle}
+    >
       <div className="flex items-center justify-around py-2">
         {/* Home Button */}
         <button
           onClick={() => navigate("/landing")}
-          className={`flex flex-col items-center py-2 px-3 rounded transition ${
-            isActive("/landing") ? "bg-gray-200 text-black" : "text-white hover:bg-teal-600"
+          className={`flex flex-col items-center py-2 px-3 rounded-md transition ${
+            isActive("/landing") 
+              ? "bg-gray-200 dark:bg-gray-700 text-black dark:text-white" 
+              : "text-white dark:text-teal-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 hover:text-black dark:hover:text-white"
           }`}
         >
           <Home size={24} />
@@ -86,8 +95,10 @@ function BottomNavbar({ onPostClick }) {
         {/* Search Button */}
         <button
           onClick={() => navigate("/jobSearch")}
-          className={`flex flex-col items-center py-2 px-3 rounded transition ${
-            isActive("/jobSearch") ? "bg-gray-200 text-black" : "text-white hover:bg-teal-600"
+          className={`flex flex-col items-center py-2 px-3 rounded-md transition ${
+            isActive("/jobSearch") 
+              ? "bg-gray-200 dark:bg-gray-700 text-black dark:text-white" 
+              : "text-white dark:text-teal-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 hover:text-black dark:hover:text-white"
           }`}
         >
           <Search size={24} />
@@ -96,8 +107,10 @@ function BottomNavbar({ onPostClick }) {
         {/* Messages Button */}
         <button
           onClick={() => navigate("/messages")}
-          className={`flex flex-col items-center py-2 px-3 rounded relative transition ${
-            isActive("/messages") ? "bg-gray-200 text-black" : "text-white hover:bg-teal-600"
+          className={`relative flex flex-col items-center py-2 px-3 rounded-md transition ${
+            isActive("/messages") 
+              ? "bg-gray-200 dark:bg-gray-700 text-black dark:text-white" 
+              : "text-white dark:text-teal-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 hover:text-black dark:hover:text-white"
           }`}
         >
           <MessageCircle size={24} />
@@ -108,11 +121,13 @@ function BottomNavbar({ onPostClick }) {
           )}
         </button>
 
-        {/* Notifications Button - Updated with badge */}
+        {/* Notifications Button */}
         <button
-          onClick={() => navigate("/Notifications")}
-          className={`flex flex-col items-center py-2 px-3 rounded relative transition ${ // Added 'relative'
-            isActive("/Notifications") ? "bg-gray-200 text-black" : "text-white hover:bg-teal-600"
+          onClick={() => navigate("/notifications")}
+          className={`relative flex flex-col items-center py-2 px-3 rounded-md transition ${
+            isActive("/notifications")
+              ? "bg-gray-200 dark:bg-gray-700 text-black dark:text-white" 
+              : "text-white dark:text-teal-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 hover:text-black dark:hover:text-white"
           }`}
         >
           <Bell size={24} />
@@ -126,8 +141,10 @@ function BottomNavbar({ onPostClick }) {
         {/* Profile Button */}
         <button
           onClick={() => navigate("/profile")}
-          className={`flex flex-col items-center py-2 px-3 rounded transition ${
-            isActive("/profile") ? "bg-gray-200 text-black" : "text-white hover:bg-teal-600"
+          className={`flex flex-col items-center py-2 px-3 rounded-md transition ${
+            isActive("/profile") 
+              ? "bg-gray-200 dark:bg-gray-700 text-black dark:text-white" 
+              : "text-white dark:text-teal-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 hover:text-black dark:hover:text-white"
           }`}
         >
           <User size={24} />
@@ -136,8 +153,10 @@ function BottomNavbar({ onPostClick }) {
         {/* Settings Button */}
         <button
           onClick={() => navigate("/settings")}
-          className={`flex flex-col items-center py-2 px-3 rounded transition ${
-            isActive("/settings") ? "bg-gray-200 text-black" : "text-white hover:bg-teal-600"
+          className={`flex flex-col items-center py-2 px-3 rounded-md transition ${
+            isActive("/settings") 
+              ? "bg-gray-200 dark:bg-gray-700 text-black dark:text-white" 
+              : "text-white dark:text-teal-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 hover:text-black dark:hover:text-white"
           }`}
         >
           <Settings size={24} />

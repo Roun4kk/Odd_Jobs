@@ -9,6 +9,7 @@ import ReviewAndRatingForm from "./reviewAndRatingForm.jsx";
 import axios from "axios";
 import useAuth from "../hooks/useAuth.jsx";
 import { differenceInMinutes, differenceInHours, differenceInDays, differenceInWeeks } from "date-fns";
+import { useSortBy } from "../SortByContext.jsx";
 
 const PostCard = ({
   userProfile,
@@ -17,11 +18,10 @@ const PostCard = ({
   topBid,
   toggleSavePost,
   setActiveCommentPost,
-  setActiveBidPost,
   setActiveSendPost,
   setActiveOptionsPost,
   shouldBlur,
-  setSortByMap,
+  feedKey,
   sortByMap,
   dropdownPostId,
   setDropdownPostId,
@@ -29,6 +29,7 @@ const PostCard = ({
   setReviewSubmitted,
   reviews
 }) => {
+  const {updatePostSort} = useSortBy();
   const navigate = useNavigate();
   const location = useLocation();
   const [isTruncated, setIsTruncated] = useState(false);
@@ -38,10 +39,8 @@ const PostCard = ({
   const [bids, setBids] = useState(post.bids || []);
   const [socketError, setSocketError] = useState(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
-  console.log("userprofile " , userProfile);
   const rating = userProfile?.ratings?.find(r => r.post === post?._id) ;
   const winningBid = post?.bids?.find(bid => bid._id === post?.winningBidId);
-  console.log("user" , user);
   const shouldBlurWinner = !(winningBid?.user?._id === user?._id || post?.user?._id === user?._id ); 
 
   useEffect(() => {
@@ -51,7 +50,6 @@ const PostCard = ({
     }
   }, [localPost.postDescription, showFullDescription]);
 
-  console.log("winningBid" , winningBid);
   // Sync localPost if props change
   useEffect(() => {
     setLocalPost(post);
@@ -159,7 +157,7 @@ const PostCard = ({
   ) return null;
 
   return (
-    <div className="bg-white p-4 rounded-md shadow-md flex flex-col gap-2 min-h-[200px]">
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-md shadow-md dark:shadow-lg dark:shadow-black/20 flex flex-col gap-2 min-h-[200px] border border-gray-200 dark:border-gray-700">
       <div className="flex gap-2 mt-0">
           <div className="flex items-center gap-2">
             <button
@@ -173,7 +171,7 @@ const PostCard = ({
               <img
                 src={localPost.user.userImage || "..."}
                 alt="User"
-                className="w-12 h-12 rounded-full border-2 border-white object-cover"
+                className="w-12 h-12 rounded-full border-2 border-white dark:border-gray-500 object-cover"
               />
             </button>
             <div className="flex flex-col items-start justify-start p-0 m-0">
@@ -184,16 +182,16 @@ const PostCard = ({
                     ? navigate(`/profile`)
                     : navigate(`/profile/${localPost.user._id}`)
                 }
-                className="flex items-center text-lg font-semibold cursor-pointer "
+                className="flex items-center text-lg font-semibold cursor-pointer dark:text-white"
               >
-                <div className="max-w-[140px] md:max-w-[200px] truncate">
+                <div className="max-w-[140px] md:max-w-[200px] truncate" title={localPost.user.username} >
                   {localPost.user.username}
                 </div>
-                {localPost.user.verified.email && localPost.user.verified.phoneNumber && (
+                {localPost?.user?.verified?.email && localPost?.user?.verified?.phoneNumber && (
                   <BadgeCheck className="h-5 w-5 text-teal-400 ml-1" />
                 )}
               </button>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 {formatCustomTimeAgo(new Date(localPost.createdAt))}
               </p>
             </div>
@@ -201,13 +199,19 @@ const PostCard = ({
         <div className="flex items-start justify-start p-0 m-0 ml-auto">
           <button disabled={!hasToken} onClick={() => toggleSavePost(localPost._id)} className="mr-4 cursor-pointer">
             {user?.savedPosts?.includes(localPost._id) ? (
-              <Bookmark size={24} className="text-teal-400 fill-teal-400" />
+              <Bookmark
+                size={24}
+                className="text-teal-400 dark:text-white fill-teal-400 dark:fill-white"
+              />
             ) : (
-              <Bookmark size={24} className="text-gray-400" />
+              <Bookmark
+                size={24}
+                className="text-gray-400 dark:text-gray-500"
+              />
             )}
           </button>
           <button>
-            <MoreVertical size={24} className="text-gray-400 cursor-pointer" onClick={() => hasToken && setActiveOptionsPost(localPost)} />
+            <MoreVertical size={24} className="text-gray-400 dark:text-gray-500 dark:hover:text-white cursor-pointer" onClick={() => hasToken && setActiveOptionsPost(localPost)} />
           </button>
         </div>
       </div>
@@ -215,7 +219,7 @@ const PostCard = ({
       <div className="relative">
         <p
           ref={textRef}
-          className={`text-gray-800 whitespace-pre-wrap transition-all duration-300 ${
+          className={`text-gray-800 dark:text-gray-100 whitespace-pre-wrap transition-all duration-300 ${
             showFullDescription ? "" : "line-clamp-3"
           }`}
         >
@@ -225,7 +229,7 @@ const PostCard = ({
         {isTruncated && (
           <button
             onClick={() => setShowFullDescription(prev => !prev)}
-            className="text-sm mt-1 text-teal-600 hover:underline cursor-pointer"
+            className="text-sm mt-1 text-teal-600 dark:text-teal-400 hover:underline cursor-pointer"
           >
             {showFullDescription ? "Show less" : "Read more"}
           </button>
@@ -234,14 +238,14 @@ const PostCard = ({
       {localPost.mediaUrls?.length > 0 && <ImageSlider mediaUrls={localPost.mediaUrls} />}
 
       {/* Buttons */}
-      <div className="flex items-center">
-        <button disabled={!hasToken} className="mr-4 cursor-pointer" onClick={() => navigate(`/bid/${post._id}`, {state: { backgroundLocation: { pathname: location.pathname } }})}>
+      <div className="flex items-center text-gray-700 dark:text-gray-300">
+        <button disabled={!hasToken} className="mr-4 cursor-pointer hover:text-black dark:hover:text-white" onClick={() => navigate(`/bid/${post._id}?feed=${feedKey}`, {state: { backgroundLocation: { pathname: location.pathname } }})}>
           <Gavel size={24} />
         </button>
-        <button disabled={!hasToken} className="mr-4 cursor-pointer" onClick={() => setActiveCommentPost(localPost)}>
+        <button disabled={!hasToken} className="mr-4 cursor-pointer hover:text-black dark:hover:text-white" onClick={() => setActiveCommentPost(localPost)}>
           <MessageCircle size={24} />
         </button>
-        <button disabled={!hasToken} onClick={() => setActiveSendPost(localPost)}>
+        <button disabled={!hasToken} onClick={() => setActiveSendPost(localPost)} className="hover:text-black dark:hover:text-white">
           <Send className="rotate-[19deg] cursor-pointer" size={24} />
         </button>
 
@@ -250,7 +254,7 @@ const PostCard = ({
           <button
             disabled={!hasToken}
             onClick={() => setDropdownPostId(dropdownPostId === localPost._id ? null : localPost._id)}
-            className="flex items-center px-3 py-1 border rounded-md bg-white text-sm shadow-sm hover:bg-gray-50 cursor-pointer"
+            className="flex items-center px-3 py-1 border dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
           >
             Sort Bids
             <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -258,15 +262,15 @@ const PostCard = ({
             </svg>
           </button>
           {dropdownPostId === localPost._id && (
-            <div className="absolute right-0 bottom-full mb-2 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-              <ul className="py-1 text-sm text-gray-700">
+            <div className="absolute right-0 bottom-full mb-2 w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10">
+              <ul className="py-1 text-sm text-gray-700 dark:text-gray-300">
                 <li>
                   <button
                     onClick={() => {
-                      setSortByMap(prev => ({ ...prev, [localPost._id]: "-1" }));
+                      updatePostSort(feedKey, localPost._id, "-1");
                       setDropdownPostId(null);
                     }}
-                    className="block w-full px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                   >
                     Highest
                     {sortByMap[localPost._id] === "-1" && <span className="ml-1">✅</span>}
@@ -275,10 +279,10 @@ const PostCard = ({
                 <li>
                   <button
                     onClick={() => {
-                      setSortByMap(prev => ({ ...prev, [localPost._id]: "1" }));
+                      updatePostSort(feedKey, localPost._id, "1");
                       setDropdownPostId(null);
                     }}
-                    className="block w-full px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                   >
                     Lowest
                     {sortByMap[localPost._id] === "1" && <span className="ml-1">✅</span>}
@@ -287,10 +291,10 @@ const PostCard = ({
                 <li>
                   <button
                     onClick={() => {
-                      setSortByMap(prev => ({ ...prev, [localPost._id]: "rating" }));
+                      updatePostSort(feedKey, localPost._id, "rating");
                       setDropdownPostId(null);
                     }}
-                    className="block w-full px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                   >
                     Ratings
                     {sortByMap[localPost._id] === "rating" && <span className="ml-1">✅</span>}
@@ -304,32 +308,29 @@ const PostCard = ({
 
       {/* Top Bid & Completion UI */}
       {localPost.status !== "winnerSelected" && localPost.status !== "completed"  && (
-        <div className="mt-2 text-sm text-gray-600">
+        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
           {topBid ? (
             <div className="mb-1">
               <p className="flex items-center gap-1">
-                <span className="font-semibold text-black">{topBid.BidAmount}₹ bid by </span>
+                <span className="font-semibold text-black dark:text-white">{topBid.BidAmount}₹ bid by </span>
                 <button disabled={shouldBlur || !hasToken} onClick={() => {
                   if (user._id === topBid.user._id) navigate(`/profile`);
                   else navigate(`/profile/${topBid.user._id}`);
-                }} className={`font-semibold text-black ${shouldBlur ? "blur-sm" : ""} cursor-pointer max-w-[180px]  md:max-w-[250px] truncate `}>
+                }} className={`font-semibold text-black dark:text-white ${shouldBlur ? "blur-sm" : ""} cursor-pointer max-w-[180px]  md:max-w-[250px] truncate `}>
                   {shouldBlur ? "anonymous" : `@${topBid.user.username} `}
                 </button>
-                {topBid.user.verified.email && topBid.user.verified.phoneNumber && <BadgeCheck className="h-5 w-5 text-teal-400 cursor-pointer" />}
+                {topBid?.user?.verified?.email && topBid?.user?.verified?.phoneNumber && <BadgeCheck className="h-5 w-5 text-teal-400 cursor-pointer" />}
               </p>
             </div>
-          ) : <span>No bids yet.</span>}
-          {/* {socketError && (
-            <div className="p-4 text-red-500">Connection error: {socketError}. Please try refreshing the page or logging in again.</div>
-          )} */}
+          ) : <span className="dark:text-gray-500">No bids yet.</span>}
         </div>
       )}
 
       {winningBid && (
         <div className="mb-2">
-          <h2 className="text-lg font-semibold text-gray-800">Winning Bid</h2>
-          <p className="flex items-center flex-wrap gap-2 mt-1 text-gray-700">
-            <span className="font-medium text-black">{winningBid.BidAmount}₹ bid by</span>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Winning Bid</h2>
+          <p className="flex items-center flex-wrap gap-2 mt-1 text-gray-700 dark:text-gray-300">
+            <span className="font-medium text-black dark:text-white">{winningBid.BidAmount}₹ bid by</span>
 
             <button
               disabled={shouldBlurWinner || !hasToken}
@@ -337,7 +338,7 @@ const PostCard = ({
                 const isSelf = user._id === winningBid.user._id;
                 navigate(isSelf ? `/profile` : `/profile/${winningBid.user._id}`);
               }}
-              className={`font-semibold text-black transition duration-150 ${
+              className={`font-semibold text-black dark:text-white transition duration-150 ${
                 shouldBlurWinner ? "blur-sm cursor-not-allowed" : "hover:underline cursor-pointer"
               }`}
             >
@@ -354,12 +355,12 @@ const PostCard = ({
       {/* Completion Controls */}
       {localPost.status === "winnerSelected" &&
         (user._id === localPost.user._id || user._id === localPost.selectedWinner) && (
-          <div className="mt-4 p-4 border-t border-gray-300">
-            <h3 className="text-lg text-center font-semibold mb-4">Job Completion</h3>
+          <div className="mt-4 p-4 border-t border-gray-300 dark:border-gray-600">
+            <h3 className="text-lg text-center font-semibold mb-4 dark:text-white">Job Completion</h3>
             <div className="flex justify-between items-center gap-4 flex-wrap">
               {/* Provider */}
               <div className="flex-1">
-                <p className="mb-1 font-medium">Provider Confirmation</p>
+                <p className="mb-1 font-medium dark:text-gray-200">Provider Confirmation</p>
                 {user._id === localPost.user._id ? (
                   !localPost.providerConfirmed ? (
                     <button
@@ -371,7 +372,7 @@ const PostCard = ({
                   ) : (
                     <button
                       disabled
-                      className="w-full bg-gray-300 text-gray-600 px-4 py-2 rounded mb-2 cursor-pointer"
+                      className="w-full bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 px-4 py-2 rounded mb-2 cursor-pointer"
                     >
                       Completed
                     </button>
@@ -379,7 +380,7 @@ const PostCard = ({
                 ) : (
                   <button
                     disabled
-                    className="w-full bg-gray-300 text-gray-600 px-4 py-2 rounded cursor-pointer"
+                    className="w-full bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 px-4 py-2 rounded cursor-pointer"
                   >
                     {localPost.providerConfirmed ? "Completed" : "In Progress"}
                   </button>
@@ -388,7 +389,7 @@ const PostCard = ({
 
               {/* Worker */}
               <div className="flex-1">
-                <p className="mb-1 text-right font-medium">Worker Confirmation</p>
+                <p className="mb-1 text-right font-medium dark:text-gray-200">Worker Confirmation</p>
                 {user._id === localPost.selectedWinner ? (
                   !localPost.workerConfirmed ? (
                     <button
@@ -400,7 +401,7 @@ const PostCard = ({
                   ) : (
                     <button
                       disabled
-                      className="w-full bg-gray-300 text-gray-600 px-4 py-2 rounded mb-2 cursor-pointer"
+                      className="w-full bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 px-4 py-2 rounded mb-2 cursor-pointer"
                     >
                       Completed
                     </button>
@@ -408,7 +409,7 @@ const PostCard = ({
                 ) : (
                   <button
                     disabled
-                    className="w-full bg-gray-300 text-gray-600 px-4 py-2 rounded cursor-pointer"
+                    className="w-full bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 px-4 py-2 rounded cursor-pointer"
                   >
                     {localPost.workerConfirmed ? "Completed" : "In Progress"}
                   </button>
@@ -430,11 +431,11 @@ const PostCard = ({
       )}
 
       {rating && (
-        <div className="mt-4 p-4 border-t border-gray-200 bg-gray-50 rounded">
-          <h3 className="text-lg font-semibold mb-2">
+        <div className="mt-4 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 rounded">
+          <h3 className="text-lg font-semibold mb-2 dark:text-gray-100">
             Review by{" "}
             <button
-              className="cursor-pointer"
+              className="cursor-pointer dark:text-teal-400"
               onClick={() => {
                 const isSelf = localPost.user._id === rating.from._id;
                 navigate(isSelf ? `/profile` : `/profile/${rating.from._id}`);
@@ -449,14 +450,14 @@ const PostCard = ({
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
-                className={`w-5 h-5 ${i < rating.rating ? "text-yellow-400" : "text-gray-300"}`}
+                className={`w-5 h-5 ${i < rating.rating ? "text-yellow-400" : "text-gray-300 dark:text-gray-600"}`}
                 fill={i < rating.rating ? "#facc15" : "none"}
               />
             ))}
           </div>
 
           {/* 💬 Review Text */}
-          <p className="text-gray-700">{rating.review}</p>
+          <p className="text-gray-700 dark:text-gray-300">{rating.review}</p>
         </div>
       )}
 

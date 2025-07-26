@@ -123,6 +123,13 @@ const UserSchema = mongoose.Schema(
           type: mongoose.Schema.Types.ObjectId,
           ref: 'Post.bids',
         },
+        commentId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Post.Comments',
+        },
+        replyId:{
+          type: mongoose.Schema.Types.ObjectId,
+        },
         message: {
           type: String,
         },
@@ -141,7 +148,16 @@ const UserSchema = mongoose.Schema(
         },
       }
     ],
-
+    allowNotifications: {
+      bids:{
+        type: Boolean,
+        default: true,
+      },
+      comments: {
+        type: Boolean,
+        default: true,
+      },
+    },
     phoneNumber: {
       type: String,
       default: "",

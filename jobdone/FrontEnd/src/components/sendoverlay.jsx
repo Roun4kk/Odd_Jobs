@@ -7,6 +7,7 @@ import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
 import { useNavigate } from "react-router-dom";
 import useIsMobile from "../hooks/useIsMobile.js";
 import toast from "react-hot-toast";
+import { createPortal } from "react-dom";
 
 function SendOverlay({ post, onClose }) {
   const [message, setMessage] = useState("");
@@ -59,6 +60,14 @@ function SendOverlay({ post, onClose }) {
         : [...prev, u]
     );
   };
+  useEffect(() => {
+    if (isMobile) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "auto";
+      };
+    }
+  }, [isMobile]);
 
   const handleSend = () => {
     if (selectedUsers.length === 0) {
@@ -84,19 +93,18 @@ function SendOverlay({ post, onClose }) {
   const filteredUsers = conversationUsers.filter((u) =>
     u.username.toLowerCase().includes(search.toLowerCase())
   );
-
-  if (isMobile) {
-    return (
+const overlayContent = isMobile ? 
+    (
       <div
           className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center px-4"
           style={{ height: 'calc(100dvh - 4rem)' }}
         >
-        <div className="bg-white w-full max-w-sm p-4 rounded-2xl shadow-2xl relative flex flex-col h-[80vh]">
+        <div className="bg-white dark:bg-gray-800 w-full max-w-sm p-4 rounded-2xl shadow-2xl relative flex flex-col h-[80vh]">
           {/* Header */}
-          <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-            <h2 className="text-lg font-semibold">Share Post</h2>
-            <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100">
-              <X className="w-6 h-6 text-gray-600 hover:text-black" />
+          <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-2">
+            <h2 className="text-lg font-semibold dark:text-white">Share Post</h2>
+            <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+              <X className="w-6 h-6 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white" />
             </button>
           </div>
 
@@ -106,10 +114,10 @@ function SendOverlay({ post, onClose }) {
             placeholder="Search by username..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="mt-3 px-4 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+            className="mt-3 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-full text-sm focus:outline-none focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-400/50"
           />
           {conversationLoading && (
-                <div className="flex items-center justify-center h-screen bg-white">
+                <div className="flex items-center justify-center flex-1">
                   <div className="w-12 h-12 border-4 border-teal-500 border-dashed rounded-full animate-spin"></div>
                 </div>
           )}
@@ -121,8 +129,8 @@ function SendOverlay({ post, onClose }) {
                 <div
                   key={u._id}
                   onClick={() => toggleUserSelection(u)}
-                  className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer border ${
-                    isSelected ? "bg-teal-100 border-teal-400" : "hover:bg-gray-50 border-gray-200"
+                  className={`flex items-center gap-3 p-2 my-1 rounded-lg cursor-pointer border ${
+                    isSelected ? "bg-teal-100 dark:bg-teal-900/50 border-teal-400 dark:border-teal-500/50" : "hover:bg-gray-50 dark:hover:bg-gray-700/50 border-gray-200 dark:border-gray-700"
                   }`}
                 >
                   <img
@@ -130,7 +138,7 @@ function SendOverlay({ post, onClose }) {
                     alt={u.username}
                     className="w-8 h-8 rounded-full object-cover"
                   />
-                  <span className="font-medium text-sm">{u.username}</span>
+                  <span className="font-medium text-sm dark:text-gray-200">{u.username}</span>
                   {isSelected && (
                     <div className="ml-auto w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center">
                       <Check className="w-3 h-3 text-white" />
@@ -144,7 +152,7 @@ function SendOverlay({ post, onClose }) {
           {/* Message Input and Actions */}
           {selectedUsers.length > 0 && (
             <textarea
-              className="w-full mt-2 p-3 border border-gray-300 rounded-lg resize-none h-20 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+              className="w-full mt-2 p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg resize-none h-20 text-sm focus:outline-none focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-400/50"
               placeholder={`Message to ${selectedUsers.length} user(s) (optional)`}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -152,7 +160,7 @@ function SendOverlay({ post, onClose }) {
           )}
 
           {/* Fixed Action Bar */}
-          <div className="border-t border-gray-200 pt-2 mt-2 flex justify-end gap-2">
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2 flex justify-end gap-2">
             {selectedUsers.length > 0 ? (
               <button
                 onClick={handleSend}
@@ -163,33 +171,22 @@ function SendOverlay({ post, onClose }) {
             ) : (
               <button
                 onClick={handleCopy}
-                className="bg-gray-300 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-400 flex items-center gap-1 text-sm font-medium"
+                className="bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-full hover:bg-gray-400 dark:hover:bg-gray-500 flex items-center gap-1 text-sm font-medium"
               >
                 <Copy className="w-4 h-4" /> Copy Link
               </button>
             )}
           </div>
-
-          {/* Socket Error */}
-          {/* {socketError && (
-            <div className="absolute bottom-16 left-0 right-0 p-3 text-red-500 text-sm border-t border-red-200 bg-red-50 text-center">
-              Connection error: {socketError}. Please try refreshing the page or logging in again.
-            </div>
-          )} */}
         </div>
       </div>
-    );
-  }
-
-  // Desktop UI
-  return (
+    ) : (
     <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center">
-      <div className="bg-white w-full max-w-lg p-6 rounded-2xl shadow-2xl relative flex flex-col h-[80vh]">
+      <div className="bg-white dark:bg-gray-800 w-full max-w-lg p-6 rounded-2xl shadow-2xl relative flex flex-col h-[80vh]">
         {/* Header */}
-        <div className="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
-          <h2 className="text-xl font-bold text-gray-800">Share Post</h2>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100">
-            <X className="w-6 h-6 text-gray-600 hover:text-black" />
+        <div className="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-gray-700 pb-2">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white">Share Post</h2>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+            <X className="w-6 h-6 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white" />
           </button>
         </div>
 
@@ -199,7 +196,7 @@ function SendOverlay({ post, onClose }) {
           placeholder="Search by username..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="mb-4 px-4 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+          className="mb-4 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-full text-sm focus:outline-none focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-400/50"
         />
 
         {/* User List */}
@@ -212,7 +209,7 @@ function SendOverlay({ post, onClose }) {
                   key={u._id}
                   onClick={() => toggleUserSelection(u)}
                   className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer border ${
-                    isSelected ? "bg-teal-100 border-teal-400" : "hover:bg-gray-50 border-gray-200"
+                    isSelected ? "bg-teal-100 dark:bg-teal-900/50 border-teal-400 dark:border-teal-500/50" : "hover:bg-gray-50 dark:hover:bg-gray-700/50 border-gray-200 dark:border-gray-700"
                   }`}
                 >
                   <img
@@ -220,7 +217,7 @@ function SendOverlay({ post, onClose }) {
                     alt={u.username}
                     className="w-10 h-10 rounded-full object-cover"
                   />
-                  <span className="font-medium text-sm">{u.username}</span>
+                  <span className="font-medium text-sm dark:text-gray-200">{u.username}</span>
                   {isSelected && (
                     <div className="ml-auto w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center">
                       <Check className="w-3 h-3 text-white" />
@@ -235,7 +232,7 @@ function SendOverlay({ post, onClose }) {
         {/* Message Input */}
         {selectedUsers.length > 0 && (
           <textarea
-            className="w-full mt-4 p-3 border border-gray-300 rounded-lg resize-none h-24 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+            className="w-full mt-4 p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg resize-none h-24 text-sm focus:outline-none focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-400/50"
             placeholder={`Message to ${selectedUsers.length} user(s) (optional)`}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -254,22 +251,16 @@ function SendOverlay({ post, onClose }) {
           ) : (
             <button
               onClick={handleCopy}
-              className="bg-gray-300 text-gray-800 px-6 py-2 rounded-full hover:bg-gray-400 flex items-center gap-2 text-sm font-semibold"
+              className="bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 px-6 py-2 rounded-full hover:bg-gray-400 dark:hover:bg-gray-500 flex items-center gap-2 text-sm font-semibold"
             >
               <Copy className="w-4 h-4" /> Copy Link
             </button>
           )}
         </div>
-
-        {/* Socket Error */}
-        {/* {socketError && (
-          <div className="absolute bottom-4 left-0 right-0 p-3 text-red-500 text-sm border-t border-red-200 bg-red-50 text-center">
-            Connection error: {socketError}. Please try refreshing the page or logging in again.
-          </div>
-        )} */}
       </div>
     </div>
   );
+  return createPortal(overlayContent, document.body);
 }
 
 export default SendOverlay;

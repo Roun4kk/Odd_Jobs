@@ -76,14 +76,14 @@ function SearchSkills() {
         {[...Array(5)].map((_, i) => (
           <Star
             key={i}
-            className={`w-5 h-5 ${i < rounded ? "text-yellow-400" : "text-gray-300"}`}
+            className={`w-5 h-5 ${i < rounded ? "text-yellow-400" : "text-gray-300 dark:text-gray-600"}`}
             fill={i < rounded ? "#facc15" : "none"}
           />
         ))}
-        <span className="text-xs text-gray-600 ml-1">
+        <span className="text-xs text-gray-600 dark:text-gray-400 ml-1">
           {average > 0 ? `(${average.toFixed(1)})` : "No ratings yet"}
         </span>
-        {user?.ratings?.length>0 && (<span className="text-sm text-gray-600 ml-1">
+        {user?.ratings?.length>0 && (<span className="text-sm text-gray-600 dark:text-gray-400 ml-1">
           ({user?.ratings?.length} {user?.ratings.length>1 ? "reviews" : "review"})
         </span>)}
       </div>
@@ -93,25 +93,25 @@ function SearchSkills() {
   const LoadingSpinner = () => (
     <div className="flex items-center justify-center py-8">
       <div className="relative">
-        <div className="w-8 h-8 border-4 border-gray-200 rounded-full"></div>
+        <div className="w-8 h-8 border-4 border-gray-200 dark:border-gray-600 rounded-full"></div>
         <div className="w-8 h-8 border-4 border-teal-500 border-dashed rounded-full animate-spin absolute top-0 left-0"></div>
       </div>
-      <span className="ml-3 text-gray-600 text-sm">Searching users...</span>
+      <span className="ml-3 text-gray-600 dark:text-gray-400 text-sm">Searching users...</span>
     </div>
   );
 
   const EmptyState = () => (
     <div className="text-center py-12">
-      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
             d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
       </div>
-      <h3 className="text-lg font-medium text-gray-900 mb-2">
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
         {query.trim() ? "No users found" : "Search for Skills to Hire"}
       </h3>
-      <p className="text-gray-500 text-sm max-w-sm mx-auto">
+      <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm mx-auto">
         {query.trim()
           ? "Try different keywords or check your spelling"
           : "Search by skills, username, or bio to find the right person for the job"}
@@ -124,7 +124,7 @@ function SearchSkills() {
       <div className="relative mb-6">
         <input
           type="text"
-          className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 pr-10"
+          className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 pr-10"
           placeholder="Search by skills, username, or bio..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -132,7 +132,7 @@ function SearchSkills() {
         {query && (
           <button
             onClick={clearSearch}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
             aria-label="Clear search"
           >
             ✕
@@ -146,7 +146,7 @@ function SearchSkills() {
       </div>
 
       {query && !loading && !error && (
-        <div className="mb-4 text-sm text-gray-600">
+        <div className="mb-4 text-sm text-gray-600 dark:text-gray-300">
           {results.length === 0
             ? `No results found for "${query}"`
             : `Found ${results.length} user${results.length !== 1 ? "s" : ""} for "${query}"`}
@@ -154,7 +154,7 @@ function SearchSkills() {
       )}
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-md text-red-700 dark:text-red-400 text-sm">
           {error}
         </div>
       )}
@@ -173,14 +173,14 @@ function SearchSkills() {
                   else navigate(`/profile/${person._id}`);
                 }}
                 key={person._id}
-                className="p-4 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 bg-white cursor-pointer"
+                className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 bg-white dark:bg-gray-800 dark:hover:border-gray-600 cursor-pointer"
               >
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0">
                     <img
                       src={person.userImage}
                       alt={person.username}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-gray-100"
+                      className="w-12 h-12 rounded-full object-cover border-2 border-gray-100 dark:border-gray-600"
                       onError={(e) => {
                         e.target.src =
                           "https://res.cloudinary.com/jobdone/image/upload/v1743801776/posts/bixptelcdl5h0m7t2c8w.jpg";
@@ -190,7 +190,7 @@ function SearchSkills() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-lg font-semibold text-gray-900 truncate">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
                         {person.username}
                       </h3>
                       {person.verified?.email && person.verified?.phoneNumber && (
@@ -199,25 +199,25 @@ function SearchSkills() {
                     </div>
 
                     {person.userBio && (
-                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">
                         {person.userBio}
                       </p>
                     )}
 
                     {person.userSkills && person.userSkills.length > 0 && (
                       <div className="mb-2">
-                        <p className="text-xs text-gray-500 mb-1">Skills:</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Skills:</p>
                         <div className="flex flex-wrap gap-1">
                           {person.userSkills.slice(0, 5).map((skill, index) => (
                             <span
                               key={index}
-                              className="inline-block px-2 py-1 text-xs bg-teal-50 text-teal-700 rounded-full border border-teal-200"
+                              className="inline-block px-2 py-1 text-xs bg-teal-50 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300 rounded-full border border-teal-200 dark:border-teal-500/20"
                             >
                               {skill}
                             </span>
                           ))}
                           {person.userSkills.length > 5 && (
-                            <span className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
+                            <span className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300 rounded-full">
                               +{person.userSkills.length - 5} more
                             </span>
                           )}

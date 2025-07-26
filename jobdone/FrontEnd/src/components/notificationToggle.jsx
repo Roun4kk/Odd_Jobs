@@ -33,11 +33,11 @@ const NotificationToggle = ({ label, type, checked }) => {
   };
 
   return (
-    <div className="flex justify-between items-center">
+    <div className="flex justify-between items-center text-gray-800 dark:text-gray-200">
       <span>{label}</span>
       <input
         type="checkbox"
-        className="w-5 h-5 cursor-pointer accent-teal-500 "
+        className="w-5 h-5 cursor-pointer accent-teal-500"
         checked={isChecked}
         disabled={loading}
         onChange={handleToggle}

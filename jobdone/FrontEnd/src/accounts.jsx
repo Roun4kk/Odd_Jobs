@@ -2,8 +2,11 @@ import { useEffect, useRef } from "react";
 import axios from "axios";
 import useAuth from "./hooks/useAuth.jsx";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "./ThemeContext.jsx" ; // Adjust path if needed
+import { Sun, Moon } from 'lucide-react';
 
 function SettingsComp({ setUserLog, user, triggerRef }) {
+  const { theme, toggleTheme } = useTheme();
   const popoverRef = useRef(null);
   const { updateUser } = useAuth();
   const navigate = useNavigate();
@@ -29,7 +32,12 @@ function SettingsComp({ setUserLog, user, triggerRef }) {
         withCredentials: true 
       });
       
+      // Preserve theme preference
+      const theme = localStorage.getItem("theme");
       localStorage.clear();
+      if (theme) {
+        localStorage.setItem("theme", theme);
+      }
       sessionStorage.clear();
 
       // STEP 3: Clear auth context/state
@@ -59,8 +67,12 @@ function SettingsComp({ setUserLog, user, triggerRef }) {
     } catch (error) {
       console.error("Logout error:", error);
       
-      // Fallback: Clear everything and redirect anyway
+      // Preserve theme preference
+      const theme = localStorage.getItem("theme");
       localStorage.clear();
+      if (theme) {
+        localStorage.setItem("theme", theme);
+      }
       sessionStorage.clear();
       
       if (updateUser) {
@@ -81,14 +93,21 @@ function SettingsComp({ setUserLog, user, triggerRef }) {
   return (
     <div
       ref={popoverRef}
-      className="absolute bottom-[100%] mb-2 z-50 left-1/2 -translate-x-1/2 bg-gray-200 text-black w-max shadow-lg shadow-white rounded-xl"
+      className="absolute bottom-[100%] mb-2 z-50 left-1/2 -translate-x-1/2 bg-gray-200 dark:bg-gray-800 text-black dark:text-white w-max shadow-lg shadow-white dark:shadow-gray-900 rounded-xl"
     >
       <div className="flex flex-col p-4">
         <button
           onClick={handleLogout}
-          className="text-left hover:bg-gray-100 p-2 rounded-md text-black cursor-pointer"
+          className="text-left hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-md text-black dark:text-white cursor-pointer"
         >
           Log out @{user?.username || "user not found"}
+        </button>
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-2 px-6 py-2 rounded-md transition text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          {theme === 'light' ? <Moon className="h-6 w-6" /> : <Sun className="h-6 w-6" />}
+          <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
         </button>
       </div>
     </div>

@@ -1,4 +1,3 @@
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter as Router } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
@@ -6,13 +5,18 @@ import "./index.css";
 import { AuthProvider } from "./hooks/useAuth.jsx";
 import { MessageProvider } from "./messageContext.jsx";
 import MainRouter from "./MainRouter.jsx";
+import { ThemeProvider } from './ThemeContext.jsx';
+import { SortByProvider } from "./SortByContext";
+
 
 createRoot(document.getElementById("root")).render(
+  <ThemeProvider>
     <AuthProvider>
       <MessageProvider>
-        <Router>
-          <MainRouter />
-        </Router>
+        <SortByProvider>
+          <Router>
+            <MainRouter />
+          </Router>
         <Toaster
           position="top-right"
           toastOptions={{
@@ -40,6 +44,8 @@ createRoot(document.getElementById("root")).render(
             },
           }}
         />
+        </SortByProvider>
       </MessageProvider>
     </AuthProvider>
+  </ThemeProvider>
 );

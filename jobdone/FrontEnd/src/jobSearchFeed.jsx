@@ -26,10 +26,8 @@ function JobSearchFeed({
 
   const toggleSavePost = async (postId) => {
     try {
-      // Get current state from local user object instead of API call
       const isAlreadySaved = user.savedPosts?.includes(postId);
       
-      // Optimistic update - update UI immediately
       const optimisticUser = {
         ...user,
         savedPosts: isAlreadySaved 
@@ -38,7 +36,6 @@ function JobSearchFeed({
       };
       updateUser(optimisticUser);
 
-      // Then sync with server
       if (isAlreadySaved) {
         await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/posts/unsave`, { 
           data: { postId, userId: user._id } 
@@ -50,35 +47,32 @@ function JobSearchFeed({
       }
     } catch (error) {
       console.error("Error saving/unsaving post:", error);
-      // Revert optimistic update on error
       updateUser(user);
     }
   };
 
-  // Loading spinner component
   const LoadingSpinner = () => (
     <div className="flex flex-col items-center justify-center py-12 space-y-4">
       <div className="relative">
-        <div className="w-12 h-12 border-4 border-gray-200 rounded-full"></div>
+        <div className="w-12 h-12 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
         <div className="w-12 h-12 border-4 border-teal-500 border-dashed rounded-full animate-spin absolute top-0 left-0"></div>
       </div>
-      <p className="text-gray-500 text-sm">Searching...</p>
+      <p className="text-gray-500 dark:text-gray-400 text-sm">Searching...</p>
     </div>
   );
 
-  // Empty state component
   const EmptyState = ({ hasSearchTerm }) => (
     <div className="flex flex-col items-center justify-center py-16 space-y-4">
-      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+        <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </div>
       <div className="text-center">
-        <h3 className="text-lg font-medium text-gray-900 mb-1">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">
           {hasSearchTerm ? "No results found" : "Start searching"}
         </h3>
-        <p className="text-gray-500 text-sm max-w-sm">
+        <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm">
           {hasSearchTerm 
             ? "Try adjusting your search terms or check for typos" 
             : "Enter a keyword or username to find relevant job posts"
@@ -88,7 +82,6 @@ function JobSearchFeed({
     </div>
   );
 
-  // Show refresh loading (original loading state)
   if (refreshFlag) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -97,7 +90,6 @@ function JobSearchFeed({
     );
   }
 
-  // Show search loading
   if (loading) {
     return (
       <div className="w-full lg:w-3/4 mt-4 space-y-4 max-w-md lg:max-w-none mx-auto">
@@ -147,11 +139,10 @@ function JobSearchFeed({
             );
           })}
           
-          {/* Show loading indicator at bottom when fetching top bids */}
           {posts.length > 0 && Object.keys(topBids).length < posts.length && (
             <div className="flex justify-center py-4">
-              <div className="flex items-center space-x-2 text-gray-500 text-sm">
-                <div className="w-4 h-4 border-2 border-gray-300 border-dashed rounded-full animate-spin"></div>
+              <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 text-sm">
+                <div className="w-4 h-4 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-full animate-spin"></div>
                 <span>Loading bids...</span>
               </div>
             </div>
@@ -159,7 +150,6 @@ function JobSearchFeed({
         </>
       )}
       
-      {/* Overlays */}
       {activeCommentPost && (
         <CommentOverlay 
           post={activeCommentPost} 

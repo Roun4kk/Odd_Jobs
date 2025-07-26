@@ -1,7 +1,7 @@
 import Sidebar from "./Sidebar";
 import useAuth from "./hooks/useAuth";
 import { useState, useEffect } from "react";
-import { ArrowLeftIcon, BadgeCheck } from "lucide-react";
+import { ArrowLeftIcon, BadgeCheck, Sun, Moon } from "lucide-react";
 import axios from "axios";
 import ReportForm from "./reportComp";
 import NotificationToggle from "./components/notificationToggle";
@@ -9,15 +9,55 @@ import useIsMobile from "./hooks/useIsMobile.js";
 import BottomNavbar from "./bottomNavBar";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { useTheme } from "./ThemeContext.jsx";
 
 function Settings() {
-    const { user, updateUser , loading} = useAuth();
+    const { theme, toggleTheme } = useTheme();
+    const { user, updateUser, loading } = useAuth();
     const isMobile = useIsMobile();
-    const [activeSection, setActiveSection] = useState("yourAccount");
-    const [previousSection, setPreviousSection] = useState("yourAccount");
     const navigate = useNavigate();
 
-    // State for various inputs
+    // ✅ STEP 1: Replace activeSection with a navigation stack
+    const [navigationStack, setNavigationStack] = useState(["yourAccount"]);
+    
+    // The currently visible section is always the last item in the stack
+    const activeSection = navigationStack[navigationStack.length - 1];
+
+    // ✅ STEP 2: Create navigation functions
+    const navigateTo = (section) => {
+        setNavigationStack(prevStack => [...prevStack, section]);
+    };
+
+    const handleBack = () => {
+        if (navigationStack.length > 1) {
+            // This is how we go from 3rd -> 2nd -> 1st layer
+            setNavigationStack(prevStack => prevStack.slice(0, -1));
+        }
+    };
+
+    // ✅ STEP 3: Integrate with browser history for back button/swipe
+    useEffect(() => {
+        if (!isMobile) return;
+
+        const handlePopState = (event) => {
+            // When the browser's back button is pressed,
+            // we just pop from our internal stack.
+            handleBack();
+        };
+        
+        // Push a state ONLY when we navigate away from the base layer
+        if (navigationStack.length > 1 && event.type !== 'popstate') {
+            window.history.pushState({ settingsLayer: navigationStack.length }, "");
+        }
+
+        window.addEventListener("popstate", handlePopState);
+        return () => {
+            window.removeEventListener("popstate", handlePopState);
+        };
+    }, [navigationStack, isMobile]);
+
+
+    // --- NO CHANGES NEEDED to state variables or API functions ---
     const [password, setPassword] = useState("");
     const [oldPassword, setOldPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
@@ -27,7 +67,6 @@ function Settings() {
     const [newEmail, setNewEmail] = useState("");
     const [otp, setOtp] = useState("");
 
-    // State for UI and messages
     const [showPassword, setShowPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -35,9 +74,7 @@ function Settings() {
     const [passwordErrorMessage, setPasswordErrorMessage] = useState("");
     const [passwordVerification, setPasswordVerification] = useState(false);
     const [hasToken, setHasToken] = useState(false);
-    
     const isAuth = user.isOAuth;
-
 
     useEffect(() => {
         if (!loading) {
@@ -45,46 +82,56 @@ function Settings() {
             console.log("No user found, redirecting to login");
             navigate("/");
         } else {
-            console.log("User found, setting hasToken to true");
             setHasToken(true);
         }
         }
     }, [user, loading, navigate]);
-    
+
+    // --- All API functions remain the same ---
+    // Example of how to update an API function:
+    const handleVerify = async () => {
+        setErrorMessage("");
+        if (!password) return setErrorMessage("Please enter your password.");
+        try {
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/user/check`, { email: user.email, password }, { withCredentials: true });
+            setPasswordVerification(true);
+            navigateTo("accountInformation"); // USE NAVIGATE_TO
+        } catch (error) {
+            setErrorMessage(error.response?.data?.message || "Incorrect password.");
+        }
+    };
     const handleLogout = async () => {
         try {
         const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/logout`, {}, { 
             withCredentials: true 
         });
-        // STEP 2: Clear frontend storage
+        // Preserve theme preference
+        const theme = localStorage.getItem("theme");
         localStorage.clear();
+        if (theme) {
+            localStorage.setItem("theme", theme);
+        }
         sessionStorage.clear();
 
-        // STEP 3: Clear auth context/state
         if (updateUser) {
             updateUser(null);
         }
 
-        // STEP 4: Clear any frontend cookies as backup
         const cookies = document.cookie.split(";");
         cookies.forEach((cookie) => {
             const eqPos = cookie.indexOf("=");
             const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
             
             if (name) {
-            // Clear with different combinations
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost`;
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.localhost`;
             }
         });
         
-        // STEP 5: Force redirect (use replace to prevent back navigation)
         navigate("/");
         
         } catch (error) {
-        
-        // Fallback: Clear everything and redirect anyway
         localStorage.clear();
         sessionStorage.clear();
         
@@ -92,7 +139,6 @@ function Settings() {
             updateUser(null);
         }
         
-        // Try to clear cookies anyway
         document.cookie.split(";").forEach((cookie) => {
             const eqPos = cookie.indexOf("=");
             const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
@@ -108,7 +154,6 @@ function Settings() {
         try {
             await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/users/delete`, { withCredentials: true });
             toast.success("Your account has been deleted successfully.");
-            // Clear user data and redirect to home
             localStorage.clear();
             sessionStorage.clear();
             if (updateUser) {
@@ -121,7 +166,6 @@ function Settings() {
         }
     };
 
-    // --- VALIDATION FUNCTIONS ---
     const validateEmail = (email) => {
         if (!email) return { valid: false, message: "Email is required." };
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -138,20 +182,6 @@ function Settings() {
         if (!/[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]/.test(password)) return { valid: false, message: "Include at least one special character." };
         return { valid: true };
     };
-
-    // --- API & HANDLER FUNCTIONS ---
-    const handleVerify = async () => {
-        setErrorMessage("");
-        if (!password) return setErrorMessage("Please enter your password.");
-        try {
-            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/user/check`, { email: user.email, password }, { withCredentials: true });
-            setPasswordVerification(true);
-            setActiveSection("accountInformation");
-        } catch (error) {
-            setErrorMessage(error.response?.data?.message || "Incorrect password.");
-        }
-    };
-    
     const handleChangeUsername = async () => {
         setErrorMessage("");
         if (!newUsername.trim() || newUsername === user.username) {
@@ -161,7 +191,7 @@ function Settings() {
             const response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/users/changeUsername/${user.id || user._id}`, { newUsername }, { withCredentials: true });
             updateUser({ ...user, username: response.data.username || newUsername });
             toast.success("Username updated successfully!");
-            setActiveSection("accountInformation");
+            handleBack(); // Use handleBack
         } catch (error) {
             setErrorMessage(error.response?.data?.message || "Failed to update username.");
         }
@@ -184,8 +214,7 @@ function Settings() {
 
         try {
             await axios.post(`${import.meta.env.VITE_API_BASE_URL}${endpoint}`, payload, { withCredentials: true });
-            setPreviousSection(activeSection);
-            setActiveSection(type === 'phone' ? 'verifyPhoneOTP' : 'verifyEmailOTP');
+            navigateTo(type === 'phone' ? 'verifyPhoneOTP' : 'verifyEmailOTP'); // Use navigateTo
         } catch (error) {
             setErrorMessage(error.response?.data?.message || "Failed to send OTP.");
         }
@@ -211,7 +240,8 @@ function Settings() {
             toast.success(`${type === 'phone' ? 'Phone number' : 'Email'} verified and updated successfully!`);
             const updatedField = type === 'phone' ? { phoneNumber: value } : { email: value };
             updateUser({ ...user, ...updatedField, verified: { ...user.verified, [type === 'phone' ? 'phoneNumber' : 'email']: true }});
-            setActiveSection("accountInformation");
+            // Pop twice to go from verifyOTP -> changePhone/Email -> accountInformation
+            setNavigationStack(prev => prev.slice(0, -2)); 
         } catch (error) {
             setErrorMessage(error.response?.data?.message || "Invalid or expired OTP.");
         }
@@ -238,8 +268,7 @@ function Settings() {
         setErrorMessage("");
         try {
             await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/email/send-otp`, { email: user.email });
-            setPreviousSection(activeSection);
-            setActiveSection("forgotPasswordOTP");
+            navigateTo("forgotPasswordOTP"); // Use navigateTo
         } catch (error) {
             setErrorMessage(error.response?.data?.message || "Failed to send password reset OTP.");
         }
@@ -250,7 +279,7 @@ function Settings() {
         if (!/^\d{6}$/.test(otp)) return setErrorMessage("Please enter a valid 6-digit OTP.");
         try {
             await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/email/verify-otp`, { email: user.email, otp, userId: user.id || user._id });
-            setActiveSection("resetPassword");
+            navigateTo("resetPassword"); // Use navigateTo
         } catch (error) {
             setErrorMessage(error.response?.data?.message || "Invalid or expired OTP.");
         }
@@ -265,8 +294,7 @@ function Settings() {
         try {
             await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/change-password`, { newPassword, email: user.email , otpVerified:true}, { withCredentials: true });
             toast.success("Password has been reset successfully. For security, you will be logged out.");
-            // Add your logout logic here, then navigate to login page.
-            handleLogout(); // Example logout redirect
+            handleLogout(); 
         } catch (error) {
             setPasswordErrorMessage(error.response?.data?.message || "Failed to reset password.");
         }
@@ -277,45 +305,46 @@ function Settings() {
     };
 
     const navigateToForgotPasswordFlow = () => {
-        setPreviousSection(activeSection);
         resetPasswordStates();
-        setActiveSection("forgotPasswordSend");
+        navigateTo("forgotPasswordSend"); // Use navigateTo
     };
-
+    
     useEffect(() => {
         setErrorMessage("");
         setPasswordErrorMessage("");
     }, [activeSection]);
-
+    
+    // --- The JSX now needs to be updated to use the new navigation functions ---
+    
     const buttonClass = (section) =>
-        `w-full py-3 px-4 text-left hover:bg-gray-100 rounded-md cursor-pointer ${
-            activeSection === section ? "bg-gray-200 font-medium" : ""
+        `w-full py-3 px-4 text-left hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer ${
+            activeSection === section ? "bg-gray-200 dark:bg-gray-700 font-medium" : ""
         }`;
-    const backButton = (targetSection) => (
+        
+    const backButton = () => (
         <button
-            onClick={() => setActiveSection(targetSection)}
-            className="p-2 rounded-full hover:bg-gray-200 text-teal-800 cursor-pointer"
+            onClick={handleBack} // The back button now just calls handleBack
+            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-teal-800 dark:text-teal-300 cursor-pointer"
         >
             <ArrowLeftIcon className="h-6 w-6" />
         </button>
     );
 
-    // --- RENDER LOGIC ---
     if (isMobile) {
         return (
-            <div className="min-h-screen bg-white pb-20 px-4">
+            <div className="min-h-screen bg-white dark:bg-gray-900 pb-20 px-4">
                 {activeSection === "yourAccount" && (
-                    <div className="flex items-center justify-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
-                        <h1 className="text-2xl text-teal-800 font-bold ml-2">Settings</h1>
+                    <div className="flex items-center justify-center bg-teal-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                        <h1 className="text-2xl text-teal-800 dark:text-white font-bold ml-2">Settings</h1>
                     </div>
                 )}
 
                 {activeSection === "yourAccount" && (
                     <>
-                        <div className="space-y-4">
+                        <div className="space-y-4 text-gray-800 dark:text-gray-200">
                             <button
                                 onClick={() =>
-                                    setActiveSection(
+                                    navigateTo( // USE NAVIGATE_TO
                                         isAuth || passwordVerification
                                             ? "accountInformation"
                                             : "passwordVerification"
@@ -324,56 +353,66 @@ function Settings() {
                                 className={buttonClass("accountInformation")}
                             >
                                 <span className="font-medium">Account Information</span>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
                                     See your account info like phone and email.
                                 </p>
                             </button>
                             <button
-                                onClick={() => setActiveSection("changePassword")}
+                                onClick={() => navigateTo("changePassword")} // USE NAVIGATE_TO
                                 className={buttonClass("changePassword")}
                             >
                                 <span className="font-medium">Change Password</span>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
                                     Change your account password.
                                 </p>
                             </button>
                             <button
-                                onClick={() => setActiveSection("notifications")}
+                                onClick={() => navigateTo("notifications")} // USE NAVIGATE_TO
                                 className={buttonClass("notifications")}
                             >
                                 <span className="font-medium">Notifications</span>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
                                     Manage your notification settings.
                                 </p>
                             </button>
                             <button
-                                onClick={() => setActiveSection("report")}
+                                onClick={() => navigateTo("report")} // USE NAVIGATE_TO
                                 className={buttonClass("report")}
                             >
                                 <span className="font-medium">Report a Problem</span>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
                                     Report issues or concerns.
                                 </p>
                             </button>
+                            {/* ... other buttons remain the same */}
                             <button
                                 onClick={handleLogout}
-                                className="w-full py-3 px-4 text-left hover:bg-gray-100 rounded-md text-red-600 cursor-pointer"
+                                className="w-full py-3 px-4 text-left hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-red-600 dark:text-red-400 cursor-pointer"
                             >
                                 <span className="font-medium">Logout</span>
                             </button>
+                            <button
+                                onClick={toggleTheme}
+                                className="flex items-center gap-2 px-6 py-2 rounded-md transition text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
+                                {theme === 'light' ? <Moon className="h-6 w-6" /> : <Sun className="h-6 w-6" />}
+                                <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
+                                </button>
                         </div>
                     </>
                 )}
-
+                
+                {/* Now all headers with a back button will work correctly */}
                 {activeSection === "notifications" && (
                     <>
-                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
-                            {backButton("yourAccount")}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800">
+                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                            {backButton()}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
                                 Notifications
                             </h1>
                         </div>
-                        <div className="space-y-6">
+                        {/* ... content ... */}
+                         <div className="space-y-6">
                             <NotificationToggle
                                 label="Comment Notifications"
                                 type="comments"
@@ -388,11 +427,99 @@ function Settings() {
                     </>
                 )}
 
-                {activeSection === "report" && (
+                {activeSection === "accountInformation" && (
+                     <>
+                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                            {backButton()}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
+                                Account Information
+                            </h1>
+                        </div>
+                        <div className="space-y-4 text-gray-800 dark:text-gray-200">
+                             <button
+                                onClick={() => navigateTo("changeUsername")} // USE NAVIGATE_TO
+                                className={buttonClass("changeUsername")}
+                            >
+                                <span className="font-medium">Username</span>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    @{user.username}
+                                </p>
+                            </button>
+                             <button
+                                onClick={() => navigateTo("changePhone")} // USE NAVIGATE_TO
+                                className={buttonClass("changePhone")}
+                            >
+                                <span className="font-medium">Phone Number</span>
+                                {user.verified?.phoneNumber && (
+                                    <BadgeCheck className="inline h-4 w-4 text-teal-400" />
+                                )}
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {user.phoneNumber || "Add a phone number"}
+                                </p>
+                            </button>
+                             <button
+                                onClick={() => navigateTo("changeEmail")} // USE NAVIGATE_TO
+                                className={buttonClass("changeEmail")}
+                            >
+                                <span className="font-medium">Email</span>
+                                {user.verified?.email && (
+                                    <BadgeCheck className="inline h-4 w-4 text-teal-400" />
+                                )}
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                            </button>
+                             <button
+                                onClick={handleDeleteAccount}
+                                className="w-full py-3 px-4 text-left hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-red-600 dark:text-red-400 cursor-pointer"
+                            >
+                                <span className="font-medium">Delete Account</span>
+                            </button>
+                        </div>
+                    </>
+                )}
+                
+                {/* ... The rest of the JSX needs to be updated in the same way ... */}
+                {/* Example for one more section */}
+                {activeSection === "changeUsername" && (
                     <>
-                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
-                            {backButton("yourAccount")}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800">
+                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                            {backButton()}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
+                                Change Username
+                            </h1>
+                        </div>
+                        {/* ... content ... */}
+                         <div className="space-y-4">
+                            <input
+                                type="text"
+                                placeholder={user.username}
+                                value={newUsername}
+                                onChange={(e) => setNewUsername(e.target.value)}
+                                className="w-full p-4 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg text-base"
+                            />
+                            {errorMessage && (
+                                <p className="text-red-500 dark:text-red-400 text-sm text-center">
+                                    {errorMessage}
+                                </p>
+                            )}
+                            <button
+                                onClick={handleChangeUsername}
+                                className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </>
+                )}
+
+                {/* --- And so on for all other sections --- */}
+                
+                {/* ... I will complete the rest of the mobile JSX for you ... */}
+
+                 {activeSection === "report" && (
+                    <>
+                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                            {backButton()}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
                                 Report a Problem
                             </h1>
                         </div>
@@ -404,15 +531,15 @@ function Settings() {
 
                 {activeSection === "passwordVerification" && (
                     <>
-                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
-                            {backButton("yourAccount")}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800">
+                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                            {backButton()}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
                                 Account Information
                             </h1>
                         </div>
-                        <div className="space-y-4">
+                        <div className="space-y-4 text-gray-800 dark:text-gray-200">
                             <h2 className="text-lg font-semibold">Verify it's you</h2>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Enter your password to continue.
                             </p>
                             <div className="relative">
@@ -421,18 +548,18 @@ function Settings() {
                                     placeholder="Password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full p-4 border border-gray-300 rounded-lg text-base"
+                                    className="w-full p-4 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-lg text-base"
                                 />
                             </div>
                             {errorMessage && (
-                                <p className="text-red-500 text-sm text-center">
+                                <p className="text-red-500 dark:text-red-400 text-sm text-center">
                                     {errorMessage}
                                 </p>
                             )}
                             <div className="flex flex-col space-y-4 mt-4">
                                 <button
                                     onClick={navigateToForgotPasswordFlow}
-                                    className="text-md text-teal-600 hover:underline text-center cursor-pointer"
+                                    className="text-md text-teal-600 dark:text-teal-400 hover:underline text-center cursor-pointer"
                                 >
                                     Forgot Password?
                                 </button>
@@ -447,92 +574,11 @@ function Settings() {
                     </>
                 )}
 
-                {activeSection === "accountInformation" && (
-                    <>
-                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
-                            {backButton("yourAccount")}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800">
-                                Account Information
-                            </h1>
-                        </div>
-                        <div className="space-y-4">
-                            <button
-                                onClick={() => setActiveSection("changeUsername")}
-                                className={buttonClass("changeUsername")}
-                            >
-                                <span className="font-medium">Username</span>
-                                <p className="text-xs text-gray-500">
-                                    @{user.username}
-                                </p>
-                            </button>
-                            <button
-                                onClick={() => setActiveSection("changePhone")}
-                                className={buttonClass("changePhone")}
-                            >
-                                <span className="font-medium">Phone Number</span>
-                                {user.verified?.phoneNumber && (
-                                    <BadgeCheck className="inline h-4 w-4 text-teal-400" />
-                                )}
-                                <p className="text-xs text-gray-500">
-                                    {user.phoneNumber || "Add a phone number"}
-                                </p>
-                            </button>
-                            <button
-                                onClick={() => setActiveSection("changeEmail")}
-                                className={buttonClass("changeEmail")}
-                            >
-                                <span className="font-medium">Email</span>
-                                {user.verified?.email && (
-                                    <BadgeCheck className="inline h-4 w-4 text-teal-400" />
-                                )}
-                                <p className="text-xs text-gray-500">{user.email}</p>
-                            </button>
-                            <button
-                                onClick={handleDeleteAccount}
-                                className="w-full py-3 px-4 text-left hover:bg-gray-100 rounded-md text-red-600 cursor-pointer"
-                            >
-                                <span className="font-medium">Delete Account</span>
-                            </button>
-                        </div>
-                    </>
-                )}
-
-                {activeSection === "changeUsername" && (
-                    <>
-                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
-                            {backButton("accountInformation")}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800">
-                                Change Username
-                            </h1>
-                        </div>
-                        <div className="space-y-4">
-                            <input
-                                type="text"
-                                placeholder={user.username}
-                                value={newUsername}
-                                onChange={(e) => setNewUsername(e.target.value)}
-                                className="w-full p-4 border border-gray-300 rounded-lg text-base"
-                            />
-                            {errorMessage && (
-                                <p className="text-red-500 text-sm text-center">
-                                    {errorMessage}
-                                </p>
-                            )}
-                            <button
-                                onClick={handleChangeUsername}
-                                className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
-                            >
-                                Save
-                            </button>
-                        </div>
-                    </>
-                )}
-
                 {["changePhone", "changeEmail"].includes(activeSection) && (
                     <>
-                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
-                            {backButton("accountInformation")}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800">
+                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                            {backButton()}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
                                 {activeSection === "changePhone"
                                     ? "Change Phone Number"
                                     : "Change Email"}
@@ -551,10 +597,10 @@ function Settings() {
                                         ? setNewPhoneNumber(e.target.value)
                                         : setNewEmail(e.target.value)
                                 }
-                                className="w-full p-4 border border-gray-300 rounded-lg text-base"
+                                className="w-full p-4 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg text-base"
                             />
                             {errorMessage && (
-                                <p className="text-red-500 text-sm text-center">
+                                <p className="text-red-500 dark:text-red-400 text-sm text-center">
                                     {errorMessage}
                                 </p>
                             )}
@@ -579,13 +625,9 @@ function Settings() {
 
                 {["verifyPhoneOTP", "verifyEmailOTP"].includes(activeSection) && (
                     <>
-                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
-                            {backButton(
-                                activeSection === "verifyPhoneOTP"
-                                    ? "changePhone"
-                                    : "changeEmail"
-                            )}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800">
+                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                            {backButton()}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
                                 Verify Code
                             </h1>
                         </div>
@@ -595,11 +637,11 @@ function Settings() {
                                 placeholder="6-digit code"
                                 value={otp}
                                 onChange={(e) => setOtp(e.target.value)}
-                                className="w-full p-4 border border-gray-300 rounded-lg text-center text-base tracking-widest"
+                                className="w-full p-4 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg text-center text-base tracking-widest"
                                 maxLength={6}
                             />
                             {errorMessage && (
-                                <p className="text-red-500 text-sm text-center">
+                                <p className="text-red-500 dark:text-red-400 text-sm text-center">
                                     {errorMessage}
                                 </p>
                             )}
@@ -625,9 +667,9 @@ function Settings() {
 
                 {activeSection === "changePassword" && (
                     <>
-                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
-                            {backButton("yourAccount")}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800">
+                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                            {backButton()}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
                                 Change Password
                             </h1>
                         </div>
@@ -637,31 +679,31 @@ function Settings() {
                                 placeholder="Current Password"
                                 value={oldPassword}
                                 onChange={(e) => setOldPassword(e.target.value)}
-                                className="w-full p-4 border border-gray-300 rounded-lg text-base"
+                                className="w-full p-4 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg text-base"
                             />)}
                             <input
                                 type={showNewPassword ? "text" : "password"}
                                 placeholder="New Password"
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
-                                className="w-full p-4 border border-gray-300 rounded-lg text-base"
+                                className="w-full p-4 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg text-base"
                             />
                             <input
                                 type={showConfirmPassword ? "text" : "password"}
                                 placeholder="Confirm New Password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full p-4 border border-gray-300 rounded-lg text-base"
+                                className="w-full p-4 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg text-base"
                             />
                             {passwordErrorMessage && (
-                                <p className="text-red-500 text-sm text-center">
+                                <p className="text-red-500 dark:text-red-400 text-sm text-center">
                                     {passwordErrorMessage}
                                 </p>
                             )}
                             <div className="flex flex-col space-y-4 mt-4">
                                 {!isAuth && (<button
                                     onClick={navigateToForgotPasswordFlow}
-                                    className="text-md text-teal-600 hover:underline text-center cursor-pointer"
+                                    className="text-md text-teal-600 dark:text-teal-400 hover:underline text-center cursor-pointer"
                                 >
                                     Forgot Password?
                                 </button>)}
@@ -678,19 +720,19 @@ function Settings() {
 
                 {activeSection === "forgotPasswordSend" && (
                     <>
-                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
-                            {backButton(previousSection)}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800">
+                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                            {backButton()}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
                                 Forgot Password
                             </h1>
                         </div>
                         <div className="space-y-4">
-                            <p className="text-sm text-gray-500 text-center">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
                                 We'll send a code to your email:{" "}
                                 <strong>{user.email}</strong>
                             </p>
                             {errorMessage && (
-                                <p className="text-red-500 text-sm text-center">
+                                <p className="text-red-500 dark:text-red-400 text-sm text-center">
                                     {errorMessage}
                                 </p>
                             )}
@@ -706,14 +748,14 @@ function Settings() {
 
                 {activeSection === "forgotPasswordOTP" && (
                     <>
-                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
-                            {backButton("forgotPasswordSend")}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800">
+                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                            {backButton()}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
                                 Enter Code
                             </h1>
                         </div>
                         <div className="space-y-4">
-                            <p className="text-sm text-gray-500 text-center">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
                                 Enter the 6-digit code sent to{" "}
                                 <strong>{user.email}</strong>.
                             </p>
@@ -722,11 +764,11 @@ function Settings() {
                                 placeholder="6-digit code"
                                 value={otp}
                                 onChange={(e) => setOtp(e.target.value)}
-                                className="w-full p-4 border border-gray-300 rounded-lg text-center text-base tracking-widest"
+                                className="w-full p-4 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg text-center text-base tracking-widest"
                                 maxLength={6}
                             />
                             {errorMessage && (
-                                <p className="text-red-500 text-sm text-center">
+                                <p className="text-red-500 dark:text-red-400 text-sm text-center">
                                     {errorMessage}
                                 </p>
                             )}
@@ -742,9 +784,9 @@ function Settings() {
 
                 {activeSection === "resetPassword" && (
                     <>
-                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
-                            {backButton("forgotPasswordOTP")}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800">
+                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                            {backButton()}
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
                                 Reset Your Password
                             </h1>
                         </div>
@@ -754,17 +796,17 @@ function Settings() {
                                 placeholder="New Password"
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
-                                className="w-full p-4 border border-gray-300 rounded-lg text-base"
+                                className="w-full p-4 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg text-base"
                             />
                             <input
                                 type={showConfirmPassword ? "text" : "password"}
                                 placeholder="Confirm New Password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full p-4 border border-gray-300 rounded-lg text-base"
+                                className="w-full p-4 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg text-base"
                             />
                             {passwordErrorMessage && (
-                                <p className="text-red-500 text-sm text-center">
+                                <p className="text-red-500 dark:text-red-400 text-sm text-center">
                                     {passwordErrorMessage}
                                 </p>
                             )}
@@ -782,26 +824,27 @@ function Settings() {
         );
     }
 
+    // --- The Desktop JSX also needs to be updated to use the new navigation functions ---
     return (
-        <div className="flex h-screen overflow-hidden">
+        <div className="flex h-screen overflow-hidden dark:bg-gray-900 text-gray-800 dark:text-gray-200">
             <Sidebar user={user} />
-            <div className="w-[70%] h-full fixed right-0 top-0 bg-white flex overflow-y-hidden">
-                <div className="py-3 w-2/5 h-full flex flex-col border-r border-gray-300">
+            <div className="w-[70%] h-full fixed right-0 top-0 bg-white dark:bg-gray-900 flex overflow-y-hidden">
+                <div className="py-3 w-2/5 h-full flex flex-col border-r border-gray-300 dark:border-gray-700">
                     <h1 className="font-bold py-2 px-5 text-2xl">Settings</h1>
                     <button
-                        onClick={() => setActiveSection("yourAccount")}
+                        onClick={() => setNavigationStack(["yourAccount"])} // Reset to base
                         className={buttonClass("yourAccount")}
                     >
                         Your Account
                     </button>
                     <button
-                        onClick={() => setActiveSection("notifications")}
+                        onClick={() => setNavigationStack(["notifications"])} // Reset to this section
                         className={buttonClass("notifications")}
                     >
                         Notifications
                     </button>
                     <button
-                        onClick={() => setActiveSection("report")}
+                        onClick={() => setNavigationStack(["report"])} // Reset to this section
                         className={buttonClass("report")}
                     >
                         Report a problem
@@ -810,39 +853,39 @@ function Settings() {
                 
                 <div className="py-3 w-3/5 h-full flex flex-col overflow-y-auto px-5">
                     
-                    {/* Your Account Main Screen */}
                     {activeSection === "yourAccount" && (
                         <>
                             <h1 className="font-bold py-2 text-2xl">Your Account</h1>
                             <button
                                 onClick={() =>
-                                    setActiveSection(
+                                    navigateTo( // USE NAVIGATE_TO
                                         isAuth || passwordVerification
                                             ? "accountInformation"
                                             : "passwordVerification"
                                     )
                                 }
-                                className="py-2 text-left hover:bg-gray-100 p-2 rounded-md cursor-pointer"
+                                className="py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-md cursor-pointer"
                             >
                                 <span className="font-medium">Account Information</span>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
                                     See your account information like phone number and email address.
                                 </p>
                             </button>
                             <button
-                                onClick={() => setActiveSection("changePassword")}
-                                className="py-2 text-left hover:bg-gray-100 p-2 rounded-md cursor-pointer"
+                                onClick={() => navigateTo("changePassword")} // USE NAVIGATE_TO
+                                className="py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-md cursor-pointer"
                             >
                                 <span className="font-medium">Change password</span>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
                                     Change your account password at any time.
                                 </p>
                             </button>
                         </>
                     )}
-
-                    {/* Notifications Screen (Restored) */}
-                    {activeSection === "notifications" && (
+                    
+                    {/* ... And so on for all desktop sections ... */}
+                    {/* --- I will complete the rest of the desktop JSX for you --- */}
+                     {activeSection === "notifications" && (
                         <>
                             <h1 className="font-bold py-2 text-2xl">Notifications</h1>
                             <div className="space-y-4 py-2">
@@ -860,7 +903,6 @@ function Settings() {
                         </>
                     )}
 
-                    {/* Report a Problem Screen (Restored) */}
                     {activeSection === "report" && (
                         <>
                             <h1 className="font-bold py-2 text-2xl">Report a Problem</h1>
@@ -870,16 +912,15 @@ function Settings() {
                         </>
                     )}
                     
-                    {/* Reusable Password Verification Screen */}
                     {activeSection === "passwordVerification" && (
                          <>
                             <div className="font-bold flex items-center py-2 text-2xl">
-                                {backButton("yourAccount")}
+                                {backButton()}
                                 <h1 className="ml-4">Account Information</h1>
                             </div>
                             <div className="px-2 mt-4 space-y-2">
                                 <h2 className="text-base font-semibold">Verify it's you</h2>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
                                     To continue, please enter your password.
                                 </p>
                                 <div className="relative w-full pt-2">
@@ -888,18 +929,18 @@ function Settings() {
                                         placeholder="Password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full p-3 border border-gray-300 rounded-md"
+                                        className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md"
                                     />
                                 </div>
                                 {errorMessage && (
-                                    <p className="text-red-500 text-sm text-center">
+                                    <p className="text-red-500 dark:text-red-400 text-sm text-center">
                                         {errorMessage}
                                     </p>
                                 )}
                                 <div className="flex justify-between items-center mt-4">
                                     <button
                                         onClick={navigateToForgotPasswordFlow}
-                                        className="text-md text-teal-600 hover:underline cursor-pointer"
+                                        className="text-md text-teal-600 dark:text-teal-400 hover:underline cursor-pointer"
                                     >
                                         Forgot Password?
                                     </button>
@@ -914,58 +955,56 @@ function Settings() {
                         </>
                     )}
 
-                    {/* Account Information Screen (Restored) */}
                     {activeSection === "accountInformation" && (
                         <>
                             <div className="font-bold flex items-center py-2 text-2xl">
-                                {backButton("yourAccount")}
+                                {backButton()}
                                 <h1 className="ml-4">Account Information</h1>
                             </div>
                             <button
-                                onClick={() => setActiveSection("changeUsername")}
-                                className="py-2 text-left hover:bg-gray-100 p-2 rounded-md cursor-pointer"
+                                onClick={() => navigateTo("changeUsername")}
+                                className="py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-md cursor-pointer"
                             >
                                 <span className="font-medium">Username</span>{" "}
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
                                     @{user.username}
                                 </p>
                             </button>
                             <button
-                                onClick={() => setActiveSection("changePhone")}
-                                className="py-2 text-left hover:bg-gray-100 p-2 rounded-md cursor-pointer"
+                                onClick={() => navigateTo("changePhone")}
+                                className="py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-md cursor-pointer"
                             >
                                 <span className="font-medium">Phone Number</span>{" "}
                                 {user.verified?.phoneNumber && (
                                     <BadgeCheck className="inline h-4 w-4 text-teal-400" />
                                 )}{" "}
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
                                     {user.phoneNumber || "Add a phone number"}
                                 </p>
                             </button>
                             <button
-                                onClick={() => setActiveSection("changeEmail")}
-                                className="py-2 text-left hover:bg-gray-100 p-2 rounded-md cursor-pointer"
+                                onClick={() => navigateTo("changeEmail")}
+                                className="py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-md cursor-pointer"
                             >
                                 <span className="font-medium">Email</span>{" "}
                                 {user.verified?.email && (
                                     <BadgeCheck className="inline h-4 w-4 text-teal-400" />
                                 )}{" "}
-                                <p className="text-xs text-gray-500">{user.email}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
                             </button>
                             <button
                                 onClick={handleDeleteAccount}
-                                className="py-2 text-left text-red-600 hover:bg-gray-100 p-2 rounded-md cursor-pointer"
+                                className="py-2 text-left text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-md cursor-pointer"
                             >
                                 <span className="font-medium">Delete Account</span>
                             </button>
                         </>
                     )}
 
-                    {/* Change Username Screen (Restored) */}
                     {activeSection === "changeUsername" && (
                          <>
                             <div className="font-bold flex items-center py-2 text-2xl">
-                                {backButton("accountInformation")}
+                                {backButton()}
                                 <h1 className="ml-4">Change Username</h1>
                             </div>
                             <div className="px-2 mt-4 space-y-4">
@@ -974,10 +1013,10 @@ function Settings() {
                                     placeholder={user.username}
                                     value={newUsername}
                                     onChange={(e) => setNewUsername(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md"
+                                    className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md"
                                 />
                                 {errorMessage && (
-                                    <p className="text-red-500 text-sm text-center">
+                                    <p className="text-red-500 dark:text-red-400 text-sm text-center">
                                         {errorMessage}
                                     </p>
                                 )}
@@ -993,11 +1032,10 @@ function Settings() {
                         </>
                     )}
                     
-                    {/* Change Phone and Email Screens with OTP (Restored) */}
                     {["changePhone", "changeEmail"].includes(activeSection) && (
                         <>
                             <div className="font-bold flex items-center py-2 text-2xl">
-                                {backButton("accountInformation")}
+                                {backButton()}
                                 <h1 className="ml-4">
                                     {activeSection === "changePhone"
                                         ? "Change Phone Number"
@@ -1017,10 +1055,10 @@ function Settings() {
                                             ? setNewPhoneNumber(e.target.value)
                                             : setNewEmail(e.target.value)
                                     }
-                                    className="w-full p-3 border border-gray-300 rounded-md"
+                                    className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md"
                                 />
                                 {errorMessage && (
-                                    <p className="text-red-500 text-sm text-center">
+                                    <p className="text-red-500 dark:text-red-400 text-sm text-center">
                                         {errorMessage}
                                     </p>
                                 )}
@@ -1048,11 +1086,7 @@ function Settings() {
                     {["verifyPhoneOTP", "verifyEmailOTP"].includes(activeSection) && (
                          <>
                             <div className="font-bold flex items-center py-2 text-2xl">
-                                {backButton(
-                                    activeSection === "verifyPhoneOTP"
-                                        ? "changePhone"
-                                        : "changeEmail"
-                                )}
+                                {backButton()}
                                 <h1 className="ml-4">Verify Code</h1>
                             </div>
                             <div className="px-2 mt-4 space-y-4">
@@ -1061,11 +1095,11 @@ function Settings() {
                                     placeholder="6-digit code"
                                     value={otp}
                                     onChange={(e) => setOtp(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md tracking-widest text-center"
+                                    className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md tracking-widest text-center"
                                     maxLength={6}
                                 />
                                 {errorMessage && (
-                                    <p className="text-red-500 text-sm text-center">
+                                    <p className="text-red-500 dark:text-red-400 text-sm text-center">
                                         {errorMessage}
                                     </p>
                                 )}
@@ -1091,11 +1125,10 @@ function Settings() {
                         </>
                     )}
 
-                    {/* Change Password Screen */}
                     {activeSection === "changePassword" && (
                         <>
                             <div className="font-bold flex items-center py-2 text-2xl">
-                                {backButton("yourAccount")}
+                                {backButton()}
                                 <h1 className="ml-4">Change Password</h1>
                             </div>
                             <div className="space-y-4 mt-4 px-2">
@@ -1105,7 +1138,7 @@ function Settings() {
                                         placeholder="Current Password"
                                         value={oldPassword}
                                         onChange={(e) => setOldPassword(e.target.value)}
-                                        className="w-full p-3 border border-gray-300 rounded-md"
+                                        className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md"
                                     />
                                 </div>)}
                                 <div className="w-full">
@@ -1114,7 +1147,7 @@ function Settings() {
                                         placeholder="New Password"
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
-                                        className="w-full p-3 border border-gray-300 rounded-md"
+                                        className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md"
                                     />
                                 </div>
                                 <div className="w-full">
@@ -1123,18 +1156,18 @@ function Settings() {
                                         placeholder="Confirm New Password"
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
-                                        className="w-full p-3 border border-gray-300 rounded-md"
+                                        className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md"
                                     />
                                 </div>
                                 {passwordErrorMessage && (
-                                    <p className="text-red-500 text-sm text-center">
+                                    <p className="text-red-500 dark:text-red-400 text-sm text-center">
                                         {passwordErrorMessage}
                                     </p>
                                 )}
                                 <div className="flex justify-between items-center mt-2">
                                     {!isAuth && (<button
                                         onClick={navigateToForgotPasswordFlow}
-                                        className="text-md text-teal-600 hover:underline cursor-pointer"
+                                        className="text-md text-teal-600 dark:text-teal-400 hover:underline cursor-pointer"
                                     >
                                         Forgot Password?
                                     </button>)}
@@ -1149,20 +1182,19 @@ function Settings() {
                         </>
                     )}
 
-                    {/* --- FORGOT PASSWORD FLOW (Reusable) --- */}
                     {activeSection === "forgotPasswordSend" && (
                         <>
                             <div className="font-bold flex items-center py-2 text-2xl">
-                                {backButton(previousSection)}
+                                {backButton()}
                                 <h1 className="ml-4">Forgot Password</h1>
                             </div>
                             <div className="px-2 mt-4 space-y-2">
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
                                     We'll send a verification code to your email:{" "}
                                     <strong>{user.email}</strong>
                                 </p>
                                 {errorMessage && (
-                                    <p className="text-red-500 text-sm text-center">
+                                    <p className="text-red-500 dark:text-red-400 text-sm text-center">
                                         {errorMessage}
                                     </p>
                                 )}
@@ -1179,11 +1211,11 @@ function Settings() {
                     {activeSection === "forgotPasswordOTP" && (
                         <>
                             <div className="font-bold flex items-center py-2 text-2xl">
-                                {backButton("forgotPasswordSend")}
+                                {backButton()}
                                 <h1 className="ml-4">Enter Code</h1>
                             </div>
                             <div className="px-2 mt-4 space-y-2">
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
                                     Enter the 6-digit code we sent to{" "}
                                     <strong>{user.email}</strong>.
                                 </p>
@@ -1192,11 +1224,11 @@ function Settings() {
                                     placeholder="6-digit code"
                                     value={otp}
                                     onChange={(e) => setOtp(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md tracking-widest text-center"
+                                    className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md tracking-widest text-center"
                                     maxLength={6}
                                 />
                                 {errorMessage && (
-                                    <p className="text-red-500 text-sm text-center">
+                                    <p className="text-red-500 dark:text-red-400 text-sm text-center">
                                         {errorMessage}
                                     </p>
                                 )}
@@ -1213,7 +1245,7 @@ function Settings() {
                     {activeSection === "resetPassword" && (
                         <>
                             <div className="font-bold flex items-center py-2 text-2xl">
-                                {backButton("forgotPasswordOTP")}
+                                {backButton()}
                                 <h1 className="ml-4">Reset Your Password</h1>
                             </div>
                             <div className="space-y-4 mt-4 px-2">
@@ -1223,7 +1255,7 @@ function Settings() {
                                         placeholder="New Password"
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
-                                        className="w-full p-3 border border-gray-300 rounded-md"
+                                        className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md"
                                     />
                                 </div>
                                 <div className="w-full">
@@ -1232,11 +1264,11 @@ function Settings() {
                                         placeholder="Confirm New Password"
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
-                                        className="w-full p-3 border border-gray-300 rounded-md"
+                                        className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md"
                                     />
                                 </div>
                                 {passwordErrorMessage && (
-                                    <p className="text-red-500 text-sm text-center">
+                                    <p className="text-red-500 dark:text-red-400 text-sm text-center">
                                         {passwordErrorMessage}
                                     </p>
                                 )}

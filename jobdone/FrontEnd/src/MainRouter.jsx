@@ -11,6 +11,7 @@ import Notifications from "./notifications.jsx";
 import EditProfile from "./editProfile.jsx";
 import Settings from "./settings.jsx";
 import JobSearch from "./jobSearch.jsx";
+import ScrollToTop from "./components/scrollToTop.jsx"; 
 
 function MainRouter() {
   const location = useLocation();
@@ -19,6 +20,7 @@ function MainRouter() {
 
   return (
     <>
+    <ScrollToTop />
       <Routes location={backgroundLocation || location}>
         <Route path="/jobSearch" element={<JobSearch />} />
         <Route path="/messages" element={<Messages />} />

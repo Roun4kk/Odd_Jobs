@@ -128,7 +128,7 @@ function EditProfile() {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-screen bg-white">
+      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
         <img src={logo} alt="Loading..." className="w-40 h-40 animate-pulse" />
       </div>
     );
@@ -137,22 +137,22 @@ function EditProfile() {
   // Mobile Layout
   if (isMobile) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
         {/* Mobile Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-teal-50 flex-shrink-0">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-teal-50 dark:bg-gray-800 flex-shrink-0">
           <button
             onClick={() => navigate("/Profile")}
-            className="p-2 rounded-full hover:bg-teal-100"
+            className="p-2 rounded-full hover:bg-teal-100 dark:hover:bg-gray-700"
           >
-            <ArrowLeft className="w-6 h-6 text-teal-700 hover:text-teal-900" />
+            <ArrowLeft className="w-6 h-6 text-teal-700 dark:text-teal-300 hover:text-teal-900" />
           </button>
-          <h1 className="text-lg font-semibold text-teal-800">Edit Profile</h1>
+          <h1 className="text-lg font-semibold text-teal-800 dark:text-gray-100">Edit Profile</h1>
           <button
             onClick={handleSave}
             disabled={isSaving}
             className={`px-4 py-2 rounded-full text-sm font-medium transition ${
               isSaving
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                ? "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                 : "bg-teal-500 text-white hover:bg-teal-600"
             }`}
           >
@@ -197,67 +197,66 @@ function EditProfile() {
                   }}
                 />
               </div>
-              <p className="text-sm text-gray-600">Tap to change photo</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Tap to change photo</p>
             </div>
 
             {/* Form Fields */}
             <div className="space-y-4">
               {/* Username - Read Only */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Username
                 </label>
                 <input
                   value={user?.username || ""}
                   disabled
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
+                  className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
                 />
               </div>
 
               {/* Email - Read Only */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Email
                 </label>
                 <input
                   value={user?.email || ""}
                   disabled
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
+                  className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
                 />
               </div>
 
               {/* Bio */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Bio
                 </label>
                 <textarea
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Tell us about yourself..."
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
+                  className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:focus:border-teal-400 resize-none"
                   rows={4}
                 />
               </div>
 
               {/* Skills */}
               <div className="space-y-3">
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Skills
                 </label>
                 
-                {/* Skills Display */}
                 {skills.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {skills.map((skill, index) => (
                       <span
                         key={index}
-                        className="inline-flex items-center gap-1 px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-sm"
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-teal-100 dark:bg-teal-900/50 text-teal-800 dark:text-teal-200 rounded-full text-sm"
                       >
                         {skill}
                         <button
                           onClick={() => handleRemoveSkill(skill)}
-                          className="text-teal-600 hover:text-teal-800 transition"
+                          className="text-teal-600 dark:text-teal-300 hover:text-teal-800 dark:hover:text-teal-100 transition"
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -266,7 +265,6 @@ function EditProfile() {
                   </div>
                 )}
 
-                {/* Add Skill Input */}
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -274,14 +272,14 @@ function EditProfile() {
                     onChange={(e) => setNewSkill(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="Add a skill"
-                    className="flex-1 px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="flex-1 px-3 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:focus:border-teal-400"
                   />
                   <button
                     onClick={handleAddSkill}
                     disabled={!newSkill.trim() || skills.includes(newSkill.trim())}
                     className={`px-4 py-3 rounded-lg transition ${
                       !newSkill.trim() || skills.includes(newSkill.trim())
-                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        ? "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                         : "bg-teal-500 text-white hover:bg-teal-600"
                     }`}
                   >
@@ -293,9 +291,8 @@ function EditProfile() {
           </div>
         </div>
 
-        {/* Mobile Bottom Navbar */}
         {hasToken && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
             <BottomNavbar />
           </div>
         )}
@@ -303,25 +300,25 @@ function EditProfile() {
     );
   }
 
-  // Desktop Layout (Original)
+  // Desktop Layout
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden dark:bg-gray-900">
       <Sidebar user={user} />
-      <div className="w-[70%] h-full fixed right-0 top-0 bg-white flex items-center justify-start overflow-y-scroll">
-        <div className="w-5/6 mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg">
-          <h2 className="text-2xl font-bold mb-4">Edit Profile</h2>
+      <div className="w-[70%] h-full fixed right-0 top-0 bg-white dark:bg-gray-900 flex items-center justify-start overflow-y-scroll">
+        <div className="w-5/6 mx-auto mt-10 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+          <h2 className="text-2xl font-bold mb-4 dark:text-white">Edit Profile</h2>
           {image && (
-            <div className="mb-4 flex ">
+            <div className="mb-4 flex items-center">
               <img
                 src={image}
                 alt="Profile preview"
-                className="w-24 h-24 rounded-full object-cover border"
+                className="w-24 h-24 rounded-full object-cover border dark:border-gray-600"
               />
               <label
                 htmlFor="mediaUpload"
-                className="block text-white h-11 py-2 px-2 mt-2 mb-1 bg-teal-400 rounded-md cursor-pointer ml-auto"
+                className="block text-white py-2 px-4 bg-teal-400 rounded-md cursor-pointer ml-auto hover:bg-teal-500"
               >
-                change photo
+                Change Photo
               </label>
               <input
                 type="file"
@@ -339,35 +336,35 @@ function EditProfile() {
           )}
 
           <div className="mb-4">
-            <label className="block text-gray-600 mb-1">Username</label>
+            <label className="block text-gray-600 dark:text-gray-300 mb-1">Username</label>
             <input
               value={user?.username || ""}
               disabled
-              className="w-full border rounded-md p-2 bg-gray-100"
+              className="w-full border dark:border-gray-600 rounded-md p-2 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
             />
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-600 mb-1">Email</label>
+            <label className="block text-gray-600 dark:text-gray-300 mb-1">Email</label>
             <input
               value={user?.email || ""}
               disabled
-              className="w-full border rounded-md p-2 bg-gray-100"
+              className="w-full border dark:border-gray-600 rounded-md p-2 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
             />
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-600 mb-1">Bio</label>
+            <label className="block text-gray-600 dark:text-gray-300 mb-1">Bio</label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              className="w-full border rounded-md p-2"
+              className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
               rows={3}
             />
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-600 mb-1">Skills</label>
+            <label className="block text-gray-600 dark:text-gray-300 mb-1">Skills</label>
             <div className="flex gap-2 mb-2 flex-wrap">
               {skills.map((skill, index) => (
                 <span
@@ -391,12 +388,12 @@ function EditProfile() {
                 onChange={(e) => setNewSkill(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Add new skill"
-                className="flex-grow border rounded-md p-2"
+                className="flex-grow border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
               />
               <button
                 onClick={handleAddSkill}
                 disabled={!newSkill || skills.includes(newSkill)}
-                className="bg-teal-400 text-white px-4 py-2 rounded-md cursor-pointer hover:bg-teal-600"
+                className="bg-teal-400 text-white px-4 py-2 rounded-md cursor-pointer hover:bg-teal-600 disabled:opacity-50"
               >
                 Add
               </button>
@@ -408,7 +405,7 @@ function EditProfile() {
             disabled={isSaving}
             className={`mt-4 px-6 py-2 rounded-md text-white cursor-pointer ${
               isSaving
-                ? "bg-teal-400 cursor-not-allowed"
+                ? "bg-teal-400/50 cursor-not-allowed"
                 : "bg-teal-400 hover:bg-teal-600"
             }`}
           >
