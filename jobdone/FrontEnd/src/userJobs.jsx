@@ -265,7 +265,7 @@ function UserJobs({ job, userProfile, hasToken }) {
   }
 
   return (
-    <div className="w-full lg:w-3/4 mt-4 space-y-4 max-w-md lg:max-w-none mx-auto">
+    <div className="w-full lg:w-3/4 mt-4 space-y-4 max-w-md lg:max-w-none mx-auto mb-2">
       {posts.length === 0 || user?.blockedUsers?.includes(userProfileReplacer?._id) ? (
         <p className="text-gray-500 dark:text-gray-400 text-center py-10">No {job} yet.</p>
       ) : (

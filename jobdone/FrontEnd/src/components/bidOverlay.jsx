@@ -11,6 +11,7 @@ import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
 import useIsMobile from "../hooks/useIsMobile.js";
 import toast from "react-hot-toast";
 import BottomNavbar from "../bottomNavBar.jsx";
+import { useTheme } from "../ThemeContext"; // Import useTheme
 
 function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
   const [refresh, setRefresh] = useState(false);
@@ -31,6 +32,7 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
   const savedScrollPosition = useRef(0);
   const lastViewportHeight = useRef(0);
   const initialViewportHeight = useRef(0);
+  const { theme } = useTheme(); // Get current theme
 
   // Lock body scroll
   useEffect(() => {
@@ -39,6 +41,12 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
       document.body.style.overflow = "auto";
     };
   }, []);
+
+  const buttonStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#2dd4bf' // This is the hex code for teal-400
+  };
 
   useEffect(() => {
     const el = descriptionRef.current;
@@ -428,7 +436,8 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
               />
               <button
                 onClick={handlePostSubmit}
-                className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 text-sm font-medium flex-shrink-0"
+                className=" text-white px-4 py-2 rounded-md hover:bg-teal-600 text-sm font-medium flex-shrink-0"
+                style={buttonStyle}
               >
                 Place
               </button>
@@ -534,7 +543,8 @@ function BidOverlay({ post, onClose, sortBy, setActiveBidPost, setPost }) {
                     value={BidText}
                   />
                   <button
-                    className="bg-teal-400 text-white px-4 rounded-full hover:bg-teal-600 transition duration-200 cursor-pointer"
+                    className=" text-white px-4 rounded-full hover:bg-teal-600 transition duration-200 cursor-pointer"
+                    style={buttonStyle}
                     onClick={handlePostSubmit}
                   >
                     Place

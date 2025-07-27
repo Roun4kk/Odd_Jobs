@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import { useTheme } from "../ThemeContext";
 
 const ReviewAndRatingForm = ({ targetUserType = "worker" , post  , setReviewSubmitted}) => {
   const [rating, setRating] = useState(0);
@@ -8,6 +9,7 @@ const ReviewAndRatingForm = ({ targetUserType = "worker" , post  , setReviewSubm
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [successMessage , setSuccessMessage] = useState("");
+  const { theme } = useTheme(); // Get current theme
 
   const handleSubmit = async () => {
     setError("");
@@ -146,6 +148,7 @@ const ReviewAndRatingForm = ({ targetUserType = "worker" , post  , setReviewSubm
             ? "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
             : "bg-teal-400 text-white hover:bg-teal-600 active:transform active:scale-95 shadow-md hover:shadow-lg cursor-pointer"
         }`}
+        style={buttonStyle}
       >
         {submitting ? (
           <div className="flex items-center justify-center gap-2">

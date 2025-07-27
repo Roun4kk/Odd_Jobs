@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Send, ImagePlus, X, AlertCircle } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { useTheme } from "../ThemeContext"; // Import useTheme
 
 function JobPostInput({ refresh, user }) {
   const [postText, setPostText] = useState("");
@@ -12,6 +13,7 @@ function JobPostInput({ refresh, user }) {
   const [isFocused, setIsFocused] = useState(false);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
+  const { theme } = useTheme(); // Get current theme
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -20,6 +22,12 @@ function JobPostInput({ refresh, user }) {
       textarea.style.height = `${Math.min(textarea.scrollHeight, 80)}px`;
     }
   }, [postText]);
+
+  const buttonStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#2dd4bf' // This is the hex code for teal-400
+  };
 
   const postUpload = async () => {
     if (media.length === 0) return [];
@@ -223,6 +231,7 @@ function JobPostInput({ refresh, user }) {
                 ? "bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed"
                 : "bg-teal-500 text-white hover:bg-teal-600 focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 shadow-sm hover:shadow-md"
             }`}
+            style={!isDisabled && postText.trim() ? buttonStyle : {}}
             disabled={isDisabled || (!postText.trim() && media.length === 0)}
           >
             {isPosting ? (

@@ -22,6 +22,11 @@ function Landing() {
   const [hasToken, setHasToken] = useState(false);
   const navigate = useNavigate();
 
+  const headingStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#f0fdfa' // This is the hex code for teal-400
+  };
   useEffect(() => {
     if (!loading) {
       if (!user) {
@@ -47,7 +52,7 @@ function Landing() {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
         {/* Mobile Header */}
-        <div className="sticky top-0 bg-teal-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 w-full h-16 z-10 shadow-sm flex-shrink-0">
+        <div className="sticky top-0 border-b border-gray-200 dark:border-gray-700 w-full h-16 z-10 shadow-sm flex-shrink-0" style={headingStyle}>
           <div className="flex items-center justify-center h-12 px-4">
             {theme!=="dark" && (<div className="w-full items-center justify-center max-w-[250px] mt-3">
               <img

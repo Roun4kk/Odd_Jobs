@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import axios from "axios";
 import useIsMobile from "../hooks/useIsMobile.js";
 import toast from "react-hot-toast";
+import { useTheme } from "../ThemeContext"; // Import useTheme
 
 function PostOptionsOverlay({ post, onClose, setPosts, onPostDelete }) {
   const { user } = useAuth();
@@ -15,6 +16,7 @@ function PostOptionsOverlay({ post, onClose, setPosts, onPostDelete }) {
   const [minBid, setMinBid] = useState(post.minimumBid);
   const [maxBid, setMaxBid] = useState(post.maximumBid);
   const isMobile = useIsMobile();
+  const { theme } = useTheme(); // Get current theme
 
   const handleCopy = () => {
     navigator.clipboard.writeText(`${window.location.origin}/post/${post._id}`);
@@ -28,6 +30,12 @@ function PostOptionsOverlay({ post, onClose, setPosts, onPostDelete }) {
       };
     }
   }, [isMobile]);
+
+  const buttonStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#2dd4bf' // This is the hex code for teal-400
+  };
 
   const handleSetBidRange = async () => {
     try {
@@ -273,7 +281,8 @@ function PostOptionsOverlay({ post, onClose, setPosts, onPostDelete }) {
               </div>
               <div className="flex justify-between gap-4">
                 <button
-                  className="flex-1 px-4 py-2 bg-teal-500 text-white rounded-full hover:bg-teal-600 transition duration-200 text-sm font-semibold"
+                  className="flex-1 px-4 py-2 text-white rounded-full hover:bg-teal-600 transition duration-200 text-sm font-semibold"
+                  style={buttonStyle}
                   onClick={handleSetBidRange}
                   disabled={minBid < 0 || (maxBid && maxBid < minBid)}
                 >

@@ -16,7 +16,7 @@ import useSocketRoomJoin from "./hooks/socketRoomJoin.js";
 import { useTheme } from "./ThemeContext"; 
 
 // 1. Accept 'isEmbedded' prop
-function BottomNavbar({ onPostClick, isEmbedded }) {
+function BottomNavbar({ isEmbedded }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { unseenConversations } = useMessageContext();

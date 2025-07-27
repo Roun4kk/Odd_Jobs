@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import useIsMobile from "../hooks/useIsMobile.js";
 import toast from "react-hot-toast";
 import { createPortal } from "react-dom";
+import { useTheme } from "../ThemeContext"; // Import useTheme
 
 function SendOverlay({ post, onClose }) {
   const [message, setMessage] = useState("");
@@ -19,7 +20,14 @@ function SendOverlay({ post, onClose }) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [conversationLoading, setConversationLoading] = useState(false);
+  const { theme } = useTheme(); // Get current theme
 
+  const buttonStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#2dd4bf' // This is the hex code for teal-400
+  };
+  
   useSocketRoomJoin(user?._id, setSocketError);
 
   useEffect(() => {
@@ -164,7 +172,8 @@ const overlayContent = isMobile ?
             {selectedUsers.length > 0 ? (
               <button
                 onClick={handleSend}
-                className="bg-teal-500 text-white px-4 py-2 rounded-full hover:bg-teal-600 flex items-center gap-1 text-sm font-medium"
+                className="text-white px-4 py-2 rounded-full hover:bg-teal-600 flex items-center gap-1 text-sm font-medium"
+                style={buttonStyle}
               >
                 <Send className="w-4 h-4" /> Share ({selectedUsers.length})
               </button>
@@ -172,6 +181,7 @@ const overlayContent = isMobile ?
               <button
                 onClick={handleCopy}
                 className="bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-full hover:bg-gray-400 dark:hover:bg-gray-500 flex items-center gap-1 text-sm font-medium"
+                style={buttonStyle}
               >
                 <Copy className="w-4 h-4" /> Copy Link
               </button>
@@ -244,7 +254,8 @@ const overlayContent = isMobile ?
           {selectedUsers.length > 0 ? (
             <button
               onClick={handleSend}
-              className="bg-teal-500 text-white px-6 py-2 rounded-full hover:bg-teal-600 flex items-center gap-2 text-sm font-semibold"
+              className="text-white px-6 py-2 rounded-full hover:bg-teal-600 flex items-center gap-2 text-sm font-semibold"
+              style={buttonStyle}
             >
               <Send className="w-4 h-4" /> Share ({selectedUsers.length})
             </button>
@@ -252,6 +263,7 @@ const overlayContent = isMobile ?
             <button
               onClick={handleCopy}
               className="bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 px-6 py-2 rounded-full hover:bg-gray-400 dark:hover:bg-gray-500 flex items-center gap-2 text-sm font-semibold"
+              style={buttonStyle}
             >
               <Copy className="w-4 h-4" /> Copy Link
             </button>

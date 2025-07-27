@@ -1,12 +1,18 @@
 import axios from "axios";
 import { useState } from "react";
+import { useTheme } from "./ThemeContext"; // Import useTheme
 
 const ReportForm = ({ reportedUserId, postId, bidId, commentId }) => {
   const [text, setText] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  const { theme } = useTheme(); // Get current theme
+  const buttonStyle = {
+        background: theme === 'dark' 
+        ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+        : '#2dd4bf' // This is the hex code for teal-400
+    };
   const handleSubmit = async () => {
     if (!text.trim()) {
       setError("Please enter a reason for the report.");
@@ -53,9 +59,10 @@ const ReportForm = ({ reportedUserId, postId, bidId, commentId }) => {
       <button
         onClick={handleSubmit}
         disabled={loading}
+        style={buttonStyle}
         className={`px-4 py-2 rounded-md text-white transition ${
           loading
-            ? "bg-teal-300 dark:bg-teal-800 cursor-not-allowed"
+            ? "bg-teal-300  cursor-not-allowed"
             : "bg-teal-500 hover:bg-teal-600"
         }`}
       >

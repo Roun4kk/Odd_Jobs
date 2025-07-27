@@ -7,11 +7,13 @@ import axios from "axios";
 import SearchSkills from "./components/searchSkills.jsx";
 import useIsMobile from "./hooks/useIsMobile.js";
 import BottomNavBar from "./bottomNavBar.jsx";
+import { useTheme } from "./ThemeContext"; // Import useTheme
 
 function Notifications() {
   const { user, loading, refreshUser } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { theme } = useTheme(); // Get current theme
   const [hasToken, setHasToken] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
@@ -21,7 +23,11 @@ function Notifications() {
       ? description.substring(0, maxLength) + "..."
       : description;
   };
-
+  const headingStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#f0fdfa' // This is the hex code for teal-400
+  };
   const fetchNotifications = async () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/notifications`, {
@@ -76,8 +82,8 @@ function Notifications() {
   if (isMobile) {
     return (
       <>
-        <div className="w-full fixed top-0 left-0 z-40 h-16 bg-teal-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 py-4 shadow-sm">
-          <h2 className="text-2xl font-semibold text-center text-teal-800 dark:text-white">Notifications</h2>
+        <div className="w-full fixed top-0 left-0 z-40 h-16 border-b border-gray-200 dark:border-gray-700 py-4 shadow-sm" style={headingStyle}>
+          <h2 className="text-2xl font-semibold text-center text-teal-800 dark:text-teal-400">Notifications</h2>
         </div>
 
         <div className="min-h-screen bg-white dark:bg-gray-900 px-4 pt-20 pb-20">
@@ -150,8 +156,8 @@ function Notifications() {
       <Sidebar user={user} />
       <div className="w-[70%] h-full fixed right-0 top-0 overflow-y-scroll">
         <div className="flex min-h-screen">
-          <div className="w-[57%] flex flex-col items-center gap-6 pt-10 border-r border-gray-300 dark:border-gray-700">
-            <h2 className="text-2xl font-semibold mb-4 dark:text-white">Notifications</h2>
+          <div className="w-[57%] flex flex-col items-center gap-6 pt-7 pb-2 border-r border-gray-300 dark:border-gray-700 transform-gpu">
+            <h2 className="text-2xl font-semibold dark:text-teal-400">Notifications</h2>
             {notifications.length === 0 ? (
               <p className="text-gray-500 dark:text-gray-400">No notifications yet.</p>
             ) : (

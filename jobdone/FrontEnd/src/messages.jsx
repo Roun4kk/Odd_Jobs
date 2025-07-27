@@ -13,8 +13,16 @@ import { formatDistanceToNow } from 'date-fns';
 import debounce from 'lodash.debounce';
 import useIsMobile from "./hooks/useIsMobile.js";
 import BottomNavbar from "./bottomNavBar.jsx";
+import { useTheme } from "./ThemeContext"; // Import useTheme
+
 
 const MessageItem = memo(({ msg, user, selectedUser, renderMessageContent }) => {
+  const { theme } = useTheme(); // Get current theme
+  const buttonStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#2dd4bf' // This is the hex code for teal-400
+  };
   if (msg.deletedFor.includes(user._id)) return null;
   const senderId = typeof msg.sender === 'object' && msg.sender?._id
     ? msg.sender._id.toString()
@@ -32,8 +40,9 @@ const MessageItem = memo(({ msg, user, selectedUser, renderMessageContent }) => 
       )}
       <div
         className={`p-3 rounded-lg max-w-sm ${
-          isSender ? "bg-teal-200 dark:bg-teal-500 text-teal-900 dark:text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          isSender ? "bg-teal-200 text-teal-900 dark:text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         } shadow-sm`}
+        style={isSender ? buttonStyle : {}}
       >
         {renderMessageContent(msg , isSender)}
       </div>
@@ -70,13 +79,26 @@ function Messages() {
   const messagesEndRef = useRef(null);
   const isMobile = useIsMobile();
   const [hasToken, setHasToken] = useState(false);
-  const hasAddedChatHistoryState = useRef(false);
   const isNavigatingAway = useRef(false);
   const inputContainerRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const activeElementRef = useRef(null);
   const savedScrollPosition = useRef(0);
   const lastViewportHeight = useRef(0);
+  const { theme } = useTheme(); // Get current theme
+  const buttonStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#2dd4bf' // This is the hex code for teal-400
+  };
+  
+  const headingStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#f0fdfa' // This is the hex code for teal-400
+  };
+  
+  
 
   useEffect(() => {
     if (!loading) {
@@ -108,30 +130,34 @@ function Messages() {
 
   useSocketRoomJoin(user?._id, setSocketError);
 
+  // *** CORRECTED HISTORY MANAGEMENT LOGIC ***
   useEffect(() => {
     if (!isMobile) return;
 
     const handlePopState = (event) => {
+      // When the user navigates back (via gesture or button),
+      // we check the component's state and revert it.
       if (isNavigatingAway.current) {
         isNavigatingAway.current = false;
-        hasAddedChatHistoryState.current = false;
         return;
       }
-
-      if (selectedUser && hasAddedChatHistoryState.current) {
+      
+      // If a chat view is open, the back action should close it.
+      if (selectedUser) {
         setSelectedUser(null);
-        hasAddedChatHistoryState.current = false;
-        event.preventDefault();
-        window.history.pushState({ chat: false }, "");
+      } 
+      // Else if the requests view is open, the back action should close it.
+      else if (showRequests) {
+        setShowRequests(false);
       }
     };
 
     window.addEventListener("popstate", handlePopState);
-
+    
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [isMobile, selectedUser]);
+  }, [isMobile, selectedUser, showRequests]); // Dependencies are crucial here
 
   useEffect(() => {
     if (!isMobile || !window.visualViewport) return;
@@ -502,9 +528,8 @@ function Messages() {
     setError("");
     await fetchMessages(user._id);
     setIsTyping(false);
-    if (isMobile && !hasAddedChatHistoryState.current) {
-      window.history.pushState({ chat: true }, "");
-      hasAddedChatHistoryState.current = true;
+    if (isMobile) {
+      window.history.pushState({ view: 'chat' }, "");
     }
   }, [fetchMessages, isMobile]);
 
@@ -538,9 +563,8 @@ function Messages() {
     if (initialUser && isValidObjectId(initialUser._id)) {
       setSelectedUser(initialUser);
       fetchMessages(initialUser._id);
-      if (isMobile && !hasAddedChatHistoryState.current) {
-        window.history.pushState({ chat: true }, "");
-        hasAddedChatHistoryState.current = true;
+      if (isMobile) {
+        window.history.pushState({ view: 'chat' }, "");
       }
     }
 
@@ -583,7 +607,6 @@ function Messages() {
 
   const handleProfileNavigation = (userId) => {
     isNavigatingAway.current = true;
-    hasAddedChatHistoryState.current = false;
     if (user._id === userId) {
       navigate(`/profile`);
     } else {
@@ -592,12 +615,7 @@ function Messages() {
   };
 
   const handleBackFromChat = () => {
-    if (isMobile && hasAddedChatHistoryState.current) {
-      hasAddedChatHistoryState.current = false;
-      window.history.back();
-    } else {
-      setSelectedUser(null);
-    }
+    window.history.back();
   };
 
   const renderMessageContent = useCallback((msg , isSender) => {
@@ -611,7 +629,6 @@ function Messages() {
       const MessageWrapper = ({ children }) => {
         const messageTime = new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
         
-        // 2. Use a conditional class for the timestamp color
         const timeColorClass = isSender 
           ? "text-teal-700 dark:text-white/80" 
           : "text-gray-500/80 dark:text-white/80";
@@ -704,8 +721,8 @@ function Messages() {
   };
 
   const filteredConversations = conversations.filter((conv) =>
-    conv.user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.lastMessage?.text?.toLowerCase().includes(searchQuery.toLowerCase())
+    conv?.user?.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    conv?.lastMessage?.text?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredRequests = requests.filter((req) =>
@@ -718,19 +735,30 @@ function Messages() {
       <div className="fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col h-[100dvh]">
         {!selectedUser ? (
           <>
-            <div className="flex items-center justify-center p-4 border-b border-gray-200 dark:border-gray-700 bg-teal-50 dark:bg-gray-800 shadow-sm">
+            <div className="relative flex items-center justify-center p-4 border-b border-gray-200 dark:border-gray-700 shadow-sm" style={headingStyle}>
+              {/* Back Button (Left) */}
               {showRequests && (
-                <button onClick={() => setShowRequests(false)} className="px-2 rounded-full hover:bg-teal-100 dark:hover:bg-gray-700">
+                <button
+                  onClick={() => window.history.back()}
+                  className="absolute left-4 px-2 rounded-full hover:bg-teal-100 dark:hover:bg-gray-700"
+                >
                   <ArrowLeft className="w-6 h-6 text-teal-700 dark:text-teal-300 hover:text-teal-900" />
                 </button>
               )}
-              <h1 className="text-2xl font-semibold text-teal-800 dark:text-white">
+
+              {/* Center Heading */}
+              <h1 className="text-2xl font-semibold text-teal-800 dark:text-teal-400 text-center">
                 {showRequests ? "Message Requests" : "Messages"}
               </h1>
+
+              {/* Requests Button (Right) */}
               {!showRequests && requestCount > 0 && (
                 <button
-                  onClick={() => setShowRequests(true)}
-                  className="text-teal-600 dark:text-teal-400 px-3 py-1 ml-auto rounded-full text-sm hover:bg-teal-100 dark:hover:bg-gray-700 transition"
+                  onClick={() => {
+                    setShowRequests(true);
+                    window.history.pushState({ view: 'requests' }, "");
+                  }}
+                  className="absolute right-0.5 text-teal-600 dark:text-teal-400 px-3 py-1 rounded-full text-sm hover:bg-teal-100 dark:hover:bg-gray-700 transition"
                 >
                   Requests ({requestCount})
                 </button>
@@ -931,7 +959,7 @@ function Messages() {
             )}
             <div ref={inputContainerRef} className="flex items-end gap-2 px-3 py-2 bg-teal-50 dark:bg-gray-800 flex-shrink-0">
               <label className="cursor-pointer">
-                <Paperclip className="w-5 h-5 text-teal-600 dark:text-teal-300 hover:text-teal-800" />
+                <Paperclip className="w-5 h-5 mb-2 text-teal-600 dark:text-teal-300 hover:text-teal-800" />
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -962,7 +990,8 @@ function Messages() {
               <button
                 onClick={sendMessage}
                 disabled={uploading || socketError}
-                className="bg-teal-500 text-white px-4 py-2 rounded-full hover:bg-teal-600 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                className=" text-white px-4 py-2 rounded-full hover:bg-teal-600 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                style = {buttonStyle}
               >
                 {uploading ? "..." : "Send"}
               </button>
@@ -986,7 +1015,7 @@ function Messages() {
                 onClick={() => setShowRequests(false)}
               />
             )}
-            <h1 className="text-2xl font-bold mb-0 ml-4 text-teal-800 dark:text-white">
+            <h1 className="text-2xl font-bold mb-0 ml-4 text-teal-800 dark:text-teal-400">
               {showRequests ? "Message Requests" : "Messages"}
             </h1>
             {!showRequests && requestCount > 0 && (
@@ -1219,7 +1248,8 @@ function Messages() {
                   disabled={uploading || socketError}
                 />
                 <button
-                  className="ml-2 bg-teal-500 text-white px-4 py-2 rounded-full cursor-pointer hover:bg-teal-600 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="ml-2 text-white px-4 py-2 rounded-full cursor-pointer hover:bg-teal-600 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={buttonStyle}
                   onClick={() => sendMessage()}
                   disabled={uploading || socketError}
                 >

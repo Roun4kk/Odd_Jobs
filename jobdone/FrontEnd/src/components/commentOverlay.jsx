@@ -11,6 +11,7 @@ import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
 import socket from "../socket.js";
 import toast from "react-hot-toast";
 import BottomNavbar from "../bottomNavBar.jsx";
+import { useTheme } from "../ThemeContext"; // Import useTheme
 
 function CommentOverlay({ post, onClose }) {
   const [refresh, setRefresh] = useState(false);
@@ -32,6 +33,13 @@ function CommentOverlay({ post, onClose }) {
   const savedScrollPosition = useRef(0);
   const lastViewportHeight = useRef(0);
   const initialViewportHeight = useRef(0); // Store initial height
+  const { theme } = useTheme(); // Get current theme
+
+  const buttonStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#2dd4bf' // This is the hex code for teal-400
+  };
 
   useSocketRoomJoin(user?._id, setSocketError);
 
@@ -307,7 +315,8 @@ function CommentOverlay({ post, onClose }) {
             />
             <button
               onClick={handlePostSubmit}
-              className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 text-sm font-medium"
+              className=" text-white px-4 py-2 rounded-md hover:bg-teal-600 text-sm font-medium"
+              style={buttonStyle}
               disabled={!commentText.trim()}
             >
               Post
@@ -392,7 +401,8 @@ function CommentOverlay({ post, onClose }) {
                   value={commentText}
                 />
                 <button
-                  className="bg-teal-400 text-white px-4 rounded-full hover:bg-teal-600 transition duration-200 cursor-pointer"
+                  className=" text-white px-4 rounded-full hover:bg-teal-600 transition duration-200 cursor-pointer"
+                  style={buttonStyle}
                   onClick={handlePostSubmit}
                   disabled={!commentText.trim()}
                 >

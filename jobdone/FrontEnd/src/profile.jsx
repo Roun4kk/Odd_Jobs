@@ -8,6 +8,7 @@ import logo from "./assets/logo/logo-transparent-jobdone.svg";
 import useIsMobile from "./hooks/useIsMobile.js";
 import BottomNavbar from "./bottomNavBar.jsx";
 import toast from 'react-hot-toast';
+import { useTheme } from "./ThemeContext"; // Import useTheme
 
 function Profile() {
   const { user, loading } = useAuth();
@@ -16,6 +17,7 @@ function Profile() {
   const [verified, setVerified] = useState(false);
   const [hasToken, setHasToken] = useState(false);
   const isMobile = useIsMobile();
+  const { theme } = useTheme(); // Get current theme
 
   useEffect(() => {
     if (!loading) {
@@ -33,6 +35,16 @@ function Profile() {
     if (user?.verified?.email && user.verified.phoneNumber) {
       setVerified(true);
     }
+  };
+  const headingStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#f0fdfa' // This is the hex code for teal-400
+  };
+  const buttonStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#2dd4bf' // This is the hex code for teal-400
   };
 
   useEffect(() => {
@@ -63,8 +75,8 @@ function Profile() {
   if (isMobile) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-        <div className="flex z-10 items-center justify-center w-full h-16 shadow-sm border-b border-gray-200 dark:border-gray-700 bg-teal-50 dark:bg-gray-800 flex-shrink-0">
-          <h1 className="text-2xl font-semibold text-teal-800 dark:text-white">Profile</h1>
+        <div className="flex z-10 items-center justify-center w-full h-16 shadow-sm border-b border-gray-200 dark:border-gray-700" style={headingStyle}>
+          <h1 className="text-2xl font-semibold text-teal-800 dark:text-teal-400">Profile</h1>
         </div>
 
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -95,7 +107,8 @@ function Profile() {
                   <div className="ml-auto flex gap-1">
                     <button
                       onClick={() => navigate("/EditProfile")}
-                      className="px-2 py-1 text-[10px] bg-teal-400 text-white rounded-full hover:bg-teal-600 transition cursor-pointer duration-200"
+                      className="px-2 py-1 text-[10px] text-white rounded-full hover:bg-teal-600 transition cursor-pointer duration-200"
+                      style={buttonStyle}
                     >
                       Edit Profile
                     </button>
@@ -105,7 +118,8 @@ function Profile() {
                         navigator.clipboard.writeText(publicUrl);
                         toast.success("Public profile link copied to clipboard!");
                       }}
-                      className="px-2 py-1 bg-teal-400 text-white rounded-full text-[10px] hover:bg-teal-600 transition cursor-pointer duration-200"
+                      className="px-2 py-1 text-white rounded-full text-[10px] hover:bg-teal-600 transition cursor-pointer duration-200"
+                      style={buttonStyle}
                     >
                       Public Profile
                     </button>
@@ -118,7 +132,8 @@ function Profile() {
                   {user?.userSkills?.map((skill, index) => (
                     <span
                       key={index}
-                      className="bg-teal-400 text-white px-2 py-1 rounded-full text-xs max-w-60 sm:max-w-none truncate"
+                      className=" text-white px-2 py-1 rounded-full text-xs max-w-60 sm:max-w-none truncate"
+                      style ={ buttonStyle }
                     >
                       {skill}
                     </span>
@@ -247,7 +262,8 @@ function Profile() {
               <div className="h-full ml-auto flex gap-2">
                 <button
                   onClick={() => navigate("/EditProfile")}
-                  className="px-4 py-2 bg-teal-400 text-white rounded-3xl hover:bg-teal-600 transition cursor-pointer duration-200"
+                  className="px-4 py-2 text-white rounded-3xl hover:bg-teal-600 transition cursor-pointer duration-200"
+                  style={buttonStyle}
                 >
                   Edit Profile
                 </button>
@@ -257,7 +273,8 @@ function Profile() {
                     navigator.clipboard.writeText(publicUrl);
                     toast.success("Public profile link copied to clipboard!");
                   }}
-                  className="px-4 py-2 bg-teal-400 text-white rounded-3xl hover:bg-teal-600 transition cursor-pointer duration-200"
+                  className="px-4 py-2 text-white rounded-3xl hover:bg-teal-600 transition cursor-pointer duration-200"
+                  style={buttonStyle}
                 >
                   Public Profile
                 </button>
@@ -269,7 +286,8 @@ function Profile() {
               {user?.userSkills?.map((skill, index) => (
                 <span
                   key={index}
-                  className="bg-teal-400 text-white px-2 py-1 rounded-full text-sm max-w-130 truncate"
+                  className=" text-white px-2 py-1 rounded-full text-sm max-w-130 truncate"
+                  style={buttonStyle}
                 >
                   {skill}
                 </span>
@@ -309,43 +327,40 @@ function Profile() {
 
         <div className="w-5/6 flex items-center justify-center border-t dark:border-gray-700">
           <button
-            onClick={() => setJob("posts")}
-            className={`w-1/2 flex justify-center cursor-pointer border-t-4 ${
-              job === "posts" ? "border-teal-400" : "border-transparent"
-            }`}
-          >
-            <div className="py-2 dark:text-white">POSTS</div>
-          </button>
-
-          <button
-            onClick={() => setJob("bids")}
-            className={`w-1/2 flex justify-center cursor-pointer border-t-4 ${
-              job === "bids" ? "border-teal-400" : "border-transparent"
-            }`}
-          >
-            <div className="py-2 dark:text-white">BIDS</div>
-          </button>
-
-          <button
-            onClick={() => setJob("saved")}
-            className={`w-1/2 flex justify-center cursor-pointer border-t-4 ${
-              job === "saved" ? "border-teal-400" : "border-transparent"
-            }`}
-          >
-            <div className="py-2 dark:text-white">SAVED</div>
-          </button>
-
-          <button
-            onClick={() => setJob("reviews")}
-            className={`w-1/2 flex justify-center cursor-pointer border-t-4 ${
-              job === "reviews" ? "border-teal-400" : "border-transparent"
-            }`}
-          >
-            <div className="py-2 dark:text-white">REVIEWS</div>
-          </button>
+              onClick={() => setJob("posts")}
+              className={`flex-1 py-2 text-center text-lg font-medium ${
+                job === "posts" ? "border-t-2 border-teal-400 text-teal-800 dark:text-teal-300" : "text-gray-600 dark:text-gray-400"
+              }`}
+            >
+              Posts
+            </button>
+            <button
+              onClick={() => setJob("bids")}
+              className={`flex-1 py-2 text-center text-lg font-medium ${
+                job === "bids" ? "border-t-2 border-teal-400 text-teal-800 dark:text-teal-300" : "text-gray-600 dark:text-gray-400"
+              }`}
+            >
+              Bids
+            </button>
+            <button
+              onClick={() => setJob("saved")}
+              className={`flex-1 py-2 text-center text-lg font-medium ${
+                job === "saved" ? "border-t-2 border-teal-400 text-teal-800 dark:text-teal-300" : "text-gray-600 dark:text-gray-400"
+              }`}
+            >
+              Saved
+            </button>
+            <button
+              onClick={() => setJob("reviews")}
+              className={`flex-1 py-2 text-center text-lg font-medium ${
+                job === "reviews" ? "border-t-2 border-teal-400 text-teal-800 dark:text-teal-300" : "text-gray-600 dark:text-gray-400"
+              }`}
+            >
+              Reviews
+            </button>
         </div>
 
-        <div className="w-5/6 flex items-center justify-center mt-4">
+        <div className="w-5/6 flex items-center justify-center mt-4 ">
           <UserJobs job={job} hasToken={hasToken} />
         </div>
       </div>

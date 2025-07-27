@@ -7,6 +7,7 @@ import socket from "../socket.js";
 import useSocketRoomJoin from "../hooks/socketRoomJoin.js";
 import toast from "react-hot-toast";
 import { createPortal } from "react-dom";
+import {useTheme} from "../ThemeContext.jsx"; // Import useTheme
 
 function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post , setRefresh , setPost, setActiveBidPost}) {
   const [bids, setBids] = useState([]);
@@ -21,7 +22,13 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
   const [reportText , setReportText] = useState("");
   const [confirmWinner, setConfirmWinner] = useState(false);
   const [pendingWinner, setPendingWinner] = useState(null);
+  const { theme } = useTheme(); // Get current theme
 
+  const buttonStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#2dd4bf' // This is the hex code for teal-400
+  };
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -316,7 +323,8 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
           <div className="flex justify-around">
             <button
               onClick={handleSelectWinner}
-              className="bg-teal-600 text-white px-4 py-1 rounded cursor-pointer"
+              className=" text-white px-4 py-1 rounded cursor-pointer"
+              style={buttonStyle}
             >
               Confirm
             </button>

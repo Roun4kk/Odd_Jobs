@@ -10,6 +10,7 @@ import axios from "axios";
 import useAuth from "../hooks/useAuth.jsx";
 import { differenceInMinutes, differenceInHours, differenceInDays, differenceInWeeks } from "date-fns";
 import { useSortBy } from "../SortByContext.jsx";
+import { useTheme } from "../ThemeContext"; // Import useTheme
 
 const PostCard = ({
   userProfile,
@@ -42,7 +43,13 @@ const PostCard = ({
   const rating = userProfile?.ratings?.find(r => r.post === post?._id) ;
   const winningBid = post?.bids?.find(bid => bid._id === post?.winningBidId);
   const shouldBlurWinner = !(winningBid?.user?._id === user?._id || post?.user?._id === user?._id ); 
+  const { theme } = useTheme(); // Get current theme
 
+  const buttonStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#2dd4bf' // This is the hex code for teal-400
+  };
   useEffect(() => {
     const el = textRef.current;
     if (el && el.scrollHeight > el.clientHeight) {
@@ -365,7 +372,8 @@ const PostCard = ({
                   !localPost.providerConfirmed ? (
                     <button
                       onClick={() => handleCompleted(localPost._id)}
-                      className="w-full bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600 cursor-pointer"
+                      className="w-full  text-white px-4 py-2 rounded hover:bg-teal-600 cursor-pointer"
+                      style={buttonStyle}
                     >
                       Mark as Completed
                     </button>
@@ -394,7 +402,8 @@ const PostCard = ({
                   !localPost.workerConfirmed ? (
                     <button
                       onClick={() => handleCompleted(localPost._id)}
-                      className="w-full bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600 cursor-pointer"
+                      className="w-full text-white px-4 py-2 rounded hover:bg-teal-600 cursor-pointer"
+                      style={buttonStyle}
                     >
                       Job Done
                     </button>

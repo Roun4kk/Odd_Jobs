@@ -8,6 +8,7 @@ import useIsMobile from "./hooks/useIsMobile.js";
 import BottomNavbar from "./bottomNavBar.jsx";
 import logo from "./assets/logo/logo-transparent-jobdone.svg";
 import toast from "react-hot-toast";
+import { useTheme } from "./ThemeContext";
 
 function EditProfile() {
   const { user, updateUser , loading } = useAuth();
@@ -20,6 +21,7 @@ function EditProfile() {
   const [hasToken, setHasToken] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (!loading) {
@@ -84,6 +86,12 @@ function EditProfile() {
       e.preventDefault();
       handleAddSkill();
     }
+  };
+
+  const buttonStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#2dd4bf' // This is the hex code for teal-400
   };
 
   const handleSave = async () => {
@@ -155,6 +163,7 @@ function EditProfile() {
                 ? "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                 : "bg-teal-500 text-white hover:bg-teal-600"
             }`}
+            style ={buttonStyle}
           >
             {isSaving ? "Saving..." : "Save"}
           </button>
@@ -282,6 +291,7 @@ function EditProfile() {
                         ? "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                         : "bg-teal-500 text-white hover:bg-teal-600"
                     }`}
+                    style={!newSkill.trim() || skills.includes(newSkill.trim()) ? {} : buttonStyle}
                   >
                     <Plus className="w-5 h-5" />
                   </button>
@@ -316,7 +326,8 @@ function EditProfile() {
               />
               <label
                 htmlFor="mediaUpload"
-                className="block text-white py-2 px-4 bg-teal-400 rounded-md cursor-pointer ml-auto hover:bg-teal-500"
+                className="block text-white py-2 px-4 rounded-md cursor-pointer ml-auto hover:bg-teal-500"
+                style={buttonStyle}
               >
                 Change Photo
               </label>
@@ -369,14 +380,15 @@ function EditProfile() {
               {skills.map((skill, index) => (
                 <span
                   key={index}
-                  className="px-3 py-1 bg-teal-400 text-white rounded-full text-sm flex items-center gap-1"
+                  className="px-3 py-1  text-white rounded-full text-sm flex items-center gap-1"
+                  style ={buttonStyle}
                 >
                   {skill}
                   <button
                     onClick={() => handleRemoveSkill(skill)}
                     className="ml-1 text-white hover:text-red-300"
                   >
-                    ×
+                    <X className="w-3 h-3" />
                   </button>
                 </span>
               ))}
@@ -393,7 +405,8 @@ function EditProfile() {
               <button
                 onClick={handleAddSkill}
                 disabled={!newSkill || skills.includes(newSkill)}
-                className="bg-teal-400 text-white px-4 py-2 rounded-md cursor-pointer hover:bg-teal-600 disabled:opacity-50"
+                className=" text-white px-4 py-2 rounded-md cursor-pointer hover:bg-teal-600 disabled:opacity-50"
+                style={!newSkill.trim() || skills.includes(newSkill.trim()) ? {} : buttonStyle}
               >
                 Add
               </button>
@@ -408,6 +421,7 @@ function EditProfile() {
                 ? "bg-teal-400/50 cursor-not-allowed"
                 : "bg-teal-400 hover:bg-teal-600"
             }`}
+            style={buttonStyle}
           >
             {isSaving ? "Saving..." : "Save Changes"}
           </button>

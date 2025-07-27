@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { BadgeCheck, Star, X, Search } from "lucide-react";
 import SearchSkills from "./components/searchSkills.jsx";
 import BottomNavbar from "./bottomNavBar.jsx";
+import { useTheme } from "./ThemeContext.jsx";
 
 const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -34,6 +35,7 @@ function JobSearch() {
   const [activeTab, setActiveTab] = useState("jobs");
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [hasToken, setHasToken] = useState(false);
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (!loading) {
@@ -47,6 +49,12 @@ function JobSearch() {
     }
   }, [user, loading, navigate]);
   
+  const buttonStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#2dd4bf' // This is the hex code for teal-400
+  };
+
   const performSearch = useCallback(async (query) => {
     if (!query.trim()) {
       setFilteredPosts([]);
@@ -180,12 +188,14 @@ function JobSearch() {
           <button
             onClick={() => setActiveTab("jobs")}
             className={`flex items-center px-5 py-2 rounded-full ${activeTab === "jobs" ? "bg-teal-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"}`}
+            style={activeTab === "jobs" ? buttonStyle : {}}
           >
             Jobs
           </button>
           <button
             onClick={() => setActiveTab("skills")}
             className={`flex items-center px-5 py-2 rounded-full ${activeTab === "skills" ? "bg-teal-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"}`}
+            style={activeTab === "skills" ? buttonStyle : {}}
           >
             Skills
           </button>

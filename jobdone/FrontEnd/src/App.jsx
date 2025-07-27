@@ -246,6 +246,11 @@ function App() {
   const isMobile = useIsMobile();
   const keyboardVisible = useMobileInputFocus();
 
+  const buttonStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#2dd4bf' // This is the hex code for teal-400
+  };
 
   const validateUsername = (username) => {
     if (!username) return { valid: false, message: "Username is required" };
@@ -610,7 +615,8 @@ function App() {
                 aria-label="OTP Input"
               />
               <button
-                className="w-full bg-teal-400 text-white py-3 rounded-md hover:bg-teal-600 disabled:opacity-50 transition-colors"
+                className="w-full  text-white py-3 rounded-md hover:bg-teal-600 disabled:opacity-50 transition-colors"
+                style={buttonStyle}
                 onClick={handleOtpVerification}
                 disabled={isLoading || otp.length !== 6}
                 aria-label="Verify Email"
@@ -685,7 +691,8 @@ function App() {
                 )}
               </div>
               <button
-                className="w-full bg-teal-400 text-white py-3 rounded-md hover:bg-teal-600 disabled:opacity-50 transition-colors"
+                className="w-full  text-white py-3 rounded-md hover:bg-teal-600 disabled:opacity-50 transition-colors"
+                style={buttonStyle}
                 onClick={handleForgotPasswordOtpVerification}
                 disabled={isLoading || otp.length !== 6 || !newPassword || !confirmPassword}
                 aria-label="Reset Password"
@@ -725,7 +732,8 @@ function App() {
                 aria-label="Email Input"
               />
               <button
-                className="w-full bg-teal-400 text-white py-3 rounded-md hover:bg-teal-600 disabled:opacity-50 transition-colors"
+                className="w-full text-white py-3 rounded-md hover:bg-teal-600 disabled:opacity-50 transition-colors"
+                style={buttonStyle}
                 onClick={handleForgotPasswordSubmit}
                 disabled={isLoading || !forgotPasswordEmail}
                 aria-label="Send Reset Code"
@@ -755,7 +763,7 @@ function App() {
               <div className="flex items-center gap-3 my-4">
                 <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700"></div><span className="text-gray-500 dark:text-gray-400 text-sm">or</span><div className="flex-1 h-px bg-gray-300 dark:bg-gray-700"></div>
               </div>
-              <button onClick={() => { setEntryStage("signup"); setIsSignIn(false); }} className="w-full bg-teal-400 text-white py-3 rounded-md hover:bg-teal-600 transition-colors">
+              <button onClick={() => { setEntryStage("signup"); setIsSignIn(false); }} className="w-full text-white py-3 rounded-md hover:bg-teal-600 transition-colors" style={buttonStyle}>
                 Create Account
               </button>
               <p className="text-center text-sm text-gray-600 dark:text-gray-400">
@@ -788,7 +796,7 @@ function App() {
                 </div>
               </div>
               {isSignIn && (<div className="text-right"><button className="text-sm text-gray-500 dark:text-gray-400 hover:underline" onClick={() => setEntryStage("forgot-password")}>Forgot Password?</button></div>)}
-              <button onClick={handleSubmit} disabled={isLoading} className="w-full bg-teal-400 text-white py-3 rounded-md hover:bg-teal-600 disabled:opacity-50 transition-colors">
+              <button onClick={handleSubmit} disabled={isLoading} className="w-full text-white py-3 rounded-md hover:bg-teal-600 disabled:opacity-50 transition-colors" style={buttonStyle}>
                 {isLoading ? "Loading..." : isSignIn ? "Sign In" : "Sign Up"}
               </button>
               <div className="text-center text-gray-600 dark:text-gray-400">

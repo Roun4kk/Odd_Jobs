@@ -10,6 +10,8 @@ import ProfileComp from "./profileComp.jsx";
 import logo from "./assets/logo/logo-jobddone.svg";
 import useIsMobile from "./hooks/useIsMobile.js";
 import BottomNavbar from "./bottomNavBar.jsx";
+import { useTheme } from "./ThemeContext"; // Import useTheme
+import logoDark from "./assets/logo/logo-jobdone-dark.svg";
 
 function OtherProfile() {
   const { userId } = useParams();
@@ -22,6 +24,7 @@ function OtherProfile() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [error, setError] = useState(null);
+  const { theme } = useTheme(); // Get current theme
 
   useEffect(() => {
     if (user) {
@@ -30,6 +33,17 @@ function OtherProfile() {
       setHasToken(false);
     }
   }, [user]);
+
+  const headingStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#f0fdfa' // This is the hex code for teal-400
+  };
+  const buttonStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#2dd4bf' // This is the hex code for teal-400
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -61,21 +75,30 @@ function OtherProfile() {
     return (
       <div className={`${isMobile ? 'min-h-screen flex flex-col' : 'flex h-screen'}`}>
         {isMobile && (
-          <div className="flex items-center justify-center p-4 border-b border-gray-200 dark:border-gray-700 bg-teal-50 dark:bg-gray-800 flex-shrink-0">
+          <div className="flex items-center justify-center p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0" style={headingStyle}>
             {hasToken ? (
               <>
-                <h1 className="text-2xl font-semibold text-teal-800 dark:text-white">Profile</h1>
+                <h1 className="text-2xl font-semibold text-teal-800 dark:text-teal-400">Profile</h1>
               </>
             ) : (
               <>
                 <div className="flex items-center justify-start h-12 px-4">
-                  <div className="w-full items-center mt-4 justify-center max-w-[160px]">
-                    <img
-                      src={logo}
-                      alt="JobDone Logo"
-                      className="w-full h-auto object-contain"
-                    />
-                  </div>
+                    {theme!=="dark" && (<div className="w-full items-center justify-center max-w-[250px] mt-3">
+                      <img
+                        src={logo}
+                        alt="JobDone Logo"
+                        className="w-full h-auto object-contain"
+                      />
+                    </div>)}
+                    {theme==="dark" && (
+                      <div className="w-full items-center justify-center max-w-[130px] ml-4 mb-1.5">
+                        <img
+                          src={logoDark}
+                          alt="JobDone Logo Dark"
+                          className="w-full h-auto object-contain"
+                        />
+                      </div>)
+                    }
                 </div>
                 <div className="flex gap-2">
                   <button 
@@ -120,21 +143,31 @@ function OtherProfile() {
   if (isMobile) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-        <div className="flex items-center justify-center border-b z-10 shadow-sm h-16 w-full border-gray-200 dark:border-gray-700 bg-teal-50 dark:bg-gray-800 flex-shrink-0">
+        <div className="flex items-center justify-center border-b z-10 shadow-sm h-16 w-full border-gray-200 dark:border-gray-700 flex-shrink-0" style={headingStyle}>
           {hasToken ? (
             <>
-              <h1 className="text-2xl font-semibold text-teal-800 dark:text-white">Profile</h1>
+              <h1 className="text-2xl font-semibold text-teal-800 dark:text-teal-400">Profile</h1>
             </>
           ) : (
             <div className="flex items-center justify-between h-12 px-4 w-full">
               <div className="flex items-center justify-start flex-1">
-                <div className="w-full items-center mt-4 justify-center max-w-[160px]">
-                  <img
-                    src={logo}
-                    alt="JobDone Logo"
-                    className="w-full h-auto object-contain"
-                  />
-                </div>
+            
+                  {theme!=="dark" && (<div className="w-full items-center justify-center max-w-[250px] mt-3">
+                      <img
+                        src={logo}
+                        alt="JobDone Logo"
+                        className="w-full h-auto object-contain"
+                      />
+                    </div>)}
+                    {theme==="dark" && (
+                      <div className="w-full items-center justify-center max-w-[130px] ml-4 mb-1.5">
+                        <img
+                          src={logoDark}
+                          alt="JobDone Logo Dark"
+                          className="w-full h-auto object-contain"
+                        />
+                      </div>)
+                    }
               </div>
               <div className="flex gap-2 flex-shrink-0">
                 <button 
@@ -188,13 +221,14 @@ function OtherProfile() {
                         <div className="ml-auto flex gap-1">
                           <button
                             onClick={() => navigate("/messages", { state: { newChatWith: profile } })}
-                            className="px-2 py-1 bg-teal-400 text-white rounded-full text-xs hover:bg-teal-600 transition cursor-pointer duration-200"
+                            className="px-2 py-1 text-white rounded-full text-xs hover:bg-teal-600 transition cursor-pointer duration-200"
+                            style={buttonStyle}
                           >
                             Message
                           </button>
                           <button
                             onClick={() => setComp(prev => !prev)}
-                            className="px-2 py-1 bg-teal-400 text-white rounded-full text-xs hover:bg-teal-600 transition cursor-pointer duration-200"
+                            className="px-2 py-1 text-gray-400 dark:text-gray-300 cursor-pointer duration-200"
                           >
                             <MoreVertical className="h-4 w-4" />
                           </button>
@@ -209,7 +243,8 @@ function OtherProfile() {
                       {profile?.userSkills?.map((skill, index) => (
                         <span
                           key={index}
-                          className="bg-teal-400 text-white px-2 py-1 rounded-full text-xs max-w-60 sm:max-w-none truncate"
+                          className=" text-white px-2 py-1 rounded-full text-xs max-w-60 sm:max-w-none truncate"
+                          style ={buttonStyle}
                         >
                           {skill}
                         </span>
@@ -340,7 +375,7 @@ function OtherProfile() {
               </div>
               <div className="ml-6 flex-1 flex-col items-start justify-center">
                 <div className="flex items-center justify-start w-full gap-2">
-                  <button disabled={!hasToken} className="text-2xl font-bold text-gray-800 dark:text-white cursor-pointer">
+                  <button disabled={!hasToken} className="text-2xl font-bold text-gray-800 dark:text-white cursor-pointer truncate max-w-[300px]">
                     {profile?.username || "User not found"}
                   </button>
                   {verified && <BadgeCheck className="h-6 w-6 text-teal-400" />}
@@ -349,7 +384,8 @@ function OtherProfile() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => navigate("/messages", { state: { newChatWith: profile } })}
-                          className="ml-5 px-4 py-2 bg-teal-400 text-white rounded-3xl hover:bg-teal-600 transition cursor-pointer duration-200"
+                          className="ml-5 px-4 py-2 text-white rounded-3xl hover:bg-teal-600 transition cursor-pointer duration-200"
+                          style={buttonStyle}
                         >
                           Message
                         </button>
@@ -395,21 +431,21 @@ function OtherProfile() {
 
             <div className="w-5/6 flex items-center justify-center border-t dark:border-gray-700">
               <button
-                onClick={() => setJob("posts")}
-                className={`w-1/2 flex justify-center cursor-pointer border-t-4 ${
-                  job === "posts" ? "border-teal-400" : "border-transparent"
-                }`}
-              >
-                <div className="py-2 dark:text-white">POSTS</div>
-              </button>
-              <button
-                onClick={() => setJob("reviews")}
-                className={`w-1/2 flex justify-center cursor-pointer border-t-4 ${
-                  job === "reviews" ? "border-teal-400" : "border-transparent"
-                }`}
-              >
-                <div className="py-2 dark:text-white">REVIEWS</div>
-              </button>
+                  onClick={() => setJob("posts")}
+                  className={`flex-1 py-2 text-center text-lg font-medium ${
+                    job === "posts" ? "border-t-2 border-teal-400 text-teal-800 dark:text-teal-300" : "text-gray-600 dark:text-gray-400"
+                  }`}
+                >
+                  Posts
+                </button>
+                <button
+                  onClick={() => setJob("reviews")}
+                  className={`flex-1 py-2 text-center text-lg font-medium ${
+                    job === "reviews" ? "border-t-2 border-teal-400 text-teal-800 dark:text-teal-300" : "text-gray-600 dark:text-gray-400"
+                  }`}
+                >
+                  Reviews
+                </button>
             </div>
 
             <div className="w-5/6 flex items-center justify-center mt-4">

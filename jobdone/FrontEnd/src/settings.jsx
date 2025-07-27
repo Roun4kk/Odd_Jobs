@@ -76,6 +76,16 @@ function Settings() {
     const [hasToken, setHasToken] = useState(false);
     const isAuth = user.isOAuth;
 
+    const headingStyle = {
+        background: theme === 'dark' 
+        ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+        : '#f0fdfa' // This is the hex code for teal-400
+    };
+    const buttonStyle = {
+        background: theme === 'dark' 
+        ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+        : '#2dd4bf' // This is the hex code for teal-400
+    };
     useEffect(() => {
         if (!loading) {
         if (!user) {
@@ -334,8 +344,8 @@ function Settings() {
         return (
             <div className="min-h-screen bg-white dark:bg-gray-900 pb-20 px-4">
                 {activeSection === "yourAccount" && (
-                    <div className="flex items-center justify-center bg-teal-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
-                        <h1 className="text-2xl text-teal-800 dark:text-white font-bold ml-2">Settings</h1>
+                    <div className="flex items-center justify-center border-b border-gray-200 dark:border-gray-700 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10" style={headingStyle}>
+                        <h1 className="text-2xl text-teal-800 dark:text-teal-400 font-bold ml-2">Settings</h1>
                     </div>
                 )}
 
@@ -405,9 +415,9 @@ function Settings() {
                 {/* Now all headers with a back button will work correctly */}
                 {activeSection === "notifications" && (
                     <>
-                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10" style={headingStyle}>
                             {backButton()}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-teal-400">
                                 Notifications
                             </h1>
                         </div>
@@ -429,9 +439,9 @@ function Settings() {
 
                 {activeSection === "accountInformation" && (
                      <>
-                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10" style={headingStyle}>
                             {backButton()}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-teal-400">
                                 Account Information
                             </h1>
                         </div>
@@ -481,9 +491,9 @@ function Settings() {
                 {/* Example for one more section */}
                 {activeSection === "changeUsername" && (
                     <>
-                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10" style={headingStyle}>
                             {backButton()}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-teal-400">
                                 Change Username
                             </h1>
                         </div>
@@ -503,7 +513,8 @@ function Settings() {
                             )}
                             <button
                                 onClick={handleChangeUsername}
-                                className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
+                                className="text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
+                                style={buttonStyle}
                             >
                                 Save
                             </button>
@@ -517,9 +528,9 @@ function Settings() {
 
                  {activeSection === "report" && (
                     <>
-                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10" style={headingStyle}>
                             {backButton()}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-teal-400">
                                 Report a Problem
                             </h1>
                         </div>
@@ -531,9 +542,9 @@ function Settings() {
 
                 {activeSection === "passwordVerification" && (
                     <>
-                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10" style={headingStyle}>
                             {backButton()}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-teal-400">
                                 Account Information
                             </h1>
                         </div>
@@ -565,7 +576,8 @@ function Settings() {
                                 </button>
                                 <button
                                     onClick={handleVerify}
-                                    className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
+                                    className=" text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
+                                    style={buttonStyle}
                                 >
                                     Verify
                                 </button>
@@ -576,9 +588,9 @@ function Settings() {
 
                 {["changePhone", "changeEmail"].includes(activeSection) && (
                     <>
-                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10" style={headingStyle}>
                             {backButton()}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-teal-400">
                                 {activeSection === "changePhone"
                                     ? "Change Phone Number"
                                     : "Change Email"}
@@ -615,7 +627,8 @@ function Settings() {
                                             : newEmail
                                     )
                                 }
-                                className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
+                                className=" text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
+                                style={buttonStyle}
                             >
                                 Send OTP
                             </button>
@@ -625,9 +638,9 @@ function Settings() {
 
                 {["verifyPhoneOTP", "verifyEmailOTP"].includes(activeSection) && (
                     <>
-                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                        <div className="flex items-center bg-teal-50  mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10" style={headingStyle}>
                             {backButton()}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-teal-400">
                                 Verify Code
                             </h1>
                         </div>
@@ -657,7 +670,8 @@ function Settings() {
                                         otp
                                     )
                                 }
-                                className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
+                                className=" text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
+                                style={buttonStyle}
                             >
                                 Verify
                             </button>
@@ -667,9 +681,9 @@ function Settings() {
 
                 {activeSection === "changePassword" && (
                     <>
-                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                        <div className="flex items-center bg-teal-50  mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10" style={headingStyle}>
                             {backButton()}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-teal-400">
                                 Change Password
                             </h1>
                         </div>
@@ -709,7 +723,8 @@ function Settings() {
                                 </button>)}
                                 <button
                                     onClick={handleChangePassword}
-                                    className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
+                                    className=" text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
+                                    style={buttonStyle}
                                 >
                                     Save Changes
                                 </button>
@@ -720,9 +735,9 @@ function Settings() {
 
                 {activeSection === "forgotPasswordSend" && (
                     <>
-                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10" style={headingStyle}>
                             {backButton()}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-teal-400">
                                 Forgot Password
                             </h1>
                         </div>
@@ -738,7 +753,8 @@ function Settings() {
                             )}
                             <button
                                 onClick={handleForgotPassword}
-                                className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
+                                className=" text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
+                                style={buttonStyle}
                             >
                                 Send Code
                             </button>
@@ -748,9 +764,9 @@ function Settings() {
 
                 {activeSection === "forgotPasswordOTP" && (
                     <>
-                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                        <div className="flex items-center bg-teal-50 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10" style={headingStyle}>
                             {backButton()}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-teal-400">
                                 Enter Code
                             </h1>
                         </div>
@@ -774,7 +790,8 @@ function Settings() {
                             )}
                             <button
                                 onClick={handleVerifyForgotPasswordOTP}
-                                className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
+                                className=" text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
+                                style={buttonStyle}
                             >
                                 Verify
                             </button>
@@ -784,9 +801,9 @@ function Settings() {
 
                 {activeSection === "resetPassword" && (
                     <>
-                        <div className="flex items-center bg-teal-50 dark:bg-gray-800 mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10">
+                        <div className="flex items-center bg-teal-50  mb-6 w-screen h-16 -mx-4 px-4 shadow-sm z-10" style={headingStyle}>
                             {backButton()}
-                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-white">
+                            <h1 className="text-2xl font-bold ml-2 text-teal-800 dark:text-teal-400">
                                 Reset Your Password
                             </h1>
                         </div>
@@ -812,7 +829,8 @@ function Settings() {
                             )}
                             <button
                                 onClick={handleResetPassword}
-                                className="bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
+                                className=" text-white py-3 px-6 rounded-lg hover:bg-teal-600 text-base w-full cursor-pointer"
+                                style={buttonStyle}
                             >
                                 Save New Password
                             </button>
@@ -830,7 +848,7 @@ function Settings() {
             <Sidebar user={user} />
             <div className="w-[70%] h-full fixed right-0 top-0 bg-white dark:bg-gray-900 flex overflow-y-hidden">
                 <div className="py-3 w-2/5 h-full flex flex-col border-r border-gray-300 dark:border-gray-700">
-                    <h1 className="font-bold py-2 px-5 text-2xl">Settings</h1>
+                    <h1 className="font-bold py-2 px-5 text-2xl dark:text-teal-400">Settings</h1>
                     <button
                         onClick={() => setNavigationStack(["yourAccount"])} // Reset to base
                         className={buttonClass("yourAccount")}
@@ -855,7 +873,7 @@ function Settings() {
                     
                     {activeSection === "yourAccount" && (
                         <>
-                            <h1 className="font-bold py-2 text-2xl">Your Account</h1>
+                            <h1 className="font-bold py-2 text-2xl dark:text-teal-400">Your Account</h1>
                             <button
                                 onClick={() =>
                                     navigateTo( // USE NAVIGATE_TO
@@ -887,7 +905,7 @@ function Settings() {
                     {/* --- I will complete the rest of the desktop JSX for you --- */}
                      {activeSection === "notifications" && (
                         <>
-                            <h1 className="font-bold py-2 text-2xl">Notifications</h1>
+                            <h1 className="font-bold py-2 text-2xl dark:text-teal-400">Notifications</h1>
                             <div className="space-y-4 py-2">
                                 <NotificationToggle
                                     label="Comment Notifications"
@@ -905,7 +923,7 @@ function Settings() {
 
                     {activeSection === "report" && (
                         <>
-                            <h1 className="font-bold py-2 text-2xl">Report a Problem</h1>
+                            <h1 className="font-bold py-2 text-2xl dark:text-teal-400">Report a Problem</h1>
                             <div className="py-2">
                                 <ReportForm reportedUserId={user._id} />
                             </div>
@@ -916,7 +934,7 @@ function Settings() {
                          <>
                             <div className="font-bold flex items-center py-2 text-2xl">
                                 {backButton()}
-                                <h1 className="ml-4">Account Information</h1>
+                                <h1 className="ml-4 dark:text-teal-400">Account Information</h1>
                             </div>
                             <div className="px-2 mt-4 space-y-2">
                                 <h2 className="text-base font-semibold">Verify it's you</h2>
@@ -946,7 +964,8 @@ function Settings() {
                                     </button>
                                     <button
                                         onClick={handleVerify}
-                                        className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 cursor-pointer"
+                                        className="text-white px-4 py-2 rounded-md hover:bg-teal-600 cursor-pointer"
+                                        style={buttonStyle}
                                     >
                                         Verify
                                     </button>
@@ -959,7 +978,7 @@ function Settings() {
                         <>
                             <div className="font-bold flex items-center py-2 text-2xl">
                                 {backButton()}
-                                <h1 className="ml-4">Account Information</h1>
+                                <h1 className="ml-4 dark:text-teal-400">Account Information</h1>
                             </div>
                             <button
                                 onClick={() => navigateTo("changeUsername")}
@@ -1005,7 +1024,7 @@ function Settings() {
                          <>
                             <div className="font-bold flex items-center py-2 text-2xl">
                                 {backButton()}
-                                <h1 className="ml-4">Change Username</h1>
+                                <h1 className="ml-4 dark:text-teal-400">Change Username</h1>
                             </div>
                             <div className="px-2 mt-4 space-y-4">
                                 <input
@@ -1023,7 +1042,8 @@ function Settings() {
                                 <div className="flex justify-end">
                                     <button
                                         onClick={handleChangeUsername}
-                                        className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 cursor-pointer"
+                                        className=" text-white px-4 py-2 rounded-md hover:bg-teal-600 cursor-pointer"
+                                        style={buttonStyle}
                                     >
                                         Save
                                     </button>
@@ -1036,7 +1056,7 @@ function Settings() {
                         <>
                             <div className="font-bold flex items-center py-2 text-2xl">
                                 {backButton()}
-                                <h1 className="ml-4">
+                                <h1 className="ml-4 dark:text-teal-400">
                                     {activeSection === "changePhone"
                                         ? "Change Phone Number"
                                         : "Change Email"}
@@ -1074,7 +1094,8 @@ function Settings() {
                                                     : newEmail
                                             )
                                         }
-                                        className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 cursor-pointer"
+                                        className="text-white px-4 py-2 rounded-md hover:bg-teal-600 cursor-pointer"
+                                        style={buttonStyle}
                                     >
                                         Send OTP
                                     </button>
@@ -1087,7 +1108,7 @@ function Settings() {
                          <>
                             <div className="font-bold flex items-center py-2 text-2xl">
                                 {backButton()}
-                                <h1 className="ml-4">Verify Code</h1>
+                                <h1 className="ml-4 dark:text-teal-400">Verify Code</h1>
                             </div>
                             <div className="px-2 mt-4 space-y-4">
                                 <input
@@ -1116,7 +1137,8 @@ function Settings() {
                                                 otp
                                             )
                                         }
-                                        className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 cursor-pointer"
+                                        className="text-white px-4 py-2 rounded-md hover:bg-teal-600 cursor-pointer"
+                                        style={buttonStyle}
                                     >
                                         Verify
                                     </button>
@@ -1129,7 +1151,7 @@ function Settings() {
                         <>
                             <div className="font-bold flex items-center py-2 text-2xl">
                                 {backButton()}
-                                <h1 className="ml-4">Change Password</h1>
+                                <h1 className="ml-4 dark:text-teal-400">Change Password</h1>
                             </div>
                             <div className="space-y-4 mt-4 px-2">
                                 {!isAuth && (<div className="w-full">
@@ -1173,7 +1195,8 @@ function Settings() {
                                     </button>)}
                                     <button
                                         onClick={handleChangePassword}
-                                        className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 cursor-pointer"
+                                        className="text-white px-4 py-2 rounded-md hover:bg-teal-600 cursor-pointer"
+                                        style={buttonStyle}
                                     >
                                         Save Changes
                                     </button>
@@ -1186,7 +1209,7 @@ function Settings() {
                         <>
                             <div className="font-bold flex items-center py-2 text-2xl">
                                 {backButton()}
-                                <h1 className="ml-4">Forgot Password</h1>
+                                <h1 className="ml-4 dark:text-teal-400">Forgot Password</h1>
                             </div>
                             <div className="px-2 mt-4 space-y-2">
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -1200,7 +1223,8 @@ function Settings() {
                                 )}
                                 <button
                                     onClick={handleForgotPassword}
-                                    className="w-full mt-4 bg-teal-500 text-white py-2 rounded-md hover:bg-teal-600 cursor-pointer"
+                                    className="w-full mt-4 text-white py-2 rounded-md hover:bg-teal-600 cursor-pointer"
+                                    style={buttonStyle}
                                 >
                                     Send Code
                                 </button>
@@ -1212,7 +1236,7 @@ function Settings() {
                         <>
                             <div className="font-bold flex items-center py-2 text-2xl">
                                 {backButton()}
-                                <h1 className="ml-4">Enter Code</h1>
+                                <h1 className="ml-4 dark:text-teal-400">Enter Code</h1>
                             </div>
                             <div className="px-2 mt-4 space-y-2">
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -1234,7 +1258,8 @@ function Settings() {
                                 )}
                                 <button
                                     onClick={handleVerifyForgotPasswordOTP}
-                                    className="w-full mt-2 bg-teal-500 text-white py-2 rounded-md hover:bg-teal-600 cursor-pointer"
+                                    className="w-full mt-2 text-white py-2 rounded-md hover:bg-teal-600 cursor-pointer"
+                                    style={buttonStyle}
                                 >
                                     Verify
                                 </button>
@@ -1246,7 +1271,7 @@ function Settings() {
                         <>
                             <div className="font-bold flex items-center py-2 text-2xl">
                                 {backButton()}
-                                <h1 className="ml-4">Reset Your Password</h1>
+                                <h1 className="ml-4 dark:text-teal-400">Reset Your Password</h1>
                             </div>
                             <div className="space-y-4 mt-4 px-2">
                                 <div className="w-full">
@@ -1275,7 +1300,8 @@ function Settings() {
                                 <div className="flex justify-end mt-2">
                                     <button
                                         onClick={handleResetPassword}
-                                        className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 cursor-pointer"
+                                        className="text-white px-4 py-2 rounded-md hover:bg-teal-600 cursor-pointer"
+                                        style={buttonStyle}
                                     >
                                         Save New Password
                                     </button>
