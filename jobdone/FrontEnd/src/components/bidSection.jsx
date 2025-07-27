@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import {BadgeCheck  , Handshake , MoreVertical , X , Star} from "lucide-react";
+import {BadgeCheck  , Handshake , MoreVertical , X , Star, Edit} from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth.jsx";
@@ -22,6 +22,10 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
   const [reportText , setReportText] = useState("");
   const [confirmWinner, setConfirmWinner] = useState(false);
   const [pendingWinner, setPendingWinner] = useState(null);
+  const [editingBidId, setEditingBidId] = useState(null);
+  const [editBidAmount, setEditBidAmount] = useState("");
+  const [editBidText, setEditBidText] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
   const { theme } = useTheme(); // Get current theme
 
   const buttonStyle = {
@@ -96,6 +100,120 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
       socket.off("receiveNewBid", handleNewBid);
     };
   }, [postId, sortBy]); 
+
+  const handleEditBid = () => {
+    // Set the current bid data in edit fields
+    setEditBidAmount(selectedBid.BidAmount.toString());
+    setEditBidText(selectedBid.BidText);
+    setEditingBidId(selectedBid._id);
+    
+    // Hide the bid from frontend temporarily
+    setBids(prevBids => prevBids.filter(bid => bid._id !== selectedBid._id));
+    
+    // Close the options modal and show edit modal
+    setBidComp(false);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateBid = async () => {
+    const bidAmountNumber = parseFloat(editBidAmount.trim());
+    
+    // Validation
+    if (isNaN(bidAmountNumber) || bidAmountNumber <= 0) {
+      toast.error("Please enter a valid bid amount.");
+      return;
+    }
+    
+    if (bidAmountNumber < post.minimumBid || (post.maximumBid && bidAmountNumber > post.maximumBid)) {
+      toast.error(`Bid out of bid range : ${post.minimumBid} to ${post.maximumBid}`);
+      return;
+    }
+
+    try {
+      // Update bid in backend
+      const response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/posts/bids`, {
+        bidId: editingBidId,
+        BidAmount: bidAmountNumber,
+        BidText: editBidText || "",
+        postId: postId
+      }, { withCredentials: true });
+
+      const updatedBid = response.data.bid;
+
+      // Add the updated bid back to frontend
+      setBids(prevBids => {
+        const newBids = [...prevBids, {
+          _id: updatedBid._id,
+          BidAmount: updatedBid.BidAmount,
+          BidText: updatedBid.BidText,
+          user: selectedBid.user // Keep the original user data
+        }];
+
+        // Sort the bids according to current sort preference
+        if (sortBy === "rating") {
+          newBids.sort((a, b) => (b.user.averageRating || 0) - (a.user.averageRating || 0));
+        } else if (sortBy === "1") {
+          newBids.sort((a, b) => a.BidAmount - b.BidAmount);
+        } else {
+          newBids.sort((a, b) => b.BidAmount - a.BidAmount);
+        }
+
+        return newBids;
+      });
+
+      // Reset edit state
+      setEditingBidId(null);
+      setEditBidAmount("");
+      setEditBidText("");
+      setShowEditModal(false);
+      
+      toast.success("Bid updated successfully!");
+
+    } catch (error) {
+      console.error("Error updating bid:", error);
+      toast.error("Failed to update bid.");
+      
+      // If update failed, add the original bid back
+      setBids(prevBids => {
+        const newBids = [...prevBids, selectedBid];
+        
+        // Sort the bids according to current sort preference
+        if (sortBy === "rating") {
+          newBids.sort((a, b) => (b.user.averageRating || 0) - (a.user.averageRating || 0));
+        } else if (sortBy === "1") {
+          newBids.sort((a, b) => a.BidAmount - b.BidAmount);
+        } else {
+          newBids.sort((a, b) => b.BidAmount - a.BidAmount);
+        }
+
+        return newBids;
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    // Add the original bid back to frontend
+    setBids(prevBids => {
+      const newBids = [...prevBids, selectedBid];
+      
+      // Sort the bids according to current sort preference
+      if (sortBy === "rating") {
+        newBids.sort((a, b) => (b.user.averageRating || 0) - (a.user.averageRating || 0));
+      } else if (sortBy === "1") {
+        newBids.sort((a, b) => a.BidAmount - b.BidAmount);
+      } else {
+        newBids.sort((a, b) => b.BidAmount - a.BidAmount);
+      }
+
+      return newBids;
+    });
+
+    // Reset edit state
+    setEditingBidId(null);
+    setEditBidAmount("");
+    setEditBidText("");
+    setShowEditModal(false);
+  };
 
   const handleDelete = async () => {
     try {
@@ -264,6 +382,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
         )}
       </div>
 
+      {/* Bid Options Modal */}
       {bidComp && createPortal(
         <div className="fixed inset-0 z-[100] bg-black/50 flex justify-center items-center p-4">
           <div className="bg-white dark:bg-gray-800 w-full max-w-sm p-5 rounded-xl shadow-xl relative">
@@ -271,6 +390,17 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
             <button onClick={() => {setOpenReport(true) , setBidComp(false)}} className="w-full mb-2 flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-red-500 text-red-600 dark:text-red-400 dark:hover:bg-red-900/20 hover:bg-red-50 transition cursor-pointer">
               Report
             </button>
+
+            {/* Edit Bid Option - Only show for bid owner and if not winner */}
+            {selectedBid?.user?._id === user._id && selectedBid?._id?.toString() !== post?.winningBidId?.toString() && (
+              <button 
+                onClick={handleEditBid}
+                className="w-full mb-2 flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-blue-500 text-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20 hover:bg-blue-50 transition cursor-pointer"
+              >
+                <Edit className="w-4 h-4" />
+                Edit Bid
+              </button>
+            )}
 
             {(jobPosterId===user._id || selectedBid?.user?._id === user._id) && selectedBid?._id?.toString() !== post?.winningBidId?.toString() && (<button onClick = {() => handleDelete()}className="w-full mb-2 flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-red-500 text-red-600 dark:text-red-400 dark:hover:bg-red-900/20 hover:bg-red-50 transition cursor-pointer">
               Delete
@@ -286,6 +416,77 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
         </div>,
         document.body
       )}
+
+      {/* Edit Bid Modal */}
+      {showEditModal && createPortal(
+        <div className="fixed inset-0 z-[100] bg-black/50 flex justify-center items-center p-4">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-sm p-5 rounded-xl shadow-xl relative">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold dark:text-white">Edit Bid</h2>
+              <button onClick={handleCancelEdit}>
+                <X className="w-5 h-5 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white cursor-pointer" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Bid Amount (₹)
+                </label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  placeholder="Enter bid amount"
+                  className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500"
+                  value={editBidAmount}
+                  onChange={(e) => setEditBidAmount(e.target.value)}
+                  style={{ fontSize: '16px' }}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Comment (Optional)
+                </label>
+                <textarea
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  placeholder="Add a comment..."
+                  className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 resize-none h-20"
+                  value={editBidText}
+                  onChange={(e) => setEditBidText(e.target.value)}
+                  style={{ fontSize: '16px' }}
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCancelEdit}
+                  className="flex-1 bg-gray-300 dark:bg-gray-600 text-black dark:text-white px-4 py-2 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdateBid}
+                  className="flex-1 text-white px-4 py-2 rounded-md hover:bg-teal-600 transition cursor-pointer"
+                  style={buttonStyle}
+                >
+                  Update Bid
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Report Modal */}
       {openReport && createPortal(
           <div className="fixed inset-0 z-100 bg-black/50 flex justify-center items-center">
             <div className="bg-white dark:bg-gray-800 w-full max-w-sm p-5 rounded-xl shadow-xl relative">
@@ -312,32 +513,34 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
           document.body
         )
       }
-    {confirmWinner && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-100">
-        <div className="bg-white dark:bg-gray-800 p-4 rounded shadow-md w-[300px] text-center">
-          <p className="mb-4 font-semibold dark:text-white">
-            Are you sure you want to hire this bidder ?
-            <br />
-            <span className="text-sm text-red-500 dark:text-red-400">You can't undo this action.</span>
-          </p>
-          <div className="flex justify-around">
-            <button
-              onClick={handleSelectWinner}
-              className=" text-white px-4 py-1 rounded cursor-pointer"
-              style={buttonStyle}
-            >
-              Confirm
-            </button>
-            <button
-              onClick={() => setConfirmWinner(false)}
-              className="bg-gray-300 dark:bg-gray-600 text-black dark:text-white px-4 py-1 rounded cursor-pointer"
-            >
-              Cancel
-            </button>
+
+      {/* Confirm Winner Modal */}
+      {confirmWinner && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-100">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded shadow-md w-[300px] text-center">
+            <p className="mb-4 font-semibold dark:text-white">
+              Are you sure you want to hire this bidder ?
+              <br />
+              <span className="text-sm text-red-500 dark:text-red-400">You can't undo this action.</span>
+            </p>
+            <div className="flex justify-around">
+              <button
+                onClick={handleSelectWinner}
+                className=" text-white px-4 py-1 rounded cursor-pointer"
+                style={buttonStyle}
+              >
+                Confirm
+              </button>
+              <button
+                onClick={() => setConfirmWinner(false)}
+                className="bg-gray-300 dark:bg-gray-600 text-black dark:text-white px-4 py-1 rounded cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
     </div>
   );
 }

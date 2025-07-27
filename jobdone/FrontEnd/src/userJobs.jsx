@@ -238,17 +238,28 @@ function UserJobs({ job, userProfile, hasToken }) {
   }, [scrollHandler]);
 
   const toggleSavePost = async (postId) => {
-    try {
-      const isAlreadySaved = user.savedPosts?.includes(postId);
-      updateUser({ ...user, savedPosts: isAlreadySaved ? user.savedPosts.filter((id) => id !== postId) : [...(user.savedPosts || []), postId] });
-      const url = `${import.meta.env.VITE_API_BASE_URL}/posts/${isAlreadySaved ? "unsave" : "save"}`;
-      const method = isAlreadySaved ? "delete" : "post";
-      await axios[method](url, isAlreadySaved ? { data: { postId } } : { postId }, { withCredentials: true });
-    } catch (error) {
-      console.error("Error saving/unsaving post:", error);
-      updateUser(user); // Revert on error
-    }
-  };
+      try {
+        const isAlreadySaved = user.savedPosts?.includes(postId);
+        const optimisticUser = {
+          ...user,
+          savedPosts: isAlreadySaved
+            ? user.savedPosts.filter(id => id !== postId)
+            : [...(user.savedPosts || []), postId]
+        };
+        updateUser(optimisticUser);
+  
+        const url = `${import.meta.env.VITE_API_BASE_URL}/posts/${isAlreadySaved ? 'unsave' : 'save'}`;
+        const method = isAlreadySaved ? 'delete' : 'post';
+        const payload = { postId, userId: user._id };
+  
+        await axios[method](url, isAlreadySaved ? { data: payload } : payload, {
+          withCredentials: true
+        });
+      } catch (error) {
+        console.error("Error saving/unsaving post:", error);
+        updateUser(user);
+      }
+    };
   
   const handlePostDelete = (deletedPostId) => {
     setPosts(prev => prev.filter(p => p._id !== deletedPostId));

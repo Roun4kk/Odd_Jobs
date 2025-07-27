@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; // Added useRef
 import useAuth from "./hooks/useAuth.jsx";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +9,53 @@ import BottomNavbar from "./bottomNavBar.jsx";
 import logo from "./assets/logo/logo-transparent-jobdone.svg";
 import toast from "react-hot-toast";
 import { useTheme } from "./ThemeContext";
+
+// --- HOOK PORTED FROM App.jsx ---
+// This hook provides a robust solution for the virtual keyboard covering inputs on mobile.
+// It listens for the viewport to resize (which happens when the keyboard appears)
+// and then scrolls the currently active input into the center of the view.
+const useMobileInputFocus = () => {
+  const isMobile = useIsMobile();
+  const activeElementRef = useRef(null);
+
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const handleFocusIn = (e) => {
+      const target = e.target;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+        activeElementRef.current = target;
+      }
+    };
+
+    const handleFocusOut = () => {
+      activeElementRef.current = null;
+    };
+
+    const handleViewportResize = () => {
+      if (activeElementRef.current) {
+        setTimeout(() => {
+          activeElementRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }, 100); 
+      }
+    };
+
+    document.addEventListener("focusin", handleFocusIn);
+    document.addEventListener("focusout", handleFocusOut);
+    // Use the visualViewport API for better reliability
+    window.visualViewport?.addEventListener("resize", handleViewportResize);
+
+    return () => {
+      document.removeEventListener("focusin", handleFocusIn);
+      document.removeEventListener("focusout", handleFocusOut);
+      window.visualViewport?.removeEventListener("resize", handleViewportResize);
+    };
+  }, [isMobile]);
+};
+
 
 function EditProfile() {
   const { user, updateUser , loading } = useAuth();
@@ -22,6 +69,9 @@ function EditProfile() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { theme } = useTheme();
+
+  // Activate the keyboard handling hook for mobile
+  useMobileInputFocus();
 
   useEffect(() => {
     if (!loading) {
@@ -87,7 +137,11 @@ function EditProfile() {
       handleAddSkill();
     }
   };
-
+  const headingStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#f0fdfa' // This is the hex code for teal-400
+  };
   const buttonStyle = {
     background: theme === 'dark' 
       ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
@@ -147,29 +201,28 @@ function EditProfile() {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
         {/* Mobile Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-teal-50 dark:bg-gray-800 flex-shrink-0">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200  bg-teal-50 dark:bg-gray-800 flex-shrink-0" style={headingStyle}>
           <button
             onClick={() => navigate("/Profile")}
             className="p-2 rounded-full hover:bg-teal-100 dark:hover:bg-gray-700"
           >
             <ArrowLeft className="w-6 h-6 text-teal-700 dark:text-teal-300 hover:text-teal-900" />
           </button>
-          <h1 className="text-lg font-semibold text-teal-800 dark:text-gray-100">Edit Profile</h1>
+          <h1 className="text-lg font-semibold text-teal-800 dark:text-teal-400">Edit Profile</h1>
           <button
             onClick={handleSave}
             disabled={isSaving}
             className={`px-4 py-2 rounded-full text-sm font-medium transition ${
               isSaving
                 ? "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                : "bg-teal-500 text-white hover:bg-teal-600"
+                : "bg-teal-600 text-white hover:bg-teal-600"
             }`}
-            style ={buttonStyle}
           >
             {isSaving ? "Saving..." : "Save"}
           </button>
         </div>
 
-        {/* Mobile Content */}
+        {/* Mobile Content - Removed scrollPaddingBottom style */}
         <div className="flex-1 overflow-y-auto pb-20">
           <div className="p-4 space-y-6">
             {/* Profile Image Section */}
@@ -235,7 +288,7 @@ function EditProfile() {
                 />
               </div>
 
-              {/* Bio */}
+              {/* Bio - Removed onFocus */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Bio
@@ -275,6 +328,7 @@ function EditProfile() {
                 )}
 
                 <div className="flex gap-2">
+                  {/* Skill input - Removed onFocus */}
                   <input
                     type="text"
                     value={newSkill}
@@ -310,7 +364,7 @@ function EditProfile() {
     );
   }
 
-  // Desktop Layout
+  // Desktop Layout (unchanged)
   return (
     <div className="flex h-screen overflow-hidden dark:bg-gray-900">
       <Sidebar user={user} />

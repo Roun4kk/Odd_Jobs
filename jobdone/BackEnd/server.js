@@ -1660,6 +1660,33 @@ app.post("/posts/bids", async (req, res) => {
   }
 });
 
+app.put("/posts/bids", verifyToken, async (req, res) => {
+  const { postId, bidId, BidAmount, BidText } = req.body;
+
+  if (!postId || !bidId || !BidAmount) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
+
+  try {
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    const bid = post.bids.id(bidId);
+    if (!bid) return res.status(404).json({ message: "Bid not found" });
+
+    // Update bid fields
+    bid.BidAmount = BidAmount;
+    bid.BidText = BidText || "";
+
+    await post.save();
+
+    res.status(200).json({ message: "Bid updated successfully", bid });
+  } catch (error) {
+    console.error("❌ Error while updating bid:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 app.get("/posts/topbid", verifyToken, async (req, res) => {
   const { postId, sortBy } = req.query;
   if (!postId) return res.status(400).json({ message: "postId is missing" });
@@ -3340,7 +3367,7 @@ mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log("Connection established");
     
-    server.listen(PORT,'0.0.0.0', () => {
+    server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
   })
