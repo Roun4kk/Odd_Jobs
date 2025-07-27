@@ -191,7 +191,7 @@ function Notifications() {
                           </span>
                         )}
                         <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                          • {formatTimeAgo(notif.createdAt)}
+                           {formatTimeAgo(notif.createdAt)}
                         </span>
                       </p>
                     </div>
