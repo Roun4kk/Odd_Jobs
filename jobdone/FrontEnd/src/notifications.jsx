@@ -26,6 +26,38 @@ const NotificationSkeleton = () => (
   </div>
 );
 
+// Helper function to format time like Instagram
+const formatTimeAgo = (dateString) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now - date) / 1000);
+
+  let interval = seconds / 31536000; // years
+  if (interval > 1) {
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+  interval = seconds / 2592000; // months
+  if (interval > 1) {
+     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+  interval = seconds / 86400; // days
+  if (interval > 1) {
+    const days = Math.floor(interval);
+    return days === 1 ? "1d" : `${days}d`;
+  }
+  interval = seconds / 3600; // hours
+  if (interval > 1) {
+    const hours = Math.floor(interval);
+    return hours === 1 ? "1h" : `${hours}h`;
+  }
+  interval = seconds / 60; // minutes
+  if (interval > 1) {
+    const minutes = Math.floor(interval);
+    return minutes === 1 ? "1m" : `${minutes}m`;
+  }
+  return `${Math.floor(seconds)}s`;
+};
+
 
 function Notifications() {
   const { user, loading, refreshUser } = useAuth();
@@ -55,7 +87,12 @@ function Notifications() {
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/notifications`, {
         withCredentials: true,
       });
-      setNotifications(res.data.notifications || []);
+      const fetchedNotifications = res.data.notifications || [];
+      
+      // Sort notifications by date, newest first
+      fetchedNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      setNotifications(fetchedNotifications);
     } catch (err) {
       console.error("Failed to fetch notifications:", err.response?.data || err.message);
     } finally {
@@ -138,24 +175,24 @@ function Notifications() {
                         <span
                           className="font-medium text-teal-600 dark:text-teal-400 hover:underline cursor-pointer"
                           onClick={(e) => {
-                            e.stopPropagation(); 
+                            e.stopPropagation();
                             navigate(`/profile/${notif.sender?._id}`);
                           }}
                         >
                           {notif.sender?.username}
                         </span>{" "}
-                        {notif.type === "bid" && `placed a bid of ₹${notif.bidAmount}`}
-                        {notif.type === "comment" && `commented: "${notif.commentText || notif.bidText || ""}"`}
-                        {notif.type === "Reply" && `replied: "${notif.commentText || notif.bidText || ""}"`}
-                        {notif.type === "Hired" && `has hired you with a pay of ₹${notif.bidAmount}`}
+                        {notif.type === "bid" && <>placed a bid of ₹{notif.bidAmount}</>}
+                        {notif.type === "comment" && <>commented: <span>"{notif.commentText || notif.bidText || ""}"</span></>}
+                        {notif.type === "Reply" && <>replied: <span>"{notif.commentText || notif.bidText || ""}"</span></>}
+                        {notif.type === "Hired" && <>has hired you with a pay of ₹{notif.bidAmount}</>}
                         {notif.postDescription && (
-                          <span className="font-normal text-gray-700 dark:text-gray-300">
-                            {notif.type === "Hired" ? " for the job:" : " on the job post:"} "{truncateDescription(notif.postDescription)}"
+                          <span className="font-medium text-gray-700 dark:text-gray-300">
+                            {notif.type === "Hired" ? " for the job :" : " on the job post:"} "{truncateDescription(notif.postDescription)}"
                           </span>
                         )}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {new Date(notif.createdAt).toLocaleString()}
+                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                          • {formatTimeAgo(notif.createdAt)}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -207,7 +244,7 @@ function Notifications() {
                           <span
                             className="font-medium text-teal-600 dark:text-teal-400 hover:underline cursor-pointer"
                             onClick={(e) => {
-                              e.stopPropagation(); 
+                              e.stopPropagation();
                               navigate(`/profile/${notif.sender?._id}`);
                             }}
                           >
@@ -222,10 +259,10 @@ function Notifications() {
                               {notif.type === "Hired" ? " for the job :" : " on the job post:"} "{truncateDescription(notif.postDescription)}"
                             </span>
                           )}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {new Date(notif.createdAt).toLocaleString()}
-                        </p>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                            {formatTimeAgo(notif.createdAt)}
+                          </span>
+                        </p>   
                       </div>
                     </div>
                   </button>
