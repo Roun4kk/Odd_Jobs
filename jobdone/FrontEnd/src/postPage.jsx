@@ -11,6 +11,7 @@ import PostOptionsOverlay from "./components/postOptionsOverlay";
 import SendOverlay from "./components/sendoverlay";
 import useIsMobile from "./hooks/useIsMobile.js";
 import { useSortBy } from "./SortByContext.jsx";
+import BottomNavbar from "./bottomNavBar.jsx";
 
 export default function PostPage() {
   // 1. Get state and actions from the context
