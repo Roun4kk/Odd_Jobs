@@ -1,5 +1,3 @@
-// --- START OF FILE SortByContext.jsx ---
-
 import { createContext, useContext, useState, useCallback } from "react";
 
 const SortByContext = createContext();
@@ -12,7 +10,7 @@ export const SortByProvider = ({ children }) => {
     feeds: {
       jobFeed: {},
       userJobs: {},
-      // You could add more here later, e.g., 'searchFeed'
+      postPage: {}, // ADDED: Explicitly add a key for the single post page
     },
   });
 

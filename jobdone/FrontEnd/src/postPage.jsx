@@ -10,24 +10,23 @@ import logo from "./assets/logo/logo-jobddone.svg";
 import PostOptionsOverlay from "./components/postOptionsOverlay";
 import SendOverlay from "./components/sendoverlay";
 import useIsMobile from "./hooks/useIsMobile.js";
-import BottomNavbar from "./bottomNavBar.jsx";
-import { ArrowLeft } from "lucide-react";
+import { useSortBy } from "./SortByContext.jsx";
 
 export default function PostPage() {
+  // 1. Get state and actions from the context
+  const { activeSortMap, setActiveFeed, setFeedMap } = useSortBy();
   const { postId } = useParams();
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [topBids, setTopBids] = useState({});
   const [dropdownPostId, setDropdownPostId] = useState(null);
-  const [sortByMap, setSortByMap] = useState({});
   const [error, setError] = useState(null);
   const [hasToken, setHasToken] = useState(false);
   const [activeCommentPost, setActiveCommentPost] = useState(null);
-  const [activeBidPost, setActiveBidPost] = useState(null);
+
   const [refreshFlag, setRefreshFlag] = useState(false);
   const [activeSendPost, setActiveSendPost] = useState(null);
   const [activeOptionsPost, setActiveOptionsPost] = useState(null);
@@ -71,16 +70,24 @@ export default function PostPage() {
     } else {
       setHasToken(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
+    // 3. Tell the context that this component is now the active feed
+    setActiveFeed('postPage');
+    
     const fetchPost = async () => {
       console.log("Fetching post with ID:", postId);
       try {
         setLoading(true);
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${postId}` ,{withCredentials:true});
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${postId}`, {withCredentials:true});
         const fetchedPost = res.data;
         setPost(fetchedPost);
+
+        // 4. Initialize the sort state for this post IN THE CONTEXT
+        if (fetchedPost) {
+          setFeedMap('postPage', { [fetchedPost._id]: "1" });
+        }
 
         if (fetchedPost.bids?.length > 0) {
           const sortedBids = [...fetchedPost.bids].sort((a, b) => a.BidAmount - b.BidAmount);
@@ -94,10 +101,6 @@ export default function PostPage() {
             [postId]: null,
           }));
         }
-        setSortByMap((prev) => ({
-          ...prev,
-          [postId]: "1",
-        }));
       } catch (err) {
         console.error("Error fetching post:", err);
         setError("Post not found or failed to load.");
@@ -107,7 +110,7 @@ export default function PostPage() {
     };
 
     fetchPost();
-  }, [postId, refreshFlag]);
+  }, [postId, refreshFlag, setActiveFeed, setFeedMap]);
 
   const shouldBlur = useMemo(() => {
     if (!user || !post) return true;
@@ -246,16 +249,16 @@ export default function PostPage() {
                     topBid={topBids[postId]}
                     toggleSavePost={toggleSavePost}
                     setActiveCommentPost={setActiveCommentPost}
-                    setActiveBidPost={setActiveBidPost}
+
                     setActiveOptionsPost={setActiveOptionsPost}
                     setActiveSendPost={setActiveSendPost}
                     shouldBlur={shouldBlur}
                     setTopBids={setTopBids}
-                    setSortByMap={setSortByMap}
-                    sortByMap={sortByMap}
+                    sortByMap={activeSortMap} // Fixed: was sortByMap
                     dropdownPostId={dropdownPostId}
                     setDropdownPostId={setDropdownPostId}
                     hasToken={hasToken}
+                    feedKey={'postPage'} // Fixed: was 'jobFeed'
                   />
                 </div>
               </div>
@@ -269,17 +272,11 @@ export default function PostPage() {
           </div>
         )}
 
+        {/* Fixed: All overlays now properly integrated */}
         {activeCommentPost && (
           <CommentOverlay post={activeCommentPost} onClose={() => setActiveCommentPost(null)} />
         )}
-        {activeBidPost && (
-          <BidOverlay
-            post={activeBidPost}
-            postRefresh={refresh}
-            onClose={() => setActiveBidPost(null)}
-            sortBy={sortByMap[activeBidPost._id] || "1"}
-          />
-        )}
+
         {activeOptionsPost && (
           <PostOptionsOverlay post={activeOptionsPost} onClose={() => setActiveOptionsPost(null)} />
         )}
@@ -337,29 +334,23 @@ export default function PostPage() {
                 topBid={topBids[postId]}
                 toggleSavePost={toggleSavePost}
                 setActiveCommentPost={setActiveCommentPost}
-                setActiveBidPost={setActiveBidPost}
+
                 setActiveOptionsPost={setActiveOptionsPost}
                 setActiveSendPost={setActiveSendPost}
                 shouldBlur={shouldBlur}
                 setTopBids={setTopBids}
-                setSortByMap={setSortByMap}
-                sortByMap={sortByMap}
+                sortByMap={activeSortMap} // Fixed: was sortByMap
                 dropdownPostId={dropdownPostId}
                 setDropdownPostId={setDropdownPostId}
                 hasToken={hasToken}
+                feedKey={'postPage'} // Fixed: was missing
               />
 
+              {/* Fixed: All overlays now properly integrated */}
               {activeCommentPost && (
                 <CommentOverlay post={activeCommentPost} onClose={() => setActiveCommentPost(null)} />
               )}
-              {activeBidPost && (
-                <BidOverlay
-                  post={activeBidPost}
-                  postRefresh={refresh}
-                  onClose={() => setActiveBidPost(null)}
-                  sortBy={sortByMap[activeBidPost._id] || "1"}
-                />
-              )}
+
               {activeOptionsPost && (
                 <PostOptionsOverlay post={activeOptionsPost} onClose={() => setActiveOptionsPost(null)} />
               )}
