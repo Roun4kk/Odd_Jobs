@@ -11,6 +11,12 @@ const ReviewAndRatingForm = ({ targetUserType = "worker" , post  , setReviewSubm
   const [successMessage , setSuccessMessage] = useState("");
   const { theme } = useTheme(); // Get current theme
 
+  const buttonStyle = {
+    background: theme === 'dark' 
+      ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
+      : '#2dd4bf' // This is the hex code for teal-400
+  };
+  
   const handleSubmit = async () => {
     setError("");
 
