@@ -817,8 +817,15 @@ function App() {
 
   if (checkingAuth && !wasLoggedOut) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-teal-600" aria-label="Loading"></div>
+      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
+        {theme!=='dark' && (<div className=" w-44 h-44">
+            <img src={logo} alt="JobDone Logo" className="object-contain w-full h-full animate-pulse " />
+          </div>)}
+        {theme === 'dark' && (
+          <div className=" w-46 h-46">
+            <img src={logoDark} alt="JobDone Logo Dark" className="object-contain w-full h-full animate-pulse " />
+          </div>
+        )}
       </div>
     );
   }
