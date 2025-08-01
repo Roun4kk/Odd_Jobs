@@ -20,9 +20,7 @@ const SmallPostCard = ({ postId }) => {
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${postId}`, {
-          withCredentials: true,
-        });
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${postId}` , { params: { userId: user?._id } });
         setPost(response.data);
         setBids(response.data.bids || []);
       } catch (error) {

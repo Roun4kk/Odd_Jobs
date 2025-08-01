@@ -137,8 +137,7 @@ function JobFeed({ refreshFlag }) {
     const bids = await Promise.all(posts.map(async post => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts/topbid`, {
-          params: { postId: post._id, sortBy: sortByMap[post._id] || "1" },
-          withCredentials: true,
+          params: { postId: post._id, sortBy: sortByMap[post._id] || "1", userId: user?._id }
         });
         return [post._id, res.data];
       } catch {

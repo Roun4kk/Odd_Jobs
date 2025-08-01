@@ -222,9 +222,7 @@ function BidSection({ postId, refresh, sortBy, currentUserId, jobPosterId , post
         withCredentials: true,
       });
 
-      const updatedPostResponse = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${postId}`, {
-        withCredentials: true,
-      });
+      const updatedPostResponse = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${postId}` , { params: { userId: user?._id } });
       const updatedPost = updatedPostResponse.data;
 
       setPost(updatedPost);

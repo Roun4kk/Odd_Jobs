@@ -5,38 +5,37 @@ import useAuth from "./hooks/useAuth";
 import Sidebar from "./Sidebar";
 import axios from "axios";
 import CommentOverlay from "./components/commentOverlay";
-import BidOverlay from "./components/bidOverlay";
 import logo from "./assets/logo/logo-jobddone.svg";
+import logoDark from "./assets/logo/logo-dark.svg";
+import loadingLogo from "./assets/logo/logo-transparent-jobdone.svg";
 import PostOptionsOverlay from "./components/postOptionsOverlay";
 import SendOverlay from "./components/sendoverlay";
 import useIsMobile from "./hooks/useIsMobile.js";
 import { useSortBy } from "./SortByContext.jsx";
 import BottomNavbar from "./bottomNavBar.jsx";
+import { useTheme } from "./ThemeContext"; // Import useTheme
 
 export default function PostPage() {
   // 1. Get state and actions from the context
   const { activeSortMap, setActiveFeed, setFeedMap } = useSortBy();
   const { postId } = useParams();
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, loading: authLoading } = useAuth(); // Get authLoading
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [post, setPost] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [postLoading, setPostLoading] = useState(true); // Rename to avoid confusion
   const [topBids, setTopBids] = useState({});
   const [dropdownPostId, setDropdownPostId] = useState(null);
   const [error, setError] = useState(null);
   const [hasToken, setHasToken] = useState(false);
   const [activeCommentPost, setActiveCommentPost] = useState(null);
-
-  const [refreshFlag, setRefreshFlag] = useState(false);
+  const { theme } = useTheme(); // Get current theme
   const [activeSendPost, setActiveSendPost] = useState(null);
   const [activeOptionsPost, setActiveOptionsPost] = useState(null);
   
-  console.log("User in PostPage component:", user);
   
-  const refresh = useCallback(() => {
-    setRefreshFlag((prev) => !prev);
-  }, []);
+  // Combined loading state - show loading if either auth or post is loading
+  const loading = authLoading || postLoading;
 
   const toggleSavePost = async (postId) => {
     try {
@@ -74,44 +73,51 @@ export default function PostPage() {
   }, [user]);
 
   useEffect(() => {
+    // Only fetch post if auth loading is complete
+    if (authLoading) return;
+    
     // 3. Tell the context that this component is now the active feed
     setActiveFeed('postPage');
     
     const fetchPost = async () => {
       console.log("Fetching post with ID:", postId);
       try {
-        setLoading(true);
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${postId}`, {withCredentials:true});
+        setPostLoading(true);
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${postId}`, { params: { userId: user?._id } });
         const fetchedPost = res.data;
         setPost(fetchedPost);
+
+        console.log("post" , fetchedPost);
 
         // 4. Initialize the sort state for this post IN THE CONTEXT
         if (fetchedPost) {
           setFeedMap('postPage', { [fetchedPost._id]: "1" });
         }
 
+        // Fetch initial top bid similar to JobFeed
         if (fetchedPost.bids?.length > 0) {
-          const sortedBids = [...fetchedPost.bids].sort((a, b) => a.BidAmount - b.BidAmount);
-          setTopBids((prev) => ({
-            ...prev,
-            [postId]: sortedBids[0],
-          }));
+          try {
+            const topBidRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts/topbid`, {
+              params: { postId: fetchedPost._id, sortBy: "1", userId: user?._id },
+            });
+            setTopBids({ [fetchedPost._id]: topBidRes.data });
+          } catch (err) {
+            console.error("Error fetching top bid:", err);
+            setTopBids({ [fetchedPost._id]: null });
+          }
         } else {
-          setTopBids((prev) => ({
-            ...prev,
-            [postId]: null,
-          }));
+          setTopBids({ [fetchedPost._id]: null });
         }
       } catch (err) {
         console.error("Error fetching post:", err);
         setError("Post not found or failed to load.");
       } finally {
-        setLoading(false);
+        setPostLoading(false);
       }
     };
 
     fetchPost();
-  }, [postId, refreshFlag, setActiveFeed, setFeedMap]);
+  }, [postId, authLoading, setActiveFeed, setFeedMap]); // Added authLoading dependency
 
   const shouldBlur = useMemo(() => {
     if (!user || !post) return true;
@@ -122,15 +128,24 @@ export default function PostPage() {
     );
   }, [user, post, topBids]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
-        <img src={logo} alt="Loading..." className="w-40 h-40 animate-pulse" />
-      </div>
-    );
-  }
 
-  if (error) {
+  if (loading) {
+      return (
+        <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
+          {theme!=='dark' && (
+            <div className=" w-44 h-44">
+              <img src={loadingLogo} alt="JobDone Logo" className="object-contain w-full h-full animate-pulse " />
+            </div>)}
+          {theme === 'dark' && (
+            <div className=" w-46 h-46">
+              <img src={logoDark} alt="JobDone Logo Dark" className="object-contain w-full h-full animate-pulse " />
+            </div>
+          )}
+        </div>
+      );
+    }
+
+  if (error || !post) {
     return (
       <div className={`${isMobile ? 'min-h-screen flex flex-col' : 'flex h-screen'}`}>
         {isMobile && (
@@ -250,16 +265,15 @@ export default function PostPage() {
                     topBid={topBids[postId]}
                     toggleSavePost={toggleSavePost}
                     setActiveCommentPost={setActiveCommentPost}
-
                     setActiveOptionsPost={setActiveOptionsPost}
                     setActiveSendPost={setActiveSendPost}
                     shouldBlur={shouldBlur}
                     setTopBids={setTopBids}
-                    sortByMap={activeSortMap} // Fixed: was sortByMap
+                    sortByMap={activeSortMap}
                     dropdownPostId={dropdownPostId}
                     setDropdownPostId={setDropdownPostId}
                     hasToken={hasToken}
-                    feedKey={'postPage'} // Fixed: was 'jobFeed'
+                    feedKey={'postPage'}
                   />
                 </div>
               </div>
@@ -335,16 +349,15 @@ export default function PostPage() {
                 topBid={topBids[postId]}
                 toggleSavePost={toggleSavePost}
                 setActiveCommentPost={setActiveCommentPost}
-
                 setActiveOptionsPost={setActiveOptionsPost}
                 setActiveSendPost={setActiveSendPost}
                 shouldBlur={shouldBlur}
                 setTopBids={setTopBids}
-                sortByMap={activeSortMap} // Fixed: was sortByMap
+                sortByMap={activeSortMap}
                 dropdownPostId={dropdownPostId}
                 setDropdownPostId={setDropdownPostId}
                 hasToken={hasToken}
-                feedKey={'postPage'} // Fixed: was missing
+                feedKey={'postPage'}
               />
 
               {/* Fixed: All overlays now properly integrated */}

@@ -25,10 +25,11 @@ export const AuthProvider = ({ children }) => {
       });
       console.log("✅ User fetched:", res.data);
       setUser(res.data);
-      setLoading(false);
     } catch (err) {
       console.error("❌ Error fetching user:", err.response?.data || err.message);
       setUser(null);
+    }finally{
+      setLoading(false);
     }
   };
 
@@ -48,11 +49,10 @@ export const AuthProvider = ({ children }) => {
         loading,
       }}
     >
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
-
 
 export default function useAuth() {
   return useContext(AuthContext);

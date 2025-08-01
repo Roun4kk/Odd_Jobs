@@ -12,6 +12,8 @@ import useIsMobile from "./hooks/useIsMobile.js";
 import BottomNavbar from "./bottomNavBar.jsx";
 import { useTheme } from "./ThemeContext";
 import logoDark from "./assets/logo/logo-jobdone-dark.svg";
+import loadingLogo from "./assets/logo/logo-transparent-jobdone.svg";
+import loadingLogoDark from "./assets/logo/logo-dark.svg";
 
 function OtherProfile() {
   const { userId } = useParams();
@@ -73,7 +75,22 @@ function OtherProfile() {
 
     fetchProfile();
   }, [userId]);
-
+  if (loading) {
+          return (
+              <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
+                  {theme !== 'dark' && (
+                      <div className="w-44 h-44">
+                          <img src={loadingLogo} alt="JobDone Logo" className="object-contain w-full h-full animate-pulse" />
+                      </div>
+                  )}
+                  {theme === 'dark' && (
+                      <div className="w-46 h-46">
+                          <img src={loadingLogoDark} alt="JobDone Logo Dark" className="object-contain w-full h-full animate-pulse" />
+                      </div>
+                  )}
+              </div>
+          );
+      }
   if (!profile) {
     return (
       <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">

@@ -1,5 +1,7 @@
 import Sidebar from "./Sidebar";
 import useAuth from "./hooks/useAuth.jsx";
+import logoDark from"./assets/logo/logo-dark.svg";
+import loadingLogo from "./assets/logo/logo-transparent-jobdone.svg";
 import { useState, useCallback, useEffect, useRef, memo } from "react";
 import { BadgeCheck, Paperclip, X, AlertCircle, ArrowLeft, MoreVertical, Search } from "lucide-react";
 import axios from "axios";
@@ -221,7 +223,8 @@ function Messages() {
   }, [isMobile]);
 
   const refreshUserConnections = useCallback(async () => {
-    if (!user?._id || !isValidObjectId(user._id)) return;
+    // Don't make API calls if we're still loading or don't have a valid user
+    if (loading || !user?._id || !isValidObjectId(user._id)) return;
 
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/connections`, {
@@ -237,7 +240,7 @@ function Messages() {
     } catch (err) {
       setError("Failed to refresh user connections.");
     }
-  }, [user?._id]);
+  }, [user?._id, loading]); // Add loading to dependencies
 
   const markMessagesAsSeen = async (userId) => {
     if (!user?._id || !isValidObjectId(user._id) || !isValidObjectId(userId)) {
@@ -541,6 +544,7 @@ function Messages() {
   );
 
   useEffect(() => {
+    if(loading)return;
     if (!user?._id || !isValidObjectId(user._id)) {
       setError("Invalid user ID. Please log in again.");
       setLoadingConversation(false);
@@ -730,6 +734,22 @@ function Messages() {
     req.lastMessage?.text?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  if (loading) {
+          return (
+              <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
+                  {theme !== 'dark' && (
+                      <div className="w-44 h-44">
+                          <img src={loadingLogo} alt="JobDone Logo" className="object-contain w-full h-full animate-pulse" />
+                      </div>
+                  )}
+                  {theme === 'dark' && (
+                      <div className="w-46 h-46">
+                          <img src={logoDark} alt="JobDone Logo Dark" className="object-contain w-full h-full animate-pulse" />
+                      </div>
+                  )}
+              </div>
+          );
+      }
   if (isMobile) {
     return (
       <div className="fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col h-[100dvh]">

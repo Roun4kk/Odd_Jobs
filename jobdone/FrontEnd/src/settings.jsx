@@ -1,6 +1,8 @@
 import Sidebar from "./Sidebar";
 import useAuth from "./hooks/useAuth";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import logoDark from"./assets/logo/logo-dark.svg";
+import loadingLogo from "./assets/logo/logo-transparent-jobdone.svg";
 import { ArrowLeftIcon, BadgeCheck, Sun, Moon } from "lucide-react";
 import axios from "axios";
 import ReportForm from "./reportComp";
@@ -17,47 +19,8 @@ function Settings() {
     const isMobile = useIsMobile();
     const navigate = useNavigate();
 
-    // ✅ STEP 1: Replace activeSection with a navigation stack
+    // ✅ STEP 1: All useState hooks - these should remain the same order
     const [navigationStack, setNavigationStack] = useState(["yourAccount"]);
-    
-    // The currently visible section is always the last item in the stack
-    const activeSection = navigationStack[navigationStack.length - 1];
-
-    // ✅ STEP 2: Create navigation functions
-    const navigateTo = (section) => {
-        setNavigationStack(prevStack => [...prevStack, section]);
-    };
-
-    const handleBack = () => {
-        if (navigationStack.length > 1) {
-            // This is how we go from 3rd -> 2nd -> 1st layer
-            setNavigationStack(prevStack => prevStack.slice(0, -1));
-        }
-    };
-
-    // ✅ STEP 3: Integrate with browser history for back button/swipe
-    useEffect(() => {
-        if (!isMobile) return;
-
-        const handlePopState = (event) => {
-            // When the browser's back button is pressed,
-            // we just pop from our internal stack.
-            handleBack();
-        };
-        
-        // Push a state ONLY when we navigate away from the base layer
-        if (navigationStack.length > 1 && event.type !== 'popstate') {
-            window.history.pushState({ settingsLayer: navigationStack.length }, "");
-        }
-
-        window.addEventListener("popstate", handlePopState);
-        return () => {
-            window.removeEventListener("popstate", handlePopState);
-        };
-    }, [navigationStack, isMobile]);
-
-
-    // --- NO CHANGES NEEDED to state variables or API functions ---
     const [password, setPassword] = useState("");
     const [oldPassword, setOldPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
@@ -66,7 +29,6 @@ function Settings() {
     const [newPhoneNumber, setNewPhoneNumber] = useState("");
     const [newEmail, setNewEmail] = useState("");
     const [otp, setOtp] = useState("");
-
     const [showPassword, setShowPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -74,8 +36,81 @@ function Settings() {
     const [passwordErrorMessage, setPasswordErrorMessage] = useState("");
     const [passwordVerification, setPasswordVerification] = useState(false);
     const [hasToken, setHasToken] = useState(false);
-    const isAuth = user.isOAuth;
 
+    // ✅ STEP 2: Derived values (not hooks)
+    const activeSection = navigationStack[navigationStack.length - 1];
+    const isAuth = user?.isOAuth ? user.isOAuth : false;
+
+    // ✅ STEP 3: useCallback hooks - MUST be called before any useEffect
+    const navigateTo = useCallback((section) => {
+        setNavigationStack(prevStack => [...prevStack, section]);
+    }, []);
+
+    const handleBack = useCallback(() => {
+        if (navigationStack.length > 1) {
+            setNavigationStack(prevStack => prevStack.slice(0, -1));
+        }
+    }, [navigationStack.length]);
+
+    // ✅ STEP 4: All useEffect hooks - MUST come after useState and useCallback
+    
+    // First useEffect - user authentication check
+    useEffect(() => {
+        if (!loading) {
+            if (!user) {
+                console.log("No user found, redirecting to login");
+                navigate("/");
+            } else {
+                setHasToken(true);
+            }
+        }
+    }, [user, loading, navigate]);
+
+    // Second useEffect - browser history integration (ALWAYS call this hook)
+    useEffect(() => {
+        // Only execute the mobile-specific logic if on mobile, but ALWAYS call the hook
+        if (!isMobile) {
+            return; // Early return, but hook is still called
+        }
+
+        const handlePopState = (event) => {
+            handleBack();
+        };
+        
+        // Push a state ONLY when we navigate away from the base layer
+        if (navigationStack.length > 1) {
+            window.history.pushState({ settingsLayer: navigationStack.length }, "");
+        }
+
+        window.addEventListener("popstate", handlePopState);
+        return () => {
+            window.removeEventListener("popstate", handlePopState);
+        };
+    }, [navigationStack.length, isMobile, handleBack]);
+
+    // Third useEffect - clear error messages on section change
+    useEffect(() => {
+        setErrorMessage("");
+        setPasswordErrorMessage("");
+    }, [activeSection]);
+
+    // ✅ STEP 5: Early returns MUST come after all hooks
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
+                {theme !== 'dark' && (
+                    <div className="w-44 h-44">
+                        <img src={loadingLogo} alt="JobDone Logo" className="object-contain w-full h-full animate-pulse" />
+                    </div>
+                )}
+                {theme === 'dark' && (
+                    <div className="w-46 h-46">
+                        <img src={logoDark} alt="JobDone Logo Dark" className="object-contain w-full h-full animate-pulse" />
+                    </div>
+                )}
+            </div>
+        );
+    }
     const headingStyle = {
         background: theme === 'dark' 
         ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
@@ -86,16 +121,6 @@ function Settings() {
         ? 'linear-gradient(180deg, #0D2B29 0%, #1A4D4A 100%)' 
         : '#2dd4bf' // This is the hex code for teal-400
     };
-    useEffect(() => {
-        if (!loading) {
-        if (!user) {
-            console.log("No user found, redirecting to login");
-            navigate("/");
-        } else {
-            setHasToken(true);
-        }
-        }
-    }, [user, loading, navigate]);
 
     // --- All API functions remain the same ---
     // Example of how to update an API function:
@@ -318,11 +343,6 @@ function Settings() {
         resetPasswordStates();
         navigateTo("forgotPasswordSend"); // Use navigateTo
     };
-    
-    useEffect(() => {
-        setErrorMessage("");
-        setPasswordErrorMessage("");
-    }, [activeSection]);
     
     // --- The JSX now needs to be updated to use the new navigation functions ---
     

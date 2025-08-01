@@ -318,16 +318,26 @@ const PostCard = ({
         <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
           {topBid ? (
             <div className="mb-1">
-              <p className="flex items-center gap-1">
-                <span className="font-semibold text-black dark:text-white">{topBid.BidAmount}₹ bid by </span>
-                <button disabled={shouldBlur || !hasToken} onClick={() => {
-                  if (user._id === topBid.user._id) navigate(`/profile`);
-                  else navigate(`/profile/${topBid.user._id}`);
-                }} className={`font-semibold text-black dark:text-white ${shouldBlur ? "blur-sm" : ""} cursor-pointer max-w-[180px]  md:max-w-[250px] truncate `}>
-                  {shouldBlur ? "anonymous" : `@${topBid.user.username} `}
+              <div className="flex items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap">
+                <span className="font-semibold text-black dark:text-white shrink-0">
+                  {topBid.BidAmount}₹ bid by
+                </span>
+                <button
+                  disabled={shouldBlur || !hasToken}
+                  onClick={() => {
+                    if (user._id === topBid.user._id) navigate(`/profile`);
+                    else navigate(`/profile/${topBid.user._id}`);
+                  }}
+                  className={`font-semibold text-black dark:text-white ${
+                    shouldBlur ? "blur-sm" : ""
+                  } cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap min-w-0`}
+                >
+                  {shouldBlur ? "anonymous" : `@${topBid.user.username}`}
                 </button>
-                {topBid?.user?.verified?.email && topBid?.user?.verified?.phoneNumber && <BadgeCheck className="h-5 w-5 text-teal-400 cursor-pointer" />}
-              </p>
+                {topBid?.user?.verified?.email && topBid?.user?.verified?.phoneNumber && (
+                  <BadgeCheck className="h-5 w-5 text-teal-400 shrink-0" />
+                )}
+              </div>
             </div>
           ) : <span className="dark:text-gray-500">No bids yet.</span>}
         </div>
@@ -361,7 +371,7 @@ const PostCard = ({
 
       {/* Completion Controls */}
       {localPost.status === "winnerSelected" &&
-        (user._id === localPost.user._id || user._id === localPost.selectedWinner) && (
+        (user?._id === localPost?.user?._id || user?._id === localPost?.selectedWinner) && (
           <div className="mt-4 p-4 border-t border-gray-300 dark:border-gray-600">
             <h3 className="text-lg text-center font-semibold mb-4 dark:text-white">Job Completion</h3>
             <div className="flex justify-between items-center gap-4 flex-wrap">

@@ -812,6 +812,7 @@ app.post('/posts', async (req, res) => {
   }
 });
 
+// Utility function
 const anonymizeBidders = (posts, currentUserId) => {
   return posts.map(post => {
     const isPostOwner = post.user._id.toString() === currentUserId;
@@ -820,18 +821,18 @@ const anonymizeBidders = (posts, currentUserId) => {
       const isBidder = bid.user._id.toString() === currentUserId;
 
       if (!isPostOwner && !isBidder) {
+        const plainBid = bid.toObject(); // Convert whole bid to plain object
         return {
-          ...bid.toObject(),
+          ...plainBid,
           user: {
-            ...bid.user.toObject(),
             username: "Anonymous",
-            userImage: null, // or a default anonymous avatar
-            _id: undefined
+            userImage: null,
+            verified: bid.user.verified // optional: include verified status if you want
           }
         };
       }
 
-      return bid;
+      return bid.toObject(); // ensure all bids are plain objects
     });
 
     return {
@@ -1687,8 +1688,8 @@ app.put("/posts/bids", verifyToken, async (req, res) => {
   }
 });
 
-app.get("/posts/topbid", verifyToken, async (req, res) => {
-  const { postId, sortBy } = req.query;
+app.get("/posts/topbid", async (req, res) => {
+  const { postId, sortBy, userId } = req.query;
   if (!postId) return res.status(400).json({ message: "postId is missing" });
 
   try {
@@ -1721,23 +1722,26 @@ app.get("/posts/topbid", verifyToken, async (req, res) => {
     const topBid = bids[0] || null;
 
     if (topBid) {
-      const isBidder = topBid.user._id?.toString() === req.user.id;
-      const isPoster = post.user?._id?.toString() === req.user.id;
+      const isBidder = topBid.user._id?.toString() === userId;
+      const isPoster = post.user?._id?.toString() === userId;
 
-      if (!isBidder && !isPoster) {
-        topBid.user.username = "Anonymous";
-        topBid.user.userImage = null;
-        topBid.user._id = undefined;
+      const plainTopBid = topBid.toObject(); // ✅ Convert to plain JS object
+
+      if (!userId || (!isBidder && !isPoster)) {
+        plainTopBid.user.username = "Anonymous";
+        plainTopBid.user.userImage = null;
+        delete plainTopBid.user._id;
       }
+
+      return res.json(plainTopBid);
     }
 
-    res.json(topBid);
+    res.json(null);
   } catch (error) {
     console.error("Top bid fetch error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
-
 
 const filterDeletedSubdocuments = (posts) => {
   return posts.map(post => {
@@ -2968,9 +2972,8 @@ app.get("/users/:id", async (req, res) => {
   }
 });
 
-app.get("/api/post/:postId", verifyToken, async (req, res) => {
+app.get("/api/post/:postId", async (req, res) => {
   const { postId } = req.params;
-  console.log("Post ID:", postId);
 
   try {
     const post = await Post.findById(postId)
@@ -2983,30 +2986,12 @@ app.get("/api/post/:postId", verifyToken, async (req, res) => {
       return res.status(404).json({ message: "Post not found" });
     }
 
-    const currentUserId = req.user.id;
+    const currentUserId = req.query.userId || "";
     const isPostOwner = post.user._id.toString() === currentUserId;
 
     // ✅ Filter out soft-deleted bids
     const visibleBids = post.bids.filter(bid => !bid.isDeleted);
-
-    // ✅ Anonymize bids
-    const updatedBids = visibleBids.map(bid => {
-      const isBidder = bid.user._id.toString() === currentUserId;
-
-      if (!isPostOwner && !isBidder) {
-        return {
-          ...bid.toObject(),
-          user: {
-            ...bid.user.toObject(),
-            username: "Anonymous",
-            userImage: null,
-            _id: undefined
-          }
-        };
-      }
-
-      return bid;
-    });
+    post.bids = visibleBids;
 
     // ✅ Filter out soft-deleted comments and replies
     const visibleComments = post.comments
@@ -3015,13 +3000,10 @@ app.get("/api/post/:postId", verifyToken, async (req, res) => {
         ...comment.toObject(),
         replies: (comment.replies || []).filter(reply => !reply.isDeleted),
       }));
+    post.comments = visibleComments;
 
-    // ✅ Return post with updated, filtered content
-    const updatedPost = {
-      ...post.toObject(),
-      bids: updatedBids,
-      comments: visibleComments
-    };
+    // ✅ Anonymize bids
+    const [updatedPost] = anonymizeBidders([post], currentUserId);
 
     res.status(200).json(updatedPost);
   } catch (error) {
@@ -3029,6 +3011,7 @@ app.get("/api/post/:postId", verifyToken, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
 
 // POST /api/block/:userId
 app.post('/api/block/:userId', verifyToken, async (req, res) => {

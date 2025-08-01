@@ -39,9 +39,7 @@ function BidOverlayPage() {
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${postId}`, {
-          withCredentials: true,
-        });
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/post/${postId}` , { params: { userId: user?._id } });
         setPost(res.data);
       } catch (error) {
         console.error(error.response ? error.response.data : { message: "Network error" });

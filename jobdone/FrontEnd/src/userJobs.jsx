@@ -121,8 +121,7 @@ function UserJobs({ job, userProfile, hasToken }) {
     const bids = await Promise.all(bidsToFetch.map(async post => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts/topbid`, {
-          params: { postId: post._id, sortBy: activeSortMap[post._id] || "1" },
-          withCredentials: true,
+          params: { postId: post._id, sortBy: activeSortMap[post._id] || "1", userId: user?._id }
         });
         return [post._id, res.data];
       } catch {

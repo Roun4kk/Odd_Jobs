@@ -5,6 +5,7 @@ import Sidebar from "./Sidebar";
 import { BadgeCheck, Star, ArrowLeft } from "lucide-react";
 import UserJobs from "./userJobs";
 import logo from "./assets/logo/logo-transparent-jobdone.svg";
+import logoDark from "./assets/logo/logo-dark.svg";
 import useIsMobile from "./hooks/useIsMobile.js";
 import BottomNavbar from "./bottomNavBar.jsx";
 import toast from 'react-hot-toast';
@@ -54,12 +55,21 @@ function Profile() {
   }, [user?._id]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
-        <img src={logo} alt="Loading..." className="w-40 h-40 animate-pulse" />
-      </div>
-    );
-  }
+          return (
+              <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
+                  {theme !== 'dark' && (
+                      <div className="w-44 h-44">
+                          <img src={logo} alt="JobDone Logo" className="object-contain w-full h-full animate-pulse" />
+                      </div>
+                  )}
+                  {theme === 'dark' && (
+                      <div className="w-46 h-46">
+                          <img src={logoDark} alt="JobDone Logo Dark" className="object-contain w-full h-full animate-pulse" />
+                      </div>
+                  )}
+              </div>
+          );
+      }
 
   if (!user) {
     return (

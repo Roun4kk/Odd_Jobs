@@ -6,7 +6,8 @@ import Sidebar from "./Sidebar";
 import { ArrowLeft, X, Plus, Camera } from "lucide-react";
 import useIsMobile from "./hooks/useIsMobile.js";
 import BottomNavbar from "./bottomNavBar.jsx";
-import logo from "./assets/logo/logo-transparent-jobdone.svg";
+import loadingLogo from "./assets/logo/logo-transparent-jobdone.svg";
+import logoDark from "./assets/logo/logo-dark.svg";
 import toast from "react-hot-toast";
 import { useTheme } from "./ThemeContext";
 
@@ -188,13 +189,21 @@ function EditProfile() {
     setIsSaving(false);
   };
 
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
-        <img src={logo} alt="Loading..." className="w-40 h-40 animate-pulse" />
-      </div>
-    );
-  }
+  if (loading) {
+      return (
+        <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
+          {theme!=='dark' && (
+            <div className=" w-44 h-44">
+              <img src={loadingLogo} alt="JobDone Logo" className="object-contain w-full h-full animate-pulse " />
+            </div>)}
+          {theme === 'dark' && (
+            <div className=" w-46 h-46">
+              <img src={logoDark} alt="JobDone Logo Dark" className="object-contain w-full h-full animate-pulse " />
+            </div>
+          )}
+        </div>
+      );
+    }
 
   // Mobile Layout
   if (isMobile) {

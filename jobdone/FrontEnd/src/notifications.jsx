@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import useAuth from "./hooks/useAuth.jsx";
 import Sidebar from "./Sidebar";
-import logo from "./assets/logo/logo-transparent.png";
+import loadingLogo from "./assets/logo/logo-transparent.png";
+import logoDark from "./assets/logo/logo-dark.svg";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import SearchSkills from "./components/searchSkills.jsx";
@@ -132,14 +133,21 @@ function Notifications() {
     }
   }, [user, loading, navigate]);
 
-  if (loading && !user) {
-    // Show a full-page loader only during initial authentication check
-    return (
-      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
-        <img src={logo} alt="Loading..." className="w-40 h-40 animate-pulse" />
-      </div>
-    );
-  }
+  if (loading) {
+      return (
+        <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
+          {theme!=='dark' && (
+            <div className=" w-44 h-44">
+              <img src={loadingLogo} alt="JobDone Logo" className="object-contain w-full h-full animate-pulse " />
+            </div>)}
+          {theme === 'dark' && (
+            <div className=" w-46 h-46">
+              <img src={logoDark} alt="JobDone Logo Dark" className="object-contain w-full h-full animate-pulse " />
+            </div>
+          )}
+        </div>
+      );
+    }
 
   // Mobile layout
   if (isMobile) {

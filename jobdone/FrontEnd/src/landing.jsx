@@ -4,7 +4,7 @@ import JobPostInput from "./components/jobpostinput.jsx";
 import JobFeed from "./components/jobfeed.jsx";
 import Sidebar from "./Sidebar";
 import logo from "./assets/logo/logo-jobddone-cropped.svg";
-import logoDark from"./assets/logo/logo-jobdone-dark.svg";
+import logoDark from"./assets/logo/logo-dark.svg";
 import loadingLogo from "./assets/logo/logo-transparent-jobdone.svg";
 import SearchSkills from "./components/searchSkills.jsx";
 import BottomNavbar from "./bottomNavBar.jsx";
