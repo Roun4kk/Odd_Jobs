@@ -5,6 +5,7 @@ import JobFeed from "./components/jobfeed.jsx";
 import Sidebar from "./Sidebar";
 import logo from "./assets/logo/logo-jobddone-cropped.svg";
 import logoDark from"./assets/logo/logo-dark.svg";
+import headerLogo from "./assets/logo/logo-jobdone-dark.svg"
 import loadingLogo from "./assets/logo/logo-transparent-jobdone.svg";
 import SearchSkills from "./components/searchSkills.jsx";
 import BottomNavbar from "./bottomNavBar.jsx";
@@ -72,7 +73,7 @@ function Landing() {
             {theme==="dark" && (
               <div className="w-full items-center justify-center max-w-[130px] mt-3">
                 <img
-                  src={logoDark}
+                  src={headerLogo}
                   alt="JobDone Logo Dark"
                   className="w-full h-auto object-contain"
                 />
