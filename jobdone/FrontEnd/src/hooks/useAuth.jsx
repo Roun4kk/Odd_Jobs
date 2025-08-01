@@ -25,11 +25,10 @@ export const AuthProvider = ({ children }) => {
       });
       console.log("✅ User fetched:", res.data);
       setUser(res.data);
+      setLoading(false);
     } catch (err) {
       console.error("❌ Error fetching user:", err.response?.data || err.message);
       setUser(null);
-    } finally {
-      setLoading(false);
     }
   };
 
