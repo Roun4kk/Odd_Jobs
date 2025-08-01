@@ -42,7 +42,15 @@ function Landing() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
-        <img src={loadingLogo} alt="Loading..." className="w-40 h-40 animate-pulse" />
+        {theme!=='dark' && (
+          <div className=" w-44 h-44">
+            <img src={loadingLogo} alt="JobDone Logo" className="object-contain w-full h-full animate-pulse " />
+          </div>)}
+        {theme === 'dark' && (
+          <div className=" w-46 h-46">
+            <img src={logoDark} alt="JobDone Logo Dark" className="object-contain w-full h-full animate-pulse " />
+          </div>
+        )}
       </div>
     );
   }
