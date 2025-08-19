@@ -7,6 +7,7 @@ import useAuth from "./hooks/useAuth.jsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import useIsMobile from "./hooks/useIsMobile"; // Custom hook for mobile detection
 import { useTheme } from "./ThemeContext";
+import CookieDisclaimer from "./CookieDisclaimer.jsx";
 
 // Lucide icons
 import { Rss, Search as SearchIcon, MessageCircle, User, Bell, ShieldCheck, ArrowDown, Briefcase, Zap, Star, Eye, EyeOff, ArrowLeft } from "lucide-react";
@@ -580,6 +581,7 @@ function App() {
         isMobile ? (keyboardVisible ? "min-h-screen pb-8" : "h-screen") : "h-screen"
       }`}
     >
+      <CookieDisclaimer />
       <div className="flex-shrink-0">
         {theme!=='dark' && (<div className=" w-44 h-44">
             <img src={logo} alt="JobDone Logo" className="object-contain w-full h-full" />
