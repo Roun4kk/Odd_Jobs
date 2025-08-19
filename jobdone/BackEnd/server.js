@@ -2982,7 +2982,7 @@ app.get("/api/post/:postId", async (req, res) => {
       .populate('comments.user', 'username userImage verified _id')
       .populate('comments.replies.user', 'username userImage verified _id');
 
-    if (!post || post.isDeleted) {
+    if (!post || post.isDeleted === true) {
       return res.status(404).json({ message: "Post not found" });
     }
 
