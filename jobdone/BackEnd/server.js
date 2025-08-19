@@ -1523,7 +1523,7 @@ app.get("/posts/bids", verifyToken, async (req, res) => {
       .populate('user', '_id')
       .populate('bids.user', 'username userImage verified _id averageRating totalRating');
 
-    if (!post) {
+    if (!post || post.isDeleted === true) {
       return res.status(404).json({ message: "Post not found" });
     }
 
@@ -1697,7 +1697,7 @@ app.get("/posts/topbid", async (req, res) => {
       .populate('user', '_id')
       .populate('bids.user', 'username userImage _id verified averageRating totalRating');
 
-    if (!post) return res.status(404).json({ message: "Post not found" });
+    if (!post || post.isDeleted === true ) return res.status(404).json({ message: "Post not found" });
 
     let bids = (post.bids || []).filter(bid => !bid.isDeleted);
 
@@ -3139,7 +3139,7 @@ app.get('/api/notifications', verifyToken, async (req, res) => {
     }
 
     const postIds = [...postIdsSet];
-    const posts = await Post.find({ _id: { $in: postIds } }).lean();
+    const posts = await Post.find({ _id: { $in: postIds }, isDeleted: false }).lean();
 
     // 🔹 Map for quick access
     const postMap = {};
