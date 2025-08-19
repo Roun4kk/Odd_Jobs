@@ -6,7 +6,7 @@ export default function CookieDisclaimer() {
   useEffect(() => {
     const iframe = document.createElement("iframe");
     iframe.style.display = "none";
-    iframe.src = "https://yourdomain.com/cookie-check.html"; // replace with your deployed domain
+    iframe.src = "https://jobdone-ecru.vercel.app/cookie-check.html"; // replace with your deployed domain
     document.body.appendChild(iframe);
 
     const handleMessage = (event) => {
