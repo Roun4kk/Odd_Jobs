@@ -3348,11 +3348,9 @@ app.delete('/users/delete', verifyToken, async (req, res) => {
 app.get("/probe/start", (req, res) => {
   res.cookie("jd3pc_probe", "1", {
     path: '/',
-    secure: true, // false for localhost HTTP, true for production HTTPS
+    secure: true, 
     httpOnly: true,
     sameSite: 'None' ,
-    domain: undefined,
-    maxAge: 60 * 24 * 60 * 60 * 1000,
   });
   res.json({ ok: true });
 });
