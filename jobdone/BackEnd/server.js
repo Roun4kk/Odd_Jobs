@@ -3348,8 +3348,7 @@ app.delete('/users/delete', verifyToken, async (req, res) => {
 app.get("/probe/start", (req, res) => {
   res.cookie("jd3pc_probe", "1", {
     path: '/',
-    secure: true, 
-    httpOnly: true,
+    secure: true,
     sameSite: 'None' ,
   });
   res.json({ ok: true });
