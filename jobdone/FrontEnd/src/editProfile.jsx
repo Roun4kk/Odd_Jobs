@@ -70,6 +70,7 @@ function EditProfile() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { theme } = useTheme();
+  const [name, setName] = useState("");
 
   // Activate the keyboard handling hook for mobile
   useMobileInputFocus();
@@ -90,6 +91,7 @@ function EditProfile() {
     if (user) {
       setBio(user.userBio || "");
       setSkills(user.userSkills || []);
+      setName(user.name || user.username || "");
       setImage(user.userImage || "");
       setHasToken(true);
     }
@@ -157,6 +159,7 @@ function EditProfile() {
       const payload = {
         userBio: bio,
         userSkills: skills,
+        name: name || user.name || user.username, // Use name if available, otherwise fallback to username
       };
 
       if (uploadedImage) {
@@ -273,6 +276,20 @@ function EditProfile() {
 
             {/* Form Fields */}
             <div className="space-y-4">
+              {/* Name - Editable */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your full name"
+                  className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:focus:border-teal-400"
+                />
+              </div>
+
               {/* Username - Read Only */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -373,7 +390,7 @@ function EditProfile() {
     );
   }
 
-  // Desktop Layout (unchanged)
+  // Desktop Layout
   return (
     <div className="flex h-screen overflow-hidden dark:bg-gray-900">
       <Sidebar user={user} />
@@ -408,6 +425,18 @@ function EditProfile() {
               />
             </div>
           )}
+
+          {/* Name - Editable */}
+          <div className="mb-4">
+            <label className="block text-gray-600 dark:text-gray-300 mb-1">Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter your full name"
+              className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            />
+          </div>
 
           <div className="mb-4">
             <label className="block text-gray-600 dark:text-gray-300 mb-1">Username</label>

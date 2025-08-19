@@ -257,7 +257,13 @@ function App() {
     if (!username) return { valid: false, message: "Username is required" };
     if (username.length < 3) return { valid: false, message: "Username must be at least 3 characters long" };
     if (username.length > 20) return { valid: false, message: "Username cannot exceed 20 characters" };
-    if (!/^[a-zA-Z0-9 _]+$/.test(username)) return { valid: false, message: "Username can only contain letters, numbers, spaces, and underscores" };
+    
+    // Check if username consists only of underscores
+    if (/^_*$/.test(username)) return { valid: false, message: "Username cannot consist only of underscores" };
+    
+    // Check allowed characters (letters, numbers, underscores - NO SPACES)
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) return { valid: false, message: "Username can only contain letters, numbers, and underscores" };
+    
     return { valid: true, message: "" };
   };
 

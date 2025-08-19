@@ -108,9 +108,9 @@ function Profile() {
                   <div className="flex items-center gap-1">
                     <h2
                       className="text-lg font-bold text-gray-800 dark:text-white truncate max-w-[80px]"
-                      title={user?.username}
+                      title={user?.name ? user?.name : user?.username || "User not found" }
                     >
-                      {user?.username || "User not found"}
+                      {user?.name ? user?.name : user?.username || "User not found"}
                     </h2>
                     {verified && <BadgeCheck className="h-4 w-4 text-teal-400" />}
                   </div>
@@ -135,7 +135,7 @@ function Profile() {
                     </button>
                   </div>
                 </div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm truncate max-w-[200px]">{user?.email || "User not found"}</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm truncate max-w-[200px]">{"@" + user?.username || "User not found"}</p>
                 <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">{user?.userBio || ""}</p>
 
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -264,9 +264,9 @@ function Profile() {
             <div className="flex items-center justify-start w-full gap-2">
               <button
                 className="text-2xl font-bold text-gray-800 dark:text-white cursor-pointer truncate max-w-[200px] overflow-hidden whitespace-nowrap"
-                title={user?.username}
+                title={user?.name ? user?.name : user?.username || "User not found"}
               >
-                {user?.username || "User not found"}
+                {user?.name ? user?.name : user?.username || "User not found"}
               </button>
               {verified && <BadgeCheck className="h-6 w-6 text-teal-400" />}
               <div className="h-full ml-auto flex gap-2">
@@ -290,7 +290,7 @@ function Profile() {
                 </button>
               </div>
             </div>
-            <p className="text-gray-600 dark:text-gray-400">{user?.email || "User not found"}</p>
+            <p className="text-gray-600 dark:text-gray-400">{"@" + user?.username || "User not found"}</p>
             <p className="text-gray-600 dark:text-gray-400">{user?.userBio || ""}</p>
             <div className="flex gap-2 mt-2 flex-wrap w-full items-center">
               {user?.userSkills?.map((skill, index) => (

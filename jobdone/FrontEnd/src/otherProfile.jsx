@@ -261,9 +261,9 @@ function OtherProfile() {
                       <div className="flex items-center gap-1">
                         <h2
                           className="text-lg font-bold text-gray-800 dark:text-white truncate max-w-[120px]"
-                          title={profile?.username}
+                          title={profile?.name ? profile.name : profile.username || "User not found"}
                         >
-                          {profile?.username || "User not found"}
+                          {profile?.name ? profile.name : profile.username || "User not found"}
                         </h2>
                         {verified && (
                           <BadgeCheck className="h-4 w-4 text-teal-400" />
@@ -303,7 +303,7 @@ function OtherProfile() {
                     </div>
 
                     <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      {profile?.email || "User not found"}
+                      {profile?.name ? "@" + profile.name : "User not found"}
                     </p>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">
                       {profile?.userBio || ""}
@@ -473,7 +473,7 @@ function OtherProfile() {
                     disabled={!hasToken}
                     className="text-2xl font-bold text-gray-800 dark:text-white cursor-pointer truncate max-w-[300px]"
                   >
-                    {profile?.username || "User not found"}
+                    {profile?.name ? profile?.name : profile?.username || "User not found"}
                   </button>
                   {verified && (
                     <BadgeCheck className="h-6 w-6 text-teal-400" />
@@ -510,7 +510,7 @@ function OtherProfile() {
                   </div>
                 </div>
                 <p className="text-gray-600 dark:text-gray-400">
-                  {profile?.email || "User not found"}
+                  {"@" + profile?.username || "User not found"}
                 </p>
                 <p className="text-gray-600 dark:text-gray-400">
                   {profile?.userBio || ""}

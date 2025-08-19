@@ -177,7 +177,7 @@ function Sidebar({ user }) {
           />
           <div className="ml-2 flex flex-col items-start justify-center">
             <p className="text-white group-hover:text-black dark:text-teal-400 dark:group-hover:text-white">
-              {user?.username || "User not found"}
+              {"@" + user?.username || "User not found"}
             </p>
             <p className="text-white group-hover:text-black dark:text-teal-400 dark:group-hover:text-white">
               {user?.email || "User not found"}

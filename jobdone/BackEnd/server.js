@@ -463,12 +463,14 @@ app.get("/auth/google/callback",
       if (!user) {
         console.log("🔨 Creating new user...");
 
-        let finalUsername = username;
+        // normalize username: lowercase + replace spaces with underscores
+        let finalUsername = username.toLowerCase().replace(/\s+/g, "_");
+
         let usernameExists = await User.exists({ username: finalUsername });
 
         while (usernameExists) {
           const randomSuffix = Math.floor(1000 + Math.random() * 9000); // 4-digit number
-          finalUsername = `${username.replace(/\s+/g, '')}${randomSuffix}`;
+          finalUsername = `${username.toLowerCase().replace(/\s+/g, "_")}${randomSuffix}`;
           usernameExists = await User.exists({ username: finalUsername });
         }
 
@@ -598,19 +600,40 @@ const verifyToken = (req, res, next) => {
 };
 
 app.post('/user/info', async (req, res) => {
-  const { username, email, password ,postIds} = req.body;
-  const existingUser = await User.findOne({
-    $or: [{ username }, { email }]
-  });
-  if (existingUser) {
-    return res.status(400).json({ message: existingUser.username === username ? "Username already exists" : "Email already in use" });
-  }
-
   try {
+    const { username, email, password, postIds } = req.body;
+
+    // normalize username: lowercase + replace spaces with underscores
+    let finalUsername = username.toLowerCase().replace(/\s+/g, "_");
+
+    // check if email already exists
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return res.status(400).json({ message: "Email already in use" });
+    }
+
+    // check for username conflicts, add suffix until unique
+    let usernameExists = await User.exists({ username: finalUsername });
+    while (usernameExists) {
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000); // 4-digit random
+      finalUsername = `${username.toLowerCase().replace(/\s+/g, "_")}${randomSuffix}`;
+      usernameExists = await User.exists({ username: finalUsername });
+    }
+
+    // hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ username, email, password: hashedPassword , postIds: postIds || [] });
+
+    // create user
+    await User.create({
+      username: finalUsername,
+      email,
+      password: hashedPassword,
+      postIds: postIds || []
+    });
+
     res.status(200).json({ message: "User registered successfully" });
   } catch (error) {
+    console.error("❌ Registration error:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -1885,12 +1908,12 @@ app.get("/user/reviews", verifyToken, async (req, res) => {
 
 app.put("/users/editprofile/:id", async (req, res) => {
   try {
-    const { userBio, userSkills, userImage } = req.body;
+    const { userBio, userSkills, userImage , name } = req.body;
     const userId = req.params.id;
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { userBio, userSkills, userImage },
+      { userBio, userSkills, userImage , name},
       { new: true } 
     );
 
