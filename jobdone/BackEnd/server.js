@@ -3345,6 +3345,23 @@ app.delete('/users/delete', verifyToken, async (req, res) => {
   }
 });
 
+app.get("/probe/start", (req, res) => {
+  res.cookie("jd3pc_probe", "1", {
+    path: '/',
+    secure: isProduction, // false for localhost HTTP, true for production HTTPS
+    httpOnly: true,
+    sameSite: isProduction ? 'None' : 'Lax',
+    domain: undefined,
+    maxAge: 60 * 24 * 60 * 60 * 1000,
+  });
+  res.json({ ok: true });
+});
+
+app.get("/probe/check", (req, res) => {
+  const hasCookie = Boolean(req.cookies?.jd3pc_probe);
+  res.json({ hasCookie });
+});
+
 
 mongoose.connect(MONGODB_URI)
   .then(() => {

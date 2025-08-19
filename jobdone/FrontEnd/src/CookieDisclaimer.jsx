@@ -1,42 +1,39 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 
 export default function CookieDisclaimer() {
-  const [cookiesEnabled, setCookiesEnabled] = useState(true);
+  const [needs3PC, setNeeds3PC] = useState(false);
 
   useEffect(() => {
-    const iframe = document.createElement("iframe");
-    iframe.style.display = "none";
-    iframe.src = "https://jobdone-ecru.vercel.app/cookie-check.html"; // replace with your deployed domain
-    document.body.appendChild(iframe);
+    const runProbe = async () => {
+      try {
+        // Step 1: set a cookie
+        await axios.get(`${import.meta.env.VITE_API_BASE_URL}/probe/start`);
 
-    const handleMessage = (event) => {
-      if (event.data === "3pc-enabled") {
-        setCookiesEnabled(true);
-      } else if (event.data === "3pc-disabled") {
-        setCookiesEnabled(false);
+        // Step 2: check if cookie comes back
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/probe/check`);
+        if (!res.data.hasCookie) setNeeds3PC(true);
+      } catch (err) {
+        console.error("3PC probe failed:", err);
+        // Optional: setNeeds3PC(true) if you want to assume blocked on error
       }
     };
 
-    window.addEventListener("message", handleMessage);
-
-    return () => {
-      window.removeEventListener("message", handleMessage);
-      document.body.removeChild(iframe);
-    };
+    runProbe();
   }, []);
 
-  if (cookiesEnabled) return null;
+  if (!needs3PC) return null;
 
   return (
-    <div className="bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-lg p-3 text-sm flex items-center justify-between mt-2">
+    <div className="bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-lg p-3 text-sm mt-3 flex justify-between items-center">
       <span>
         ⚠️ Please enable <b>third-party cookies</b> in your browser for login to
-        work while JobDone is in testing phase.{" "}
+        work while JobDone is in testing.{" "}
         <a
+          className="underline"
           href="https://www.whatismybrowser.com/guides/how-to-enable-cookies/"
           target="_blank"
-          rel="noopener noreferrer"
-          className="underline text-yellow-900"
+          rel="noreferrer"
         >
           Learn how
         </a>

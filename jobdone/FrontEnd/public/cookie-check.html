@@ -1,8 +1,0 @@
-<script>
-  document.cookie = "testcookie=1; SameSite=None; Secure";
-  if (document.cookie.indexOf("testcookie") !== -1) {
-    parent.postMessage("3pc-enabled", "*");
-  } else {
-    parent.postMessage("3pc-disabled", "*");
-  }
-</script>
