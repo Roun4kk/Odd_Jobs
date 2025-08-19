@@ -13,6 +13,7 @@ export default function CookieDisclaimer() {
         // Step 2: check if cookie comes back
         const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/probe/check`);
         if (!res.data.hasCookie) setNeeds3PC(true);
+        console.log("3PC probe result:", res.data);
       } catch (err) {
         console.error("3PC probe failed:", err);
         // Optional: setNeeds3PC(true) if you want to assume blocked on error
