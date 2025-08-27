@@ -186,11 +186,47 @@ export default function PostPage() {
         
         {!isMobile && user && <Sidebar user={user} />}
         
+        
         <div className={`${
           isMobile 
             ? "flex-1 flex justify-center items-center bg-white dark:bg-gray-900 px-4" 
-            : hasToken ? "w-[70%] fixed right-0 bg-white dark:bg-gray-900 h-full overflow-y-scroll" : "w-full flex justify-center bg-white dark:bg-gray-900 h-full overflow-y-scroll"
+            : hasToken ? "w-[70%] fixed right-0 bg-white dark:bg-gray-900 h-full overflow-y-scroll" : "w-full flex flex-col justify-center bg-white dark:bg-gray-900 h-full overflow-y-scroll"
         }`}>
+          {!isMobile && !user &&(
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-teal-50 dark:bg-gray-800 flex-shrink-0">
+            {hasToken ? (
+              <>
+                <h1 className="text-2xl font-semibold text-teal-800 dark:text-white">Post</h1>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-start h-12 px-4">
+                  <div className="w-full items-center mt-4 justify-center max-w-[160px]">
+                    <img
+                      src={logo}
+                      alt="JobDone Logo"
+                      className="w-full h-auto object-contain"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => navigate("/")}
+                    className="px-3 py-1 text-sm text-teal-600 border border-teal-600 rounded-full hover:bg-teal-50 cursor-pointer"
+                  >
+                    Sign In
+                  </button>
+                  <button 
+                    onClick={() => navigate("/")}
+                    className="px-3 py-1 text-sm bg-teal-600 text-white rounded-full hover:bg-teal-700 cursor-pointer"
+                  >
+                    Sign Up
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
           <div className="flex justify-center items-center h-full text-red-500 text-center">
             {error}
           </div>
