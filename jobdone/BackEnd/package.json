@@ -10,7 +10,7 @@
     "dev": "nodemon server.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Rounak Molpariya",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
