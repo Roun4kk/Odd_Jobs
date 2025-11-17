@@ -10,7 +10,6 @@ export default function CookieDisclaimer() {
         await axios.get(`${import.meta.env.VITE_API_BASE_URL}/probe/start`, { withCredentials: true });
         const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/probe/check`, { withCredentials: true });
         if (!res.data.hasCookie) setNeeds3PC(true);
-        console.log("3PC probe result:", res.data);
       } catch (err) {
         console.error("3PC probe failed:", err);
       }
