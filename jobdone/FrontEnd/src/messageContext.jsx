@@ -40,7 +40,6 @@ export function MessageProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    console.log("MessageProvider auth state:", { user, loading });
     
     if (!loading && user?._id && isValidObjectId(user._id)) {
       fetchUnseenCounts();
