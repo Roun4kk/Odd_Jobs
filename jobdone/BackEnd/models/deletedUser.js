@@ -28,15 +28,50 @@ const DeletedUserSchema = mongoose.Schema({
     post: { type: mongoose.Schema.Types.ObjectId, ref: "Post" },
     createdAt: { type: Date }
   }],
-  notifications: [{
-    type: String,
-    postId: { type: mongoose.Schema.Types.ObjectId, ref: 'Post' },
-    sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    message: String,
-    createdAt: Date,
-    postDescription: String,
-    seen: Boolean,
-  }],
+  notifications: [
+    {
+      type: {
+        type: String,
+        required: true,
+      },
+      postId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Post',
+      },
+      sender: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      bidId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Post.bids',
+      },
+      commentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Post.Comments',
+      },
+      replyId: {
+        type: mongoose.Schema.Types.ObjectId,
+      },
+      message: String,
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+      postDescription: {
+        type: String,
+        required: true,
+      },
+      isDeleted: {
+        type: Boolean,
+        default: false,
+      },
+      seen: {
+        type: Boolean,
+        default: false,
+      },
+    }
+  ],
   allowNotifications: {
     comments: Boolean,
     bids: Boolean
