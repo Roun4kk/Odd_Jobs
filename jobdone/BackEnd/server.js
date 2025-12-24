@@ -71,7 +71,7 @@ redis.on('close', () => {
 const OTP_EXPIRY_SECONDS = 900;
 const OTP_LIMIT = 5;
 const PHONE_COOLDOWN_SECONDS = 60;
-const EMAIL_OTP_EXPIRY_SECONDS = 900; // 1 hour
+const EMAIL_OTP_EXPIRY_SECONDS = 900; // 15 minutes
 const EMAIL_OTP_LIMIT = 5;
 const EMAIL_COOLDOWN_SECONDS = 120; // 2 minutes between requests for same email (longer than phone)
 console.log("Email OTP Limit:", EMAIL_OTP_LIMIT);
